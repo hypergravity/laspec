@@ -54,9 +54,6 @@ from scipy.interpolate import PchipInterpolator
 
 from .spec import spec_quick_init
 
-import astropy.constants as const
-import astropy.units as u
-from inspect import isfunction
 
 # deprecated constants ########################################################
 # OVER_SAMPLING = 10.
