@@ -1,4 +1,4 @@
-## **laspec **
+## laspec
 
 Modules for basic operations on **LA**MOST **spec**tra, etc.
 
