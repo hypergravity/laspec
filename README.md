@@ -13,7 +13,7 @@ Bo Zhang, [bozhang@nao.cas.cn](mailto:bozhang@nao.cas.cn)
 - for the latest **stable** version: `pip install laspec`
 - for the latest **github** version: `pip install git+git://github.com/hypergravity/laspec`
 
-## structures
+## structure
 
 - convolution \
     module for spectral gaussian convolution
@@ -29,4 +29,4 @@ Bo Zhang, [bozhang@nao.cas.cn](mailto:bozhang@nao.cas.cn)
 
 ## acknowledgements
 
-*SmoothingSpline* is from https://github.com/wafo-project/pywafo
+...
