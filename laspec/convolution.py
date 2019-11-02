@@ -45,8 +45,6 @@ Aims
 # i.e., the delta_lambda should be  1./1.12 times smaller.
 # ###########################################################################
 
-from __future__ import print_function
-
 import datetime
 
 import numpy as np
