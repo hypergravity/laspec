@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='laspec',
-    version='2019.0815.1',
+    version='2019.1102.0',
     author='Bo Zhang',
     author_email='bozhang@nao.cas.cn',
     description='Modules for LAMOST spectra.',  # short description
