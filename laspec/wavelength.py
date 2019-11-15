@@ -8,6 +8,17 @@ import numpy as np
 
 
 def vac2air(wave_vac):
+    """
+    Parameters
+    ----------
+    wave_vac:
+        wavelength (A) in vacuum
+
+    Return
+    ------
+    wave_air:
+        wavelength (A) in air
+    """
     wave_vac = np.array(wave_vac)
     s = 1e4 / wave_vac
     n = 1 + 0.0000834254 + \
@@ -17,6 +28,17 @@ def vac2air(wave_vac):
 
 
 def air2vac(wave_air):
+    """
+    Parameters
+    ----------
+    wave_air:
+        wavelength (A) in air
+
+    Return
+    ------
+    wave_vac:
+        wavelength (A) in vacuum
+    """
     wave_air = np.array(wave_air)
     s = 1e4 / wave_air
     n = 1 + 0.00008336624212083 + \
