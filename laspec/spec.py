@@ -24,13 +24,8 @@ Aims
 
 """
 
-from __future__ import print_function
-
 import numpy as np
 from astropy.table import Table, Column
-
-from .continuum_normalization import (_cont_norm_running_quantile,
-                                      _cont_norm_running_quantile_regions)
 
 
 class Spec(Table):
@@ -41,38 +36,6 @@ class Spec(Table):
         # assert 'wave' in self.colnames
         # assert 'flux' in self.colnames
         # why???
-
-    def norm_spec_running_q(self, ranges=None, q=0.90, delta_lambda=100.,
-                            overwrite_flux=False, verbose=False):
-        """
-
-        Parameters
-        ----------
-        ranges: N x 2 numpy.ndarray
-            pixel ranges
-
-        q: float
-            quantile
-
-        delta_lambda: float
-            flux bin width
-
-        Returns
-        -------
-        add flux_norm (& ivar_norm) column
-
-        """
-        flux_norm, ivar_norm = \
-            norm_spec_running_q(self, ranges=ranges, q=0.90, delta_lambda=100.,
-                                verbose=verbose)
-        if overwrite_flux:
-            self['flux'] = flux_norm
-        else:
-            if 'ivar' not in self.colnames:
-                self.add_column(Column(flux_norm.flatten(), 'flux_norm'))
-            else:
-                self.add_columns([Column(flux_norm.flatten(), 'flux_norm'),
-                                  Column(ivar_norm.flatten(), 'ivar_norm')])
 
     def norm_spec_pixel(self, norm_wave):
         sub_nearest_pixel = np.argsort(np.abs(self['wave']-norm_wave))[0]
@@ -150,46 +113,10 @@ def wave2ranges(wave, wave_intervals=None):
         assert wave_intervals.shape[1] == 2
 
         ranges = np.zeros_like(wave_intervals)
-        for i in xrange(len(wave_intervals)):
+        for i in range(len(wave_intervals)):
             ranges[i, 0] = np.sum(wave < wave_intervals[i, 0])
             ranges[i, 1] = np.sum(wave < wave_intervals[i, 1])
         return ranges
-
-
-def norm_spec_running_q(spec, ranges=None, q=0.90, delta_lambda=100.,
-                        verbose=False):
-        """ Continuum normalize the training set using a running quantile
-            migrated from TheCannon
-
-        Parameters
-        ----------
-        q: float
-            The quantile cut (q between 0.0 and 1.0)
-        delta_lambda: float
-            The width of the pixel range used to calculate the median
-
-        Returns
-        -------
-        flux_norm, ivar_norm
-
-        """
-        # print("Continuum normalizing the tr set using running quantile...")
-        if verbose:
-            print('@Cham: normalizing spectra using running quantile ...')
-        if 'ivar' not in spec.colnames:
-            # this is a bear spectrum without ivar data
-            # produce an all-one array to replace the ivar
-            spec.add_column(Column(np.ones_like(spec['flux']), 'ivar'))
-
-        if ranges is None:
-            # continuous spectrum
-            return _cont_norm_running_quantile(
-                spec['wave'].data, spec['flux'].data[None,:], spec['ivar'][None,:],
-                q=q, delta_lambda=delta_lambda)
-        else:
-            return _cont_norm_running_quantile_regions(
-                spec['wave'], spec['flux'], spec['ivar'],
-                q=q, delta_lambda=delta_lambda, ranges=ranges, verbose=verbose)
 
 
 # ################################## #
@@ -208,7 +135,7 @@ def norm_spec_median(spec):
 
 
 def norm_spec_chunk_median(spec_chunks):
-    for i in xrange(len(spec_chunks)):
+    for i in range(len(spec_chunks)):
         spec_chunks[i]['flux'] /= np.median(spec_chunks[i]['flux'])
     return spec_chunks
 
@@ -231,7 +158,7 @@ def break_spectrum_into_chunks(spec, ranges=None, amp=None):
 
         # break spectrum into chunks
         spec_chunks = []
-        for i in xrange(len(ranges)):
+        for i in range(len(ranges)):
             ind_chunk = np.logical_and(spec['wave'] >= ranges[i][0], spec['wave'] <= ranges[i][0])
             spec_chunk = spec[ind_chunk]
             spec_chunk['flux'] *= amp[i]
