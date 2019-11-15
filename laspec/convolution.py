@@ -101,13 +101,13 @@ def fwhm2resolution(fwhm, wave=5000.):
 
 
 def _generate_wave_array_R_fixed(wave_start, wave_stop, R=2000.,
-                                over_sample=1.):
+                                 over_sample=1.):
     """ generate wave array given a fixed R """
     R_ = over_sample * R - .5
     # determine wave_step_min
     wave_step_min = wave_start / R_
     # wave guess
-    wave_step_guess = np.zeros((wave_stop-wave_start)/wave_step_min)
+    wave_step_guess = np.zeros(np.int((wave_stop-wave_start)/wave_step_min))
     wave_guess = np.zeros_like(wave_step_guess)
     wave_step_guess[0] = wave_step_min
     wave_guess[0] = wave_start
@@ -389,16 +389,9 @@ def generate_gaussian_kernel_array(over_sample_Rgk, sigma_num):
     return normalized_gaussian_array(xgs, b=0., c=sigma_pixel_num)
 
 
-def conv_spec(wave,
-              flux,
-              R_hi=2000.,
-              R_lo=500.,
-              over_sample_additional=3.,
-              gaussian_kernel_sigma_num=8.,
-              wave_new=None,
-              wave_new_oversample=5.,
-              verbose=True,
-              return_type='array'):
+def conv_spec(wave, flux, R_hi=2000., R_lo=500., over_sample_additional=3.,
+              gaussian_kernel_sigma_num=8., wave_new=None,
+              wave_new_oversample=5., verbose=True, return_type='array'):
     """ to convolve high-R spectrum to low-R spectrum
 
     Parameters
@@ -427,14 +420,17 @@ def conv_spec(wave,
 
     Returns
     -------
+    wave_new, flux_new
+
+    OR
+
     spec: bopy.spec.spec.Spec
         Spec, based on astropy.table.Table class
-
     """
     if verbose:
         start = datetime.datetime.now()
-        print('--------------------------------------------------------------')
-        print('@Cham: Welcome to the spectral convolution code developed by Bo Zhang (@NAOC) ...')
+        print('===============================================================')
+        print('@laspec.convolution.conv_spec: starting at {}'.format(start))
 
     # 1. re-format R_hi & R_lo
     assert R_hi is not None and R_lo is not None
@@ -460,7 +456,7 @@ def conv_spec(wave,
 
     # 4. find wave_interp & flux_interp
     if verbose:
-        print('@Cham: interpolating orignal spectrum to wave_interp ...')
+        print('@laspec.convolution.conv_spec: interpolating orignal spectrum to wave_interp ...')
     wave_max = np.max(wave)
     wave_min = np.min(wave)
     wave_interp = generate_wave_array_R(wave_min, wave_max,
@@ -471,7 +467,7 @@ def conv_spec(wave,
 
     # 5. generate Gaussian Kernel array
     if verbose:
-        print('@Cham: generating gaussian kernel array ...')
+        print('@laspec.convolution.conv_spec: generating gaussian kernel array ...')
     gk_array = generate_gaussian_kernel_array(over_sample,
                                               gaussian_kernel_sigma_num)
     gk_len = len(gk_array)
@@ -479,9 +475,7 @@ def conv_spec(wave,
 
     # 6. convolution
     if verbose:
-        print('@Cham: convolution ...')
-        print('@Cham: estimated convolution time: %.2f seconds ...'
-              % (len(flux_interp) * gk_len / 55408. / 657. * 0.05))
+        print('@laspec.convolution.conv_spec: convolving ...')
     convolved_flux = np.convolve(flux_interp, gk_array)[gk_len_half:-gk_len_half]
 
     # 7. find new wave array
@@ -489,30 +483,30 @@ def conv_spec(wave,
         # wave_new is None
         # default: 5 times over-sample
         if verbose:
-            print('@Cham: using default 5 times over-sample wave array ...')
+            print('@laspec.convolution.conv_spec: using default 5 times over-sample wave array ...')
         wave_new = generate_wave_array_R(wave_interp[0], wave_interp[-1],
                                          R_lo, wave_new_oversample)
     elif np.isscalar(wave_new):
         # wave_new specifies the new wave array over_sampling_lo rate
         # default is 5. times over-sample
         if verbose:
-            print('@Cham: using user-specified %.2f times over-sample wave array ...' % wave_new)
+            print('@laspec.convolution.conv_spec: using user-specified {:.2f} times over-sample wave array ...'.format(wave_new))
         wave_new = generate_wave_array_R(wave_interp[0], wave_interp[-1],
                                          R_lo, wave_new)
     else:
         # wave_new specified
         if verbose:
-            print('@Cham: using user-specified wave array ...')
+            print('@laspec.convolution.conv_spec: using user-specified wave array ...')
 
     # 8. interpolate convolved flux to new wave array
     if verbose:
-        print('@Cham: interpolating convolved spectrum to new wave array ...')
+        print('@laspec.convolution.conv_spec: interpolating convolved spectrum to new wave array ...')
     P = PchipInterpolator(wave_interp, convolved_flux, extrapolate=False)
     flux_new = P(wave_new)
     if verbose:
         stop = datetime.datetime.now()
-        print('@Cham: total time spent: %.2f seconds' % (stop-start).total_seconds())
-        print('---------------------------------------------------------------')
+        print('@laspec.convolution.conv_spec: total time spent: {:.2f} seconds'.format((stop-start).total_seconds()))
+        print('===============================================================')
 
     if return_type == 'array':
         return wave_new, flux_new
