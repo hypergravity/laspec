@@ -17,7 +17,8 @@ Modifications
 -------------
 - Fri Nov 20 10:16:59 2015    reformatting code
 - Sun Feb 28 14:39:16 2016    migrated to bopy.spec.lamost
-- Fri Jul 15 16:08:00 2016    migrate read_spectrum to read_spectrum.py
+- Fri Jul 15 16:08:00 2016    migrated read_spectrum to read_spectrum.py
+- Mon Aug 19 14:52:00 2019    migrated to laspec
 
 
 Aims
@@ -26,11 +27,10 @@ Aims
 
 """
 
-# from __future__ import print_function
+
 import os
+
 import numpy as np
-# from astropy.io import fits
-# from astropy.table import Table, Column
 
 
 def lamost_filepath(planid, mjd, spid, fiberid, dirpath="", extname=".fits"):
@@ -77,6 +77,71 @@ def lamost_filepath(planid, mjd, spid, fiberid, dirpath="", extname=".fits"):
             # if input a list of items
             return np.array(["spec-%05d-%s_sp%02d-%03d%s" %
                              (mjd[i], planid[i], spid[i], fiberid[i], extname)
+                             for i in range(len(mjd))])
+    else:
+        # return file path
+        if not dirpath[-1] == os.path.sep:
+            dirpath += os.path.sep
+
+        if np.isscalar(mjd):
+            # if only input one item
+            return "%s%s%sspec-%05d-%s_sp%02d-%03d%s" \
+                   % (dirpath, planid, os.path.sep,
+                      mjd, planid, spid, fiberid, extname)
+        else:
+            # if input a list of items
+            return np.array(["%s%s%sspec-%05d-%s_sp%02d-%03d%s" %
+                             (dirpath, planid[i], os.path.sep, mjd[i],
+                              planid[i], spid[i], fiberid[i], extname)
+                             for i in range(len(mjd))])
+
+
+def lamost_filepath_med(planid, mjd, spid, fiberid, dirpath="",
+                        extname=".fits"):
+    """ generate file path of a LAMOST spectrum (medium resolution)
+
+    Parameters
+    ----------
+    planid: string
+        planid
+
+    mjd: 5-digit integer
+        mjd (use lmjd rather than mjd for DR3 and after!)
+
+    spid: 2-digit integer
+        spid, the number of the spectrogragh
+
+    fiberid: 3-digit integer
+        fiberid
+
+    dirpath: string
+        the root directory for storing spectra.
+
+    Returns
+    --------
+    filepath: string
+        the path of root dir of directory (prefix).
+        if un-specified, return file name.
+
+    """
+
+    # pre-processing: strip
+    if np.isscalar(planid):
+        planid = planid.strip()
+    else:
+        planid = [_.strip() for _ in planid]
+
+    if dirpath == "" or dirpath is None:
+        # return file name
+        if np.isscalar(mjd):
+            # if only input one item
+            return "spec-%05d-%s_sp%02d-%03d%s" \
+                   % (mjd, planid, spid, fiberid, extname)
+        else:
+            # if input a list of items
+            return np.array(["spec-%05d-%s_sp%02d-%03d%s" %
+                             (mjd[i], planid[i], spid[i], fiberid[i],
+                              extname)
                              for i in range(len(mjd))])
     else:
         # return file path
