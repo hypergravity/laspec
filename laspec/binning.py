@@ -1,8 +1,6 @@
 import numpy as np
 from scipy.interpolate import interp1d
 
-__all__ = ["mdwave", "wave_log10", "center2edge", "rebin_flux", "rebin_mask"]
-
 
 def mdwave(wave):
     """ median delta wavelength """
@@ -11,6 +9,7 @@ def mdwave(wave):
 
 def wave_log10(wave, dwave=None):
     """ generate log10 wavelength array given wave array
+
     Parameters
     ----------
     wave:
@@ -18,9 +17,10 @@ def wave_log10(wave, dwave=None):
     dwave:
         delta wavelength. if not specified, use median(dwave).
 
-    Examples
+    Example
     -------
     >>> wave_new = wave_log10(wave)
+    
     """
     if dwave is None:
         dwave = mdwave(wave)
@@ -35,22 +35,27 @@ def center2edge(x):
     return np.hstack((x[0] - .5 * dx[0], x[:-1] + .5 * dx, x[-1] + .5 * dx[-1]))
 
 
-def rebin_flux(wave, flux, wave_new):
+def rebin_flux(wave, flux, wave_new=None):
     """ Rebin spectrum to a new wavelength grid
 
+    Parameters
+    ----------
     wave: array
         old wavelength
     flux: array
         old flux
     wave_new:
-        new wavelength
+        new wavelength. if None, use log10 wavelength.
 
     Return
     ------
     re-binned flux
     """
     wave = np.asarray(wave)
-    wave_new = np.asarray(wave_new)
+    if wave_new is None:
+        wave_new = wave_log10(wave, dwave=None)
+    else:
+        wave_new = np.asarray(wave_new)
 
     wave_edge = center2edge(wave)
     wave_new_edge = center2edge(wave_new)
@@ -75,9 +80,11 @@ def rebin_flux(wave, flux, wave_new):
     return flux_new
 
 
-def rebin_mask(wave, mask, wave_new):
-    """ Rebin spectrum to a new wavelength grid
+def rebin_mask(wave, mask, wave_new=None):
+    """ Rebin mask to a new wavelength grid
 
+    Parameters
+    ----------
     wave: array
         old wavelength
     mask: array
@@ -90,7 +97,10 @@ def rebin_mask(wave, mask, wave_new):
     re-binned mask
     """
     wave = np.asarray(wave)
-    wave_new = np.asarray(wave_new)
+    if wave_new is None:
+        wave_new = wave_log10(wave, dwave=None)
+    else:
+        wave_new = np.asarray(wave_new)
 
     wave_edge = center2edge(wave)
     wave_new_edge = center2edge(wave_new)
