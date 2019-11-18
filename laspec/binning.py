@@ -20,7 +20,7 @@ def wave_log10(wave, dwave=None):
     Example
     -------
     >>> wave_new = wave_log10(wave)
-    
+
     """
     if dwave is None:
         dwave = mdwave(wave)
@@ -117,7 +117,7 @@ def rebin(wave, flux=None, flux_err=None, mask=None, wave_new=None):
                     mask[wave_new_ipix[ipix, 0]:wave_new_ipix[ipix, 1] + 1])
         result.append(mask_new)
 
-    return flux_new
+    return result
 
 
 def _test():
