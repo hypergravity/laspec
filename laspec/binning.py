@@ -117,7 +117,12 @@ def rebin(wave, flux=None, flux_err=None, mask=None, wave_new=None):
                     mask[wave_new_ipix[ipix, 0]:wave_new_ipix[ipix, 1] + 1])
         result.append(mask_new)
 
-    return result
+    if len(result) == 1:
+        return result[0]
+    elif len(result) > 1:
+        return result
+    else:
+        raise ValueError("@rebin: what to rebin?")
 
 
 def _test():
