@@ -210,35 +210,32 @@ if __name__ == '__main__':
     print('')
     print('@Cham: testing ''read_spectrum'' ...')
     _test_read_spectrum()
-    print(MedSpec.read(fp="file:///home/cham/PycharmProjects/bopy/bopy/data/test_spectra/lamost_dr7/med-58417-NT062347N023956S01_sp01-008.fits"))
 
 """
 
-#######################################
+=======================================
 filesource:   'lamost_dr2'
-#######################################
+=======================================
 documents of data structures (LAMOST and SDSS spectra)
 http://dr2.lamost.org/doc/data-production-description#toc_3
 
  RowNumber 	Data                Type
  1           Flux                float
- 2           Inverse Variance 	float
+ 2           Inverse Variance 	 float
  3           WaveLength          float
  4           Andmask             float
  5           Ormask              float
 
 
-#######################################
+=======================================
 filesource:   'sdss_dr7'
-#######################################
-
+=======================================
 http://classic.sdss.org/dr7/dm/flatFiles/spSpec.html
 
 
-#######################################
+=======================================
 filesource:   'sdss_dr10' / 'sdss_dr12'
-#######################################
-
+=======================================
 http://data.sdss3.org/datamodel/files/BOSS_SPECTRO_REDUX/RUN2D/spectra/PLATE4/spec.html
 
  HDU 0  : Header info from spPlate
