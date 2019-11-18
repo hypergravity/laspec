@@ -19,6 +19,8 @@ def wave_log10(wave, dwave=None):
 
     Example
     -------
+    >>> import numpy as np
+    >>> wave = np.arange(3000, 5000)
     >>> wave_new = wave_log10(wave)
 
     """
@@ -47,7 +49,7 @@ def rebin(wave, flux=None, flux_err=None, mask=None, wave_new=None):
     flux_err: array (optional)
         old flux error
     mask: array (optional)
-        old mask
+        old mask, True for bad.
     wave_new:
         new wavelength. if None, use log10 wavelength.
 
@@ -110,7 +112,7 @@ def rebin(wave, flux=None, flux_err=None, mask=None, wave_new=None):
     if mask is not None:
         mask = np.asarray(mask)
         assert mask.shape == wave.shape
-        mask_new = np.zeros_like(wave_new, dtype=bool)
+        mask_new = np.ones_like(wave_new, dtype=bool)
         for ipix, this_flag in enumerate(flags):
             if not this_flag:
                 mask_new[ipix] = np.any(
@@ -127,8 +129,18 @@ def rebin(wave, flux=None, flux_err=None, mask=None, wave_new=None):
 
 def _test():
     wave, flux, wave_new = np.arange(10), np.ones(10), np.arange(0, 10, 2) + 0.5
+    flux[5] += 1
+    flux_err = flux
+    mask = ~ (flux > 0)
+    mask[5] = True
+    print("========================")
     print(wave, flux)
-    print(wave_new, rebin(wave, flux, wave_new=wave_new))
+    print("========================")
+    print(wave, rebin(wave, flux, wave_new=wave_new))
+    print("========================")
+    print(wave_new, rebin(
+        wave, flux=flux, flux_err=flux_err, mask=mask, wave_new=wave_new))
+    print("========================")
     # figure()
     # plot(wave, flux, 'x-')
     # plot(wave_new, rebin(wave, flux, wave_new), 's-')
