@@ -42,9 +42,9 @@ class Interp1q:
 
         ind_bisect = np.asarray(
             [bisect(x, xi_flatten[i]) for i in range(len(xi_flatten))])
-        w_l = xi - x[ind_bisect]
-        w_r = x[ind_bisect - 1] - xi
-        yi = (w_l * x[ind_bisect - 1] + w_r * x[ind_bisect]) / (w_l + w_r)
+        w_l = xi_flatten - x[ind_bisect]
+        w_r = x[ind_bisect - 1] - xi_flatten
+        yi = (w_l * y[ind_bisect - 1] + w_r * y[ind_bisect]) / (w_l + w_r)
 
         # fill values for outbounds
         yi = np.where(
