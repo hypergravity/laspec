@@ -48,7 +48,7 @@ Aims
 import datetime
 
 import numpy as np
-from scipy.interpolate import PchipInterpolator
+from scipy.interpolate import interp1d
 
 from .spec import spec_quick_init
 
@@ -461,7 +461,9 @@ def conv_spec(wave, flux, R_hi=2000., R_lo=500., over_sample_additional=3.,
     wave_min = np.min(wave)
     wave_interp = generate_wave_array_R(wave_min, wave_max,
                                         Rgk, over_sample=over_sample)
-    P = PchipInterpolator(wave, flux, extrapolate=None)
+    # P = PchipInterpolator(wave, flux, extrapolate=None)
+    P = interp1d(wave, flux,
+                 kind="linear", bounds_error=False, fill_value=np.nan)
     flux_interp = P(wave_interp)
     assert not np.any(np.isnan(flux_interp))
 
@@ -501,7 +503,9 @@ def conv_spec(wave, flux, R_hi=2000., R_lo=500., over_sample_additional=3.,
     # 8. interpolate convolved flux to new wave array
     if verbose:
         print('@laspec.convolution.conv_spec: interpolating convolved spectrum to new wave array ...')
-    P = PchipInterpolator(wave_interp, convolved_flux, extrapolate=False)
+    # P = PchipInterpolator(wave_interp, convolved_flux, extrapolate=False)
+    P = interp1d(wave_interp, convolved_flux,
+                 kind="linear", bounds_error=False, fill_value=np.nan)
     flux_new = P(wave_new)
     if verbose:
         stop = datetime.datetime.now()
