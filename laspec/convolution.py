@@ -48,20 +48,9 @@ Aims
 import datetime
 
 import numpy as np
+from astropy.table import Table
+from scipy import signal
 from scipy.interpolate import interp1d
-
-from .spec import spec_quick_init
-
-
-# deprecated constants ########################################################
-# OVER_SAMPLING = 10.
-# # threshold for R_hi_spec/R_hi
-# # if R_hi_spec > OVER_SAMPLING*R_hi, then R_interp = R_hi_spec
-# # else R_interp = OVER_SAMPLING * np.max([R_hi_spec, R_hi])
-#
-# KERNEL_LENGTH_FWHM = 4.24
-# # kernel array length is 4.24 times FWHM, i.e., 10 sigma
-# #############################################################################
 
 
 # ########################################################################### #
@@ -318,32 +307,6 @@ def find_Rgk(R_hi=2000., R_lo=500., over_sample=1.):
     return Rgk
 
 
-# def find_appropriate_R_interp_for_convolution(R_hi, R_hi_spec):
-#
-#     R_hi_spec_R_hi = R_hi_spec / R_hi
-#
-#     if R_hi_spec_R_hi > OVER_SAMPLING:
-#         # already over sampled
-#         R_interp = R_hi_spec
-#     elif R_hi_spec_R_hi >= 1.:
-#         # already over sampled
-#         R_interp = OVER_SAMPLING * R_hi_spec
-#     else:
-#         R_interp = OVER_SAMPLING * R_hi
-#
-#     return R_interp
-
-
-# def find_gaussian_kernel_fwhm(R_hi, R_lo, return_type='fwhm'):
-#     assert R_hi > R_lo
-#     fwhm_hi = resolution2fwhm(R_hi)
-#     fwhm_lo = resolution2fwhm(R_lo)
-#     fwhm = np.sqrt(fwhm_lo**2. - fwhm_hi**2.)
-#     if return_type == 'fwhm':
-#         return fwhm
-#     elif return_type == 'R':
-#         return fwhm2resolution(fwhm)
-
 # ########################################################################### #
 # #########################  Gaussian Kernel ################################ #
 # ########################################################################### #
@@ -390,8 +353,8 @@ def generate_gaussian_kernel_array(over_sample_Rgk, sigma_num):
 
 
 def conv_spec(wave, flux, R_hi=2000., R_lo=500., over_sample_additional=3.,
-              gaussian_kernel_sigma_num=8., wave_new=None,
-              wave_new_oversample=5., verbose=True, return_type='array'):
+              gaussian_kernel_sigma_num=5., wave_new=None,
+              wave_new_oversample=3., verbose=True, return_type='array'):
     """ to convolve high-R spectrum to low-R spectrum
 
     Parameters
@@ -412,20 +375,18 @@ def conv_spec(wave, flux, R_hi=2000., R_lo=500., over_sample_additional=3.,
         if None: wave_new auto-generated using wave_new_oversample
         if float: this specifies the over-sample rate
         if voctor: this specifies the new wave_new array
+    wave_new_oversample:
+        if wave_new is None, use auto-generated wave_new_oversample
     verbose: bool
         if True, print the details on the screen
     return_type: string
         if 'array': return wave and flux as array
-        if 'spec': retrun spec object
+        if 'table': retrun spec object
 
     Returns
     -------
-    wave_new, flux_new
-
-    OR
-
-    spec: bopy.spec.spec.Spec
-        Spec, based on astropy.table.Table class
+    wave_new, flux_new OR Table([wave, flux])
+    
     """
     if verbose:
         start = datetime.datetime.now()
@@ -472,13 +433,15 @@ def conv_spec(wave, flux, R_hi=2000., R_lo=500., over_sample_additional=3.,
         print('@laspec.convolution.conv_spec: generating gaussian kernel array ...')
     gk_array = generate_gaussian_kernel_array(over_sample,
                                               gaussian_kernel_sigma_num)
-    gk_len = len(gk_array)
-    gk_len_half = np.int((gk_len - 1) / 2.)
+    # gk_len = len(gk_array)
+    # gk_len_half = np.int((gk_len - 1) / 2.)
 
     # 6. convolution
     if verbose:
         print('@laspec.convolution.conv_spec: convolving ...')
-    convolved_flux = np.convolve(flux_interp, gk_array)[gk_len_half:-gk_len_half]
+    # convolved_flux = np.convolve(flux_interp, gk_array)[gk_len_half:-gk_len_half]
+    # convolved_flux = np.convolve(flux_interp, gk_array, mode="same")
+    convolved_flux = signal.fftconvolve(flux_interp, gk_array, mode="same")
 
     # 7. find new wave array
     if wave_new is None:
@@ -514,39 +477,33 @@ def conv_spec(wave, flux, R_hi=2000., R_lo=500., over_sample_additional=3.,
 
     if return_type == 'array':
         return wave_new, flux_new
-    elif return_type == 'spec':
-        return spec_quick_init(wave_new, flux_new)
+    elif return_type == 'table':
+        return Table([wave_new, flux_new], names=["wave", flux])
 
 
-def test_bc03_degrade_to_R500():
-    # test a BC03 population spectrum
-    from bopy.spec.spec import Spec
-    # 1. read spectrum
-    fp = '/home/cham/PycharmProjects/bopy/bopy/data/model_bc03/bc2003_hr_m42_chab_ssp_020.spec'
-    data = np.loadtxt(fp)
-    spec = Spec(data, names=['wave', 'flux'])
-    print(spec)
-    spec = spec.extract_chunk_wave_interval([[4000., 8000.]])[0]
+def read_phoenix_sun():
+    """ read PHOENIX synthetic spectrum for the Sun """
+    import laspec
+    from astropy.io import fits
+    flux_sun = fits.open(laspec.__path__[0] + "/data/phoenix/lte05800-4.50-0.0.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits")[0].data
+    wave_sun = fits.open(laspec.__path__[0] + "/data/phoenix/WAVE_PHOENIX-ACES-AGSS-COND-2011.fits")[0].data
+    return wave_sun, flux_sun
 
-    # 2.convolve spectum
-    spec_ = conv_spec(spec['wave'], spec['flux'],
-                      lambda x: 0.2*x, lambda x: 0.1*x,
-                      over_sample_additional=3.,
-                      gaussian_kernel_sigma_num=6.,
-                      wave_new=None,
-                      wave_new_oversample=5.,
-                      verbose=False)
-    spec_.pprint()
 
-    print(find_R_for_wave_array(spec_['wave']))
-    # 3.plot results
-    # fig = plt.figure()
-    # plt.plot(wave, flux)
-    # plt.plot(spec_['wave'], spec_['flux'], 'r')
-    # fig.show()
-    # fig.savefig(''')
-    print('@Cham: test OK ...')
+def test_conv_phoenix_sun():
+    """ testing convolving PHOENIX synthetic spectrum for the Sun """
+    import matplotlib.pyplot as plt
+    wave_sun, flux_sun = read_phoenix_sun()
+    ind_optical = (wave_sun > 4000) & (wave_sun < 7000)
+    wave = wave_sun[ind_optical]
+    flux = flux_sun[ind_optical]
+    wave_conv, flux_conv = conv_spec(wave, flux, R_hi=3e5, R_lo=2000)
 
+    plt.figure()
+    plt.plot(wave, flux)
+    plt.plot(wave_conv, flux_conv)
+    return
+    
 
 if __name__ == '__main__':
-    test_bc03_degrade_to_R500()
+    test_conv_phoenix_sun()
