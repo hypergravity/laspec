@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='laspec',
-    version='2019.1119.0',
+    version='2019.1124.0',
     author='Bo Zhang',
     author_email='bozhang@nao.cas.cn',
     description='Modules for LAMOST spectra.',  # short description
@@ -22,6 +22,10 @@ setuptools.setup(
                  "Topic :: Scientific/Engineering :: Physics",
                  "Topic :: Scientific/Engineering :: Astronomy"],
     package_dir={'laspec': 'laspec'},
-    include_package_data=True,
+    # include_package_data=True,
+    package_data={"laspec": ["data/*",
+                             "data/phoenix/*"],
+                  "": ["LICENSE"]
+                  },
     requires=['numpy', 'scipy', 'astropy', 'lmfit']
 )
