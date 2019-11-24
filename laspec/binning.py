@@ -62,7 +62,7 @@ def rebin(wave, flux=None, flux_err=None, mask=None, wave_new=None):
     """
     wave = np.asarray(wave)
     if wave_new is None:
-        wave_new = wave_log10(wave, dwave=None)
+        wave_new = wave_log10(wave)
     else:
         wave_new = np.asarray(wave_new)
 
