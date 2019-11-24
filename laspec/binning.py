@@ -7,13 +7,15 @@ def mdwave(wave):
     return np.median(np.diff(wave))
 
 
-def wave_log10(wave, dwave=None):
+def wave_log10(wave, osr_ext=1., dwave=None):
     """ generate log10 wavelength array given wave array
 
     Parameters
     ----------
     wave:
         old wavelength array
+    osr_ext:
+        extra over-sampling rate
     dwave:
         delta wavelength. if not specified, use median(dwave).
 
@@ -21,12 +23,13 @@ def wave_log10(wave, dwave=None):
     -------
     >>> import numpy as np
     >>> wave = np.arange(3000, 5000)
-    >>> wave_new = wave_log10(wave)
+    >>> wave_new = wave_log10(wave, osr_ext=3)
 
     """
-    if dwave is None:
-        dwave = mdwave(wave)
-    npix = np.int(np.ptp(wave) / dwave) + 1
+    if dwave is not None:
+        npix = np.int(np.ptp(wave) / dwave) * osr_ext + 1
+    else:
+        npix = np.int(len(wave) * osr_ext) * osr_ext + 1
     return np.logspace(np.log10(np.min(wave)), np.log10(np.max(wave)), npix,
                        base=10.0)
 
