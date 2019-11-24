@@ -352,6 +352,7 @@ def generate_gaussian_kernel_array(over_sample_Rgk, sigma_num):
     return normalized_gaussian_array(xgs, b=0., c=sigma_pixel_num)
 
 
+# most general case
 def conv_spec(wave, flux, R_hi=2000., R_lo=500., over_sample_additional=3.,
               gaussian_kernel_sigma_num=5., wave_new=None,
               wave_new_oversample=3., verbose=True, return_type='array'):
@@ -366,7 +367,7 @@ def conv_spec(wave, flux, R_hi=2000., R_lo=500., over_sample_additional=3.,
     R_hi: float or function
         higher resolution
     R_lo: float or function
-        lower R
+        lower resolution
     over_sample_additional: float
         additional over-sample rate
     gaussian_kernel_sigma_num: float
@@ -478,7 +479,7 @@ def conv_spec(wave, flux, R_hi=2000., R_lo=500., over_sample_additional=3.,
     if return_type == 'array':
         return wave_new, flux_new
     elif return_type == 'table':
-        return Table([wave_new, flux_new], names=["wave", flux])
+        return Table([wave_new, flux_new], names=["wave", "flux"])
 
 
 def read_phoenix_sun():
