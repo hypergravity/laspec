@@ -1,11 +1,9 @@
 import datetime
 
 import numpy as np
-from astropy.table import Table
 from scipy import signal
-from scipy.interpolate import interp1d
 
-from laspec.binning import wave_log10
+from .binning import wave_log10
 
 
 def Gaussian_kernel(dRV_sampling=0.1, dRV_Gk=2.3548200450309493, n_sigma_Gk=5.):
@@ -23,7 +21,7 @@ def Gaussian_kernel(dRV_sampling=0.1, dRV_Gk=2.3548200450309493, n_sigma_Gk=5.):
     return kernel
 
 
-def Rotation_kernel(dRV_sampling=0.3, vsini=100, epsilon=0.6, cushion=10):
+def Rotation_kernel(dRV_sampling=0.3, vsini=100, epsilon=0.6):
     
     # determine X
     npix_half = np.int(np.floor(vsini/dRV_sampling))# + cushion
@@ -162,6 +160,7 @@ def conv_spec_Rotation(wave, flux, vsini=100., epsilon=0.6,
     else:
         flux_conv_interp = np.interp(wave_new, wave_interp, flux_conv)
         return wave_interp, flux_conv_interp    
+
 
 def read_phoenix_sun():
     """ read PHOENIX synthetic spectrum for the Sun """

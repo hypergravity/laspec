@@ -10,8 +10,8 @@ Bo Zhang, [bozhang@nao.cas.cn](mailto:bozhang@nao.cas.cn)
 - [https://pypi.org/project/laspec/](https://pypi.org/project/laspec/)
 
 ## install
-- for the latest **stable** version: `pip install laspec`
-- for the latest **github** version: `pip install git+git://github.com/hypergravity/laspec`
+- for the latest **stable** version: `pip install -U laspec`
+- for the latest **github** version: `pip install -U git+git://github.com/hypergravity/laspec`
 
 ## module structure
 - **binning** \
@@ -19,7 +19,12 @@ Bo Zhang, [bozhang@nao.cas.cn](mailto:bozhang@nao.cas.cn)
 - **ccf** \
     module for cross correlation function
 - **convolution** \
-    module for spectral gaussian convolution
+    module for spectral Gaussian convolution (arbitrary case)
+    - lamost.convolution.conv_spec
+- **qconv** \
+    quick convolution, designed for two cases:
+    - lamost.qconv.conv_spec_Gaussian: scalar resolution to scalar resolution instrumental broadening
+    - lamost.qconv.conv_spec_Rotation: stellar rotation broadening    
 - **lamost** \
     module for LAMOST spectra and files
 - **line_indices** \
