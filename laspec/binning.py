@@ -1,5 +1,4 @@
 import numpy as np
-from scipy.interpolate import interp1d
 
 
 def mdwave(wave):
@@ -69,9 +68,12 @@ def rebin(wave, flux=None, flux_err=None, mask=None, wave_new=None):
     wave_edge = center2edge(wave)
     wave_new_edge = center2edge(wave_new)
 
-    I = interp1d(wave_edge[:-1], np.arange(len(wave)), kind="linear",
-                 bounds_error=False)
-    wave_new_edge_pos = I(wave_new_edge)  # accurate position projected to old
+    # I = interp1d(wave_edge[:-1], np.arange(len(wave)), kind="linear",
+    #              bounds_error=False)
+    # wave_new_edge_pos = I(wave_new_edge)  # accurate position projected to old
+    wave_new_edge_pos = np.interp(wave_new_edge,
+                                  wave_edge[:-1], np.arange(len(wave)),
+                                  left=np.nan, right=np.nan)
     wave_new_edge_pos2 = np.array(
         [wave_new_edge_pos[:-1], wave_new_edge_pos[1:]]).T  # slipt to lo & hi
 
