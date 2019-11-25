@@ -45,3 +45,35 @@ def air2vac(wave_air):
         0.02408926869968 / (130.1065924522 - s ** 2) + \
         0.0001599740894897 / (38.92568793293 - s ** 2)
     return wave_air * n
+
+
+def mdwave(wave):
+    """ median delta wavelength """
+    return np.median(np.diff(wave))
+
+
+def wave_log10(wave, osr_ext=1., dwave=None):
+    """ generate log10 wavelength array given wave array
+
+    Parameters
+    ----------
+    wave:
+        old wavelength array
+    osr_ext:
+        extra over-sampling rate
+    dwave:
+        delta wavelength. if not specified, use median(dwave).
+
+    Example
+    -------
+    >>> import numpy as np
+    >>> wave = np.arange(3000, 5000)
+    >>> wave_new = wave_log10(wave, osr_ext=3)
+
+    """
+    if dwave is not None:
+        npix = np.int(np.ptp(wave) / dwave) * osr_ext + 1
+    else:
+        npix = np.int(len(wave) * osr_ext) * osr_ext + 1
+    return np.logspace(np.log10(np.min(wave)), np.log10(np.max(wave)), npix,
+                       base=10.0)

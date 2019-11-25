@@ -3,7 +3,7 @@ import datetime
 import numpy as np
 from scipy import signal
 
-from .binning import wave_log10
+from .wavelength import wave_log10
 
 
 def Gaussian_kernel(dRV_sampling=0.1, dRV_Gk=2.3548200450309493, n_sigma_Gk=5.):

@@ -6,20 +6,21 @@ Created on %(date)s
 @author: %(username)s
 """
 
-#%%
+
 import numpy as np
 from astropy import constants
 from matplotlib import pyplot as plt
 from scipy.interpolate import PchipInterpolator, interp1d
-from laspec.interpolate import Interp1q
 
-#%%
-# sine bell to left & right end of spectra
+
 def sinebell(n=1000, index=0.5):
+    """ sine bell to left & right end of spectra """
     return np.sin(np.linspace(0,np.pi,n))**index
+
 
 def sinebell_like(x, index=0.5):
     return sinebell(len(x), index=index)
+
 
 def test_sinebell():
     plt.figure();
@@ -32,18 +33,17 @@ def test_sinebell():
 def test_sinebell2():
     """ load data """
     wave, flux, flux_err = np.loadtxt('/hydrogen/projects/song/delCep_order20.dat').T
-    #flux_sine = flux - flux.mean()
+    # flux_sine = flux - flux.mean()
     flux_sine = 1-flux
     flux_sine = flux_sine * sinebell_like(flux, 1.0)
     
     plt.figure()
     plt.plot(wave, (flux-1))
     plt.plot(wave, flux_sine)
-    #plot(wave, flux_err)
+    # plot(wave, flux_err)
     return wave, flux_sine
 
 
-#%%    
 def xcorr_rvgrid(wave_obs, flux_obs, wave_mod, flux_mod, mask_obs=None, rv_grid=np.arange(-500, 510, 10), sinebell_idx=0):
     """ a naive cross-correlation method
     Interpolate a model spectrum with different RV and cross-correlate with
@@ -79,7 +79,7 @@ def xcorr_rvgrid(wave_obs, flux_obs, wave_mod, flux_mod, mask_obs=None, rv_grid=
     
     # p = PchipInterpolator(wave_mod, flux_mod, extrapolate=False)
     p = interp1d(wave_mod, flux_mod, kind="linear", bounds_error=False, fill_value=np.nan)
-    #p = Interp1q(wave_mod, flux_mod)
+    # p = Interp1q(wave_mod, flux_mod)
     
     wave_mod_interp = wave_obs.reshape(1, -1) / (1+z_grid.reshape(-1, 1))
     flux_mod_interp = p(wave_mod_interp)
@@ -95,7 +95,6 @@ def xcorr_rvgrid(wave_obs, flux_obs, wave_mod, flux_mod, mask_obs=None, rv_grid=
     #chi2_grid = 0.5*np.ma.sum((xmod-xobs)**2, axis=1) 
     return rv_grid, ccf_grid.data#, chi2_grid.data
     
-    
 
 def test_xcorr_rvgrid():
     """ load data """
@@ -109,7 +108,7 @@ def test_xcorr_rvgrid():
     wave_obs = wave
     flux_mod = flux_sine
     rv_grid=np.linspace(-500, 500, 1000)
-    #z_grid = rv_grid / constants.c.value * 1000
+    # z_grid = rv_grid / constants.c.value * 1000
 
     ccfv = xcorr_rvgrid(wave_obs, flux_obs,
                         wave_mod, flux_mod, mask_obs=None, 
@@ -140,14 +139,13 @@ def test_lmfit():
     wave, flux, flux_err = np.loadtxt('/hydrogen/projects/song/delCep_order20.dat').T
     flux_sine = 1-flux
     flux_sine = flux_sine * sinebell_like(flux, 1.0)
-    
-    
+
     flux_obs = flux_sine+np.random.randn(*flux_sine.shape)*0.1
     wave_mod = wave
     wave_obs = wave
     flux_mod = flux_sine
     rv_grid=np.linspace(-500, 500, 1000)
-    #z_grid = rv_grid / constants.c.value * 1000
+    # z_grid = rv_grid / constants.c.value * 1000
 
     ccfv = xcorr_rvgrid(wave_obs, flux_obs,
                         wave_mod, flux_mod, mask_obs=None, 
