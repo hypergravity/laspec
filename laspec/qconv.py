@@ -159,7 +159,7 @@ def conv_spec_Rotation(wave, flux, vsini=100., epsilon=0.6,
         return wave_interp, flux_conv
     else:
         flux_conv_interp = np.interp(wave_new, wave_interp, flux_conv)
-        return wave_interp, flux_conv_interp    
+        return wave_new, flux_conv_interp
 
 
 def read_phoenix_sun():
