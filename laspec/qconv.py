@@ -7,6 +7,22 @@ from .wavelength import wave_log10
 
 
 def Gaussian_kernel(dRV_sampling=0.1, dRV_Gk=2.3548200450309493, n_sigma_Gk=5.):
+    """ Gaussian kernel
+
+    Parameters
+    ----------
+    dRV_sampling:
+         the sampling rate of the input spectrum (km/s)
+    dRV_Gk:
+        the sampling rate of the Gaussian kernel (km/s)
+    n_sigma_Gk:
+        the length of the Gaussian kernel, in terms of sigma
+
+    Return
+    ------
+    Gaussian kernel
+
+    """
     # FWHM --> sigma
     sigma = dRV_Gk/dRV_sampling/(2*np.sqrt(2*np.log(2)))
     
@@ -21,18 +37,39 @@ def Gaussian_kernel(dRV_sampling=0.1, dRV_Gk=2.3548200450309493, n_sigma_Gk=5.):
     return kernel
 
 
-def Rotation_kernel(dRV_sampling=0.3, vsini=100, epsilon=0.6):
-    
+def Rotation_kernel(dRV_sampling=10, vsini=100, epsilon=0.6, osr_kernel=3):
+    """ Rotation kernel
+
+    Parameters
+    ----------
+    dRV_sampling:
+        the sampling rate of the input spectrum (km/s)
+    vsini:
+        v*sin(i)  (km/s)
+    epsilon:
+        the limb-darkening coefficient (0, 1)
+    osr_kernel:
+        the over-sampling rate of the kernel
+
+    Return
+    ------
+    rotation kernel
+
+    """
+    osr_kernel = np.int(np.floor(osr_kernel / 2)) * 2 + 1  # an odd number
     # determine X
-    npix_half = np.int(np.floor(vsini/dRV_sampling))# + cushion
+    npix_half = np.int(np.floor(vsini / dRV_sampling))
+    npix_half = np.int(npix_half * osr_kernel + 0.5 * (osr_kernel - 1))
     # npix = 2 * npix_half + 1
-    vvl = np.arange(-npix_half, npix_half+1)*dRV_sampling/vsini
-    
+    vvl = np.arange(-npix_half, npix_half + 1) / osr_kernel * dRV_sampling / vsini
+
     # rotation kernel
     denominator = np.pi * vsini * (1.0 - epsilon / 3.0)
     c1 = 2.0 * (1.0 - epsilon) / denominator
     c2 = 0.5 * np.pi * epsilon / denominator
-    kernel = c1 * np.sqrt(1.0 - vvl**2) + c2 * (1.0 - vvl**2)
+    kernel = np.where(np.abs(vvl) <= 1,
+                      c1 * np.sqrt(1.0 - vvl ** 2) + c2 * (1.0 - vvl ** 2), 0)
+    kernel = kernel.reshape(-1, osr_kernel).sum(axis=1)
     kernel /= np.sum(kernel)
     return kernel
 
@@ -146,7 +183,7 @@ def conv_spec_Rotation(wave, flux, vsini=100., epsilon=0.6,
     dRV_sampling = 299792.458 * np.log(10) * (np.log10(wave_interp[1])-np.log10(wave_interp[0]))
 
     # generate rotation kernel
-    Rk = Rotation_kernel(dRV_sampling, vsini, epsilon=epsilon)
+    Rk = Rotation_kernel(dRV_sampling, vsini, epsilon=epsilon, osr_kernel=15)
 
     # convolution
     # fftconvolve is the most efficient ...currently
