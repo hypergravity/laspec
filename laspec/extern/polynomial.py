@@ -28,7 +28,7 @@ from numpy import (newaxis, arange, pi)
 from numpy.lib.polynomial import *  # @UnusedWildImport
 from numpy.polynomial import polyutils as pu
 from scipy.fftpack import dct, idct as _idct
-from scipy.misc import pade  # @UnresolvedImport
+from scipy.interpolate import pade
 
 __all__ = np.lib.polynomial.__all__
 __all__ = __all__ + ['pade', 'padefit', 'polyreloc', 'polyrescl', 'polytrim',
