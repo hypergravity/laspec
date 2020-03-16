@@ -27,6 +27,7 @@ from __future__ import division
 import numpy as np
 from scipy.interpolate import interp1d
 from joblib import Parallel, delayed
+from scipy.optimize import minimize
 
 from .extern.interpolate import SmoothSpline
 
@@ -150,7 +151,7 @@ def normalize_spectrum(wave, flux, norm_range, dwave,
     return flux_norm, flux_smoothed2
 
 
-def normalize_spectrum_iter(wave, flux, p=1E-6, q=0.5, lu=(-1, 1), binwidth=30,
+def normalize_spectrum_iter(wave, flux, p=1E-6, q=0.5, lu=(-1, 3), binwidth=30,
                             niter=5):
     """ A double smooth normalization of a spectrum
 
@@ -167,7 +168,7 @@ def normalize_spectrum_iter(wave, flux, p=1E-6, q=0.5, lu=(-1, 1), binwidth=30,
         smoothing parameter between 0 and 1:
         0 -> LS-straight line
         1 -> cubic spline interpolant
-    q: float in range of [0, 100]
+    q: float in range of [0, 1]
         percentile, between 0 and 1
     lu: float tuple
         the lower & upper exclusion limits
@@ -376,6 +377,83 @@ def normalize_spectra(wave_flux_tuple_list, norm_range, dwave,
 
     """
     pass
+
+
+def normalize_spectrum_poly(wave, flux, deg=10, pw=1., lu=(-1, 5), q=0.5, binwidth=100., niter=3):
+    xs = np.nanstd(wave)
+    xc = np.nanmedian(wave)
+    ys = np.nanstd(flux)
+    yc = np.nanmedian(flux)
+    wave = (wave - xc) / xs
+    flux = (flux - yc) / ys
+
+    if np.sum(np.logical_and(np.isfinite(flux), flux > 0)) <= 10:
+        return normalize_spectrum_null(wave)
+
+    # check q region
+    assert 0. <= q <= 1.
+
+    nbins = np.int(np.ceil((wave[-1] - wave[0]) / binwidth) + 1)
+    bincenters = np.linspace(wave[0], wave[-1], nbins)
+
+    # iteratively smoothing
+    ind_good = np.ones_like(flux, dtype=bool)
+    p = np.zeros(deg)
+
+    for _ in range(niter):
+        # poly smooth
+        flux_smoothed1 = PolySmooth(wave[ind_good], flux[ind_good], pw=pw)(wave)
+
+        # residual
+        res = flux - flux_smoothed1
+
+        # determine sigma
+        stdres = np.zeros(nbins)
+        for ibin in range(nbins):
+            ind_this_bin = ind_good & (
+                        np.abs(wave - bincenters[ibin]) <= binwidth)
+            if 0 <= q <= 0:
+                stdres[ibin] = np.std(
+                    res[ind_this_bin] - np.percentile(res[ind_this_bin],
+                                                      100 * q))
+            else:
+                stdres[ibin] = np.std(res[ind_this_bin])
+        stdres_interp = interp1d(bincenters, stdres, kind="linear")(wave)
+        if 0 <= q <= 1:
+            res1 = (res - np.percentile(res, 100 * q)) / stdres_interp
+        else:
+            res1 = res / stdres_interp
+        ind_good = ind_good & (res1 > lu[0]) & (res1 < lu[1])
+
+        # assert there is continuum pixels
+        try:
+            assert np.sum(ind_good) > 0
+        except AssertionError:
+            Warning("@normalize_spectrum_iter: unable to find continuum!")
+            ind_good = np.ones(wave.shape, dtype=np.bool)
+
+    # final smoothing
+    flux_smoothed2 = PolySmooth(wave[ind_good], flux[ind_good], pw=pw)(wave)*ys+yc
+
+    # normalized flux
+    flux_norm = (flux*ys+yc) / flux_smoothed2
+
+    return flux_norm, flux_smoothed2
+
+
+class PolySmooth:
+    def __init__(self, x, y, deg=4, pw=2.):
+        result = minimize(cost_poly, x0=np.zeros(deg), args=(x, y, pw),
+                          method="powell")
+        self.p = result["x"]
+
+    def __call__(self, x):
+        return np.polyval(self.p, x)
+
+
+def cost_poly(p, x, y, pw=2.):
+    res = np.abs(np.polyval(p, x) - y)
+    return 0.5*np.sum(res[np.isfinite(res)]**(pw/2))
 
 
 # def test_normaliza_spectra_block():
