@@ -9,28 +9,40 @@ class MrsSpec:
     flux = None
     ivar = None
     mask = None
+    isempty = True
 
-    def __init__(self, hdu=None):
-        """ convert an HDU to spec """
+    def __init__(self, wave=None, flux=None, ivar=None, mask=None):
+        """ a general form of spectrum """
+        self.wave, self.flux, self.ivar, self.mask = wave, flux, ivar, mask
+        if self.wave is None and self.flux is None and self.ivar is None and self.mask is None:
+            self.isempty = True
+        else:
+            self.isempty = False
+
+    @staticmethod
+    def read_mrs(hdu=None):
+        """ convert MRS HDU to spec """
         if hdu is None:
-            return
+            return MrsSpec()
         else:
             spec = Table(hdu.data)
             spec.sort("LOGLAM")
             if "COADD" in hdu.name:
                 # it's coadded spec
-                self.wave = 10 ** spec["LOGLAM"].data
-                self.flux = spec["FLUX"].data
-                self.ivar = spec["IVAR"].data
-                self.mask = spec["OR_MASK"].data  # use pixmask for epoch spec
+                wave = 10 ** spec["LOGLAM"].data
+                flux = spec["FLUX"].data
+                ivar = spec["IVAR"].data
+                mask = spec["OR_MASK"].data  # use pixmask for epoch spec
             elif hdu.name.startswith("B-") or hdu.name.startswith("R-"):
                 # it's epoch spec
-                self.wave = 10 ** spec["LOGLAM"].data
-                self.flux = spec["FLUX"].data
-                self.ivar = spec["IVAR"].data
-                self.mask = spec["PIXMASK"].data  # use ormask instead for coadded spec
+                wave = 10 ** spec["LOGLAM"].data
+                flux = spec["FLUX"].data
+                ivar = spec["IVAR"].data
+                mask = spec["PIXMASK"].data  # use ormask instead for coadded spec
             else:
                 raise ValueError("@MrsFits: error in reading epoch spec!")
+            # initiate MrsSpec
+            return MrsSpec(wave, flux, ivar, mask)
 
 
 class MrsEpoch:
