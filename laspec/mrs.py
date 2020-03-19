@@ -3,7 +3,6 @@ import numpy as np
 from astropy.io import fits
 from astropy.table import Table
 from .normalization import normalize_spectrum_iter
-import sys
 
 
 class MrsSpec:
@@ -144,6 +143,8 @@ class MrsEpoch:
     nspec = 0
     speclist = []
     specnames = []
+    # the most important attributes
+    epoch = -1
     snr = []
 
     wave = np.array([], dtype=np.float)
@@ -157,7 +158,7 @@ class MrsEpoch:
     # default settings for normalize_spectrum_iter
     norm_kwargs = dict(p=1e-6, q=0.5, binwidth=100, lu=(-2, 3), niter=3)
 
-    def __init__(self, speclist, specnames=("B", "R"), normalize=False, **norm_kwargs):
+    def __init__(self, speclist, specnames=("B", "R"), epoch=-1, normalize=False, **norm_kwargs):
         """ combine B & R to an epoch spectrum
         In this list form, it is compatible with even echelle spectra
 
@@ -165,36 +166,42 @@ class MrsEpoch:
             spectrum list
         specnames:
             the names of spectra, will be used as suffix
+        epoch:
+            the epoch of this epoch spectrum
         normalize:
             if True, normalize spectra in initialization
         norm_kwargs:
             the normalization settings
         """
+        # set epoch
+        self.epoch = epoch
+
         # update norm kwargs
         self.norm_kwargs.update(norm_kwargs)
 
         self.nspec = len(speclist)
         # default name is spec order
-        if len(specnames) == 0 or specnames is None:
+        if specnames is None or len(specnames) == 0:
             specnames = [i for i in range(self.nspec)]
         self.speclist = speclist
         self.specnames = specnames
 
         # store spectrum data
+        self.snr = []
         for i_spec in range(self.nspec):
             # get info
-            self.snr.append(speclist[i_spec].snr)
+            self.snr.append(self.speclist[i_spec].snr)
             # normalize if necessary
-            if normalize and not speclist[i_spec].isnormalized:
-                speclist[i_spec].normalize(**self.norm_kwargs)
+            if normalize and not self.speclist[i_spec].isnormalized:
+                self.speclist[i_spec].normalize(**self.norm_kwargs)
             # store each spec
-            self.__setattr__("wave_{}".format(specnames[i_spec]), speclist[i_spec].wave)
-            self.__setattr__("flux_{}".format(specnames[i_spec]), speclist[i_spec].flux)
-            self.__setattr__("ivar_{}".format(specnames[i_spec]), speclist[i_spec].ivar)
-            self.__setattr__("mask_{}".format(specnames[i_spec]), speclist[i_spec].mask)
-            self.__setattr__("flux_norm_{}".format(specnames[i_spec]), speclist[i_spec].flux_norm)
-            self.__setattr__("ivar_norm_{}".format(specnames[i_spec]), speclist[i_spec].ivar_norm)
-            self.__setattr__("flux_cont_{}".format(specnames[i_spec]), speclist[i_spec].flux_cont)
+            self.__setattr__("wave_{}".format(specnames[i_spec]), self.speclist[i_spec].wave)
+            self.__setattr__("flux_{}".format(specnames[i_spec]), self.speclist[i_spec].flux)
+            self.__setattr__("ivar_{}".format(specnames[i_spec]), self.speclist[i_spec].ivar)
+            self.__setattr__("mask_{}".format(specnames[i_spec]), self.speclist[i_spec].mask)
+            self.__setattr__("flux_norm_{}".format(specnames[i_spec]), self.speclist[i_spec].flux_norm)
+            self.__setattr__("ivar_norm_{}".format(specnames[i_spec]), self.speclist[i_spec].ivar_norm)
+            self.__setattr__("flux_cont_{}".format(specnames[i_spec]), self.speclist[i_spec].flux_cont)
 
         # concatenate into one epoch spec *
         for i_spec in range(self.nspec):
@@ -208,7 +215,7 @@ class MrsEpoch:
         return
 
     def __repr__(self):
-        s = "[MrsEpoch nspec={}]".format(self.nspec)
+        s = "[MrsEpoch epoch={} nspec={}]".format(self.epoch, self.nspec)
         for i in range(self.nspec):
             s += "\n{}".format(self.speclist[i])
         return s
@@ -320,7 +327,7 @@ class MrsFits(fits.HDUList):
             k = "{}-{}".format(band, lmjm)
         return MrsSpec(self[k])
 
-    def get_one_epoch(self, lmjm=84420148):
+    def get_one_epoch(self, lmjm=84420148, normalize=True, norm_kwargs={}):
         """ get one epoch spec from fits """
         try:
             if isinstance(lmjm, str):
@@ -337,13 +344,13 @@ class MrsFits(fits.HDUList):
             kB = "B-{}".format(lmjm)
             kR = "R-{}".format(lmjm)
         # read B & R band spec
-        msB = MrsSpec.read_mrs(self[kB])
-        msR = MrsSpec.read_mrs(self[kR])
+        msB = MrsSpec.read_mrs(self[kB], normalize=normalize, **norm_kwargs)
+        msR = MrsSpec.read_mrs(self[kR], normalize=normalize, **norm_kwargs)
 
         # return MrsSpec
-        return MrsEpoch((msB, msR))
+        return MrsEpoch((msB, msR), epoch=lmjm)
 
-    def get_all_epochs(self, including_coadd=False):
+    def get_all_epochs(self, normalize=True, norm_kwargs={}, including_coadd=False):
         # make keys
         if not including_coadd:
             all_keys = []
@@ -352,19 +359,75 @@ class MrsFits(fits.HDUList):
         all_keys.extend(np.unique(self.lmjm[self.lmjm > 0]))
 
         # return epochs
-        return [self.get_one_epoch(k) for k in all_keys]
+        return [self.get_one_epoch(k, normalize=normalize, norm_kwargs=norm_kwargs) for k in all_keys]
 
     @property
-    def lslmjm(self):
+    def ls_epoch(self):
         return np.unique(self.lmjm[self.lmjm > 0])
 
+    @property
+    def ls_snr(self):
+        return np.unique(self.lmjm[self.lmjm > 0])
+
+
+class MrsSource(np.ndarray):
+    """ array of MrsEpoch instances, """
+    mes = []    # MrsEpoch list #
+    name = ""  # source name
+
+    @property
+    def snr(self):
+        return np.array([_.snr for _ in self], dtype=np.float)
+
+    @property
+    def epoch(self):
+        return np.array([_.epoch for _ in self], dtype=np.float)
+
+    @property
+    def nepoch(self):
+        return len(self)
+
+    def __new__(cls, data, name="", normalize=True, norm_kwargs={}, **kwargs):
+        # prepare
+        data = np.array(data, dtype=MrsEpoch)
+        # sort
+        indsort = np.argsort([_.epoch for _ in data])
+        data = data[indsort]
+        # substantiate
+        msrc = super(MrsSource, cls).__new__(cls, buffer=data, dtype=data.dtype, shape=data.shape, **kwargs)
+        # normalize if necessary
+        if normalize:
+            msrc.normalize(**norm_kwargs)
+        return msrc
+
+    # def __repr__(self):
+    #     s = "{{MrsSource nepoch={} name={}}}\n".format(self.nepoch, self.name)
+    #     for i in range(self.nepoch):
+    #         s += self.mes[i].__repr__().split("\n")[1]
+    #         s += "\n"
+    #     return s
+
+    @staticmethod
+    def read(fps, normalize=True, **norm_kwargs):
+        mes = []
+        for fp in fps:
+            mf = MrsFits(fp)
+            mes.extend(mf.get_all_epochs(normalize=normalize, norm_kwargs={}))
+        return MrsSource(mes, normalize=normalize, norm_kwargs=norm_kwargs)
+
+    def normalize(self, **norm_kwargs):
+        # normalization
+        for i in range(self.nepoch):
+            self[i].normalize(**norm_kwargs)
+        return
+
     # TODO: MrsFits: MJD & S/N of each epoch spec, and other information?
-    # TODO: MrsSource: to gather all epochs from multiple fits --> a list of MrsEpoch or a child class of MrsFits?
 
 
 if __name__ == "__main__":
     fp = "/Users/cham/PycharmProjects/laspec/laspec/data/KIC8098300/DR7_medium/med-58625-TD192102N424113K01_sp12-076.fits.gz"
-
+    import glob
+    fps = glob.glob("/Users/cham/PycharmProjects/laspec/laspec/data/KIC8098300/DR7_medium/*.fits.gz")
     # read fits
     mf = MrsFits(fp)
 
@@ -373,7 +436,7 @@ if __name__ == "__main__":
     print(mf)
 
     # print all lmjm
-    print(mf.lslmjm)
+    print(mf.ls_epoch)
 
     # get MRS spec from MrsFits
     specCoaddB = MrsSpec.read_mrs(mf["COADD_B"], normalize=False)
@@ -390,12 +453,13 @@ if __name__ == "__main__":
     me = mf.get_one_epoch(84420148)
     print(me)
     me = mf.get_one_epoch("COADD")
-    print(me)
+    print(me, me.snr)
     mes = mf.get_all_epochs(including_coadd=False)
     print(mes)
+
+    msrc = MrsSource(mes)
+    msrc1 = MrsSource.read(fps)
 
     import matplotlib.pyplot as plt
     fig = plt.figure()
     plt.plot(me.wave, me.flux_norm)
-
-
