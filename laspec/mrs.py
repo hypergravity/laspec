@@ -3,44 +3,94 @@ import numpy as np
 from astropy.io import fits
 from astropy.table import Table
 from .normalization import normalize_spectrum_iter
+import sys
 
 
 class MrsSpec:
     """ MRS spectrum """
     # original quantities
-    wave = None
-    flux = None
-    ivar = None
-    mask = None
+    wave = np.array([], dtype=np.float)
+    flux = np.array([], dtype=np.float)
+    ivar = np.array([], dtype=np.float)
+    mask = np.array([], dtype=np.bool)  # True for problematic
 
     # normalized quantities
-    flux_norm = None
-    flux_cont = None
-    ivar_norm = None
+    flux_norm = np.array([], dtype=np.float)
+    flux_cont = np.array([], dtype=np.float)
+    ivar_norm = np.array([], dtype=np.float)
 
+    # other information (optional)
+    name = ""
+    snr = 0
+    exptime = 0
+    lmjm = 0
+    lmjmlist = ""
+    lamplist = None
+    info = {}
+
+    # status
     isempty = True
+    isnormalized = False
 
     # default settings for normalize_spectrum_iter
     norm_kwargs = dict(p=1e-6, q=0.5, binwidth=100., lu=(-2, 3), niter=3)
 
-    def __init__(self, wave=None, flux=None, ivar=None, mask=None, normalize=False, **norm_kwargs):
-        """ a general form of spectrum """
-        self.wave, self.flux, self.ivar, self.mask = wave, flux, ivar, mask
-        if self.wave is None and self.flux is None and self.ivar is None and self.mask is None:
-            self.isempty = True
-        else:
+    def __init__(self, wave=None, flux=None, ivar=None, mask=None, info={}, normalize=False, **norm_kwargs):
+        """ a general form of spectrum
+        Parameters
+        ----------
+        wave:
+            array, wavelength
+        flux:
+            array, flux
+        ivar:
+            array, ivar
+        mask:
+            array(int), 1 for problematic
+        info:
+            dict, information of this spectrum
+        normalize:
+            bool, if True, normalize spectrum after initialization
+        norm_kwargs:
+            normalization settings passed to normalize_spectrum_iter()
+        """
+        # set data
+        if wave is not None and flux is not None:
+            self.wave, self.flux = wave, flux
             self.isempty = False
+        else:
+            # a null spec
+            self.wave = np.array([], dtype=np.float)
+            self.flux = np.array([], dtype=np.float)
+            self.isempty = True
+        # ivar and mask is optional for spec
+        if ivar is None:
+            self.ivar = np.ones_like(self.flux, dtype=np.float)
+        else:
+            self.ivar = ivar
+        if mask is None:
+            self.mask = np.zeros_like(self.flux, dtype=np.bool)
+        else:
+            self.ivar = ivar
+        # set info
+        for k, v in info.items():
+            self.__setattr__(k, v)
+        self.info = info
         # update norm kwargs
         self.norm_kwargs.update(norm_kwargs)
         # normalize spectrum
         if normalize:
             self.normalize()
+            self.isnormalized = True
         return
+
+    def __repr__(self):
+        return "<MrsSpec name={} snr={:.1f}>".format(self.name, self.snr)
 
     @staticmethod
     def read_mrs(hdu=None, normalize=True, **norm_kwargs):
         """ convert MRS HDU to spec """
-        if hdu is None:
+        if hdu is None or hdu.header["EXTNAME"] == "Information":
             return MrsSpec()
         else:
             spec = Table(hdu.data)
@@ -50,26 +100,42 @@ class MrsSpec:
                 wave = 10 ** spec["LOGLAM"].data
                 flux = spec["FLUX"].data
                 ivar = spec["IVAR"].data
-                mask = spec["ORMASK"].data  # use ormask for coadded spec
+                mask = spec["ORMASK"].data > 0  # use ormask for coadded spec
+                info = dict(name=hdu.header["EXTNAME"],
+                            lmjmlist=hdu.header["LMJMLIST"],
+                            snr=np.int(hdu.header["SNR"]),
+                            lamplist=hdu.header["LAMPLIST"])
             elif hdu.name.startswith("B-") or hdu.name.startswith("R-"):
                 # it's epoch spec
                 wave = 10 ** spec["LOGLAM"].data
                 flux = spec["FLUX"].data
                 ivar = spec["IVAR"].data
-                mask = spec["PIXMASK"].data  # use pixmask for epoch spec
+                mask = spec["PIXMASK"].data > 0  # use pixmask for epoch spec
+                info = dict(name=hdu.header["EXTNAME"],
+                            lmjm=np.int(hdu.header["LMJM"]),
+                            exptime=np.int(hdu.header["EXPTIME"]),
+                            snr=np.int(hdu.header["SNR"]),
+                            lamplist=hdu.header["LAMPLIST"])
             else:
                 raise ValueError("@MrsFits: error in reading epoch spec!")
             # initiate MrsSpec
-            return MrsSpec(wave, flux, ivar, mask, normalize=normalize, **norm_kwargs)
+            return MrsSpec(wave, flux, ivar, mask, info=info, normalize=normalize, **norm_kwargs)
 
     def normalize(self, **norm_kwargs):
         """ normalize spectrum with (optional) new settings """
         if not self.isempty:
+            # for normal spec
             # update norm kwargs
             self.norm_kwargs.update(norm_kwargs)
             # normalize spectrum
             self.flux_norm, self.flux_cont = normalize_spectrum_iter(self.wave, self.flux, **self.norm_kwargs)
             self.ivar_norm = self.ivar * self.flux_cont ** 2
+        else:
+            # for empty spec
+            # update norm kwargs
+            self.norm_kwargs.update(norm_kwargs)
+            # normalize spectrum
+            self.flux_norm, self.flux_cont, self.ivar_norm = None, None, None
             return
 
 
@@ -78,11 +144,12 @@ class MrsEpoch:
     nspec = 0
     speclist = []
     specnames = []
+    snr = []
 
     wave = np.array([], dtype=np.float)
     flux = np.array([], dtype=np.float)
     ivar = np.array([], dtype=np.float)
-    mask = np.array([], dtype=np.float)
+    mask = np.array([], dtype=np.int)
     flux_norm = np.array([], dtype=np.float)
     ivar_norm = np.array([], dtype=np.float)
     flux_cont = np.array([], dtype=np.float)
@@ -115,8 +182,12 @@ class MrsEpoch:
 
         # store spectrum data
         for i_spec in range(self.nspec):
-            this_spec = speclist[i_spec]
-            assert this_spec is not None
+            # get info
+            self.snr.append(speclist[i_spec].snr)
+            # normalize if necessary
+            if normalize and not speclist[i_spec].isnormalized:
+                speclist[i_spec].normalize(**self.norm_kwargs)
+            # store each spec
             self.__setattr__("wave_{}".format(specnames[i_spec]), speclist[i_spec].wave)
             self.__setattr__("flux_{}".format(specnames[i_spec]), speclist[i_spec].flux)
             self.__setattr__("ivar_{}".format(specnames[i_spec]), speclist[i_spec].ivar)
@@ -125,21 +196,22 @@ class MrsEpoch:
             self.__setattr__("ivar_norm_{}".format(specnames[i_spec]), speclist[i_spec].ivar_norm)
             self.__setattr__("flux_cont_{}".format(specnames[i_spec]), speclist[i_spec].flux_cont)
 
-        # if normalize
-        if normalize:
-            self.normalize(**self.norm_kwargs)
-
-        # concatenate into one epoch spec
+        # concatenate into one epoch spec *
         for i_spec in range(self.nspec):
-            if not self.speclist[i_spec].isempty:
-                self.wave = np.append(self.wave, self.speclist[i_spec].wave)
-                self.flux = np.append(self.flux, self.speclist[i_spec].flux)
-                self.ivar = np.append(self.ivar, self.speclist[i_spec].ivar)
-                self.mask = np.append(self.mask, self.speclist[i_spec].mask)
-                self.flux_norm = np.append(self.flux_norm, self.speclist[i_spec].flux_norm)
-                self.ivar_norm = np.append(self.ivar_norm, self.speclist[i_spec].ivar_norm)
-                self.flux_cont = np.append(self.flux_cont, self.speclist[i_spec].flux_cont)
+            self.wave = np.append(self.wave, self.speclist[i_spec].wave)
+            self.flux = np.append(self.flux, self.speclist[i_spec].flux)
+            self.ivar = np.append(self.ivar, self.speclist[i_spec].ivar)
+            self.mask = np.append(self.mask, self.speclist[i_spec].mask)
+            self.flux_norm = np.append(self.flux_norm, self.speclist[i_spec].flux_norm)
+            self.ivar_norm = np.append(self.ivar_norm, self.speclist[i_spec].ivar_norm)
+            self.flux_cont = np.append(self.flux_cont, self.speclist[i_spec].flux_cont)
         return
+
+    def __repr__(self):
+        s = "[MrsEpoch nspec={}]".format(self.nspec)
+        for i in range(self.nspec):
+            s += "\n{}".format(self.speclist[i])
+        return s
 
     def normalize(self, **norm_kwargs):
         """ normalize each spectrum with (optional) new settings """
@@ -150,6 +222,9 @@ class MrsEpoch:
         for i_spec in range(self.nspec):
             self.speclist[i_spec].normalize(**self.norm_kwargs)
 
+        self.flux_norm = np.array([], dtype=np.float)
+        self.ivar_norm = np.array([], dtype=np.float)
+        self.flux_cont = np.array([], dtype=np.float)
         # concatenate into one epoch spec
         for i_spec in range(self.nspec):
             if not self.speclist[i_spec].isempty:
@@ -216,17 +291,42 @@ class MrsFits(fits.HDUList):
     # get all epochs (specify a file path)
     # get all
 
+    def __repr__(self):
+        """ as self.info()
+        Summarize the info of the HDUs in this `HDUList`.
+        Note that this function prints its results to the console---it
+        does not return a value.
+        """
+        if self._file is None:
+            name = '(No file associated with this HDUList)'
+        else:
+            name = self._file.name
+        results = [f'Filename: {name}',
+                   'No.    Name      Ver    Type      Cards   Dimensions   Format']
+        format = '{:3d}  {:10}  {:3} {:11}  {:5d}   {}   {}   {}'
+        default = ('', '', '', 0, (), '', '')
+        for idx, hdu in enumerate(self):
+            summary = hdu._summary()
+            if len(summary) < len(default):
+                summary += default[len(summary):]
+            summary = (idx,) + summary
+            results.append(format.format(*summary))
+        return "\n".join(results[1:])
+
     def get_one_spec(self, lmjm="COADD", band="B"):
         if lmjm == "COADD":
-            k = "COADD_".format(band)
+            k = "COADD_{}".format(band)
         else:
             k = "{}-{}".format(band, lmjm)
-        return MrsSpec(ms[k])
+        return MrsSpec(self[k])
 
     def get_one_epoch(self, lmjm=84420148):
         """ get one epoch spec from fits """
         try:
-            assert lmjm in self.lmjm or lmjm == "COADD"
+            if isinstance(lmjm, str):
+                assert lmjm is "COADD"
+            if isinstance(lmjm, np.int):
+                assert lmjm in self.lmjm
         except AssertionError:
             raise AssertionError("@MrsFits: lmjm={} is not found in this file!".format(lmjm))
 
@@ -243,30 +343,59 @@ class MrsFits(fits.HDUList):
         # return MrsSpec
         return MrsEpoch((msB, msR))
 
+    def get_all_epochs(self, including_coadd=False):
+        # make keys
+        if not including_coadd:
+            all_keys = []
+        else:
+            all_keys = ["COADD", ]
+        all_keys.extend(np.unique(self.lmjm[self.lmjm > 0]))
+
+        # return epochs
+        return [self.get_one_epoch(k) for k in all_keys]
+
     @property
     def lslmjm(self):
         return np.unique(self.lmjm[self.lmjm > 0])
 
+    # TODO: MrsFits: MJD & S/N of each epoch spec, and other information?
+    # TODO: MrsSource: to gather all epochs from multiple fits --> a list of MrsEpoch or a child class of MrsFits?
+
 
 if __name__ == "__main__":
     fp = "/Users/cham/PycharmProjects/laspec/laspec/data/KIC8098300/DR7_medium/med-58625-TD192102N424113K01_sp12-076.fits.gz"
+
     # read fits
-    ms = MrsFits(fp)
+    mf = MrsFits(fp)
+
     # print info
-    ms.info()
+    mf.info()
+    print(mf)
+
     # print all lmjm
-    print(ms.lslmjm)
+    print(mf.lslmjm)
 
     # get MRS spec from MrsFits
-    specB = MrsSpec.read_mrs(ms["B-84420148"])
-    specR = MrsSpec.read_mrs(ms["R-84420148"], normalize=True)
+    specCoaddB = MrsSpec.read_mrs(mf["COADD_B"], normalize=False)
+    msB = MrsSpec.read_mrs(mf["B-84420148"], normalize=True)
+    msR = MrsSpec.read_mrs(mf["R-84420148"], normalize=True)
+    print(msB, msR)
+    print(msB.snr, msR.snr)
+
     # combine B and R into an epoch spec
-    me = MrsEpoch([specB, specR], specnames=["B", "R"])
+    me = MrsEpoch([msB, msR], specnames=["B", "R"])
+    print(me)
 
     # a short way of doing this:
-    es = ms.get_one_epoch(84420148)
-    es = ms.get_one_epoch("COADD")
+    me = mf.get_one_epoch(84420148)
+    print(me)
+    me = mf.get_one_epoch("COADD")
+    print(me)
+    mes = mf.get_all_epochs(including_coadd=False)
+    print(mes)
 
     import matplotlib.pyplot as plt
     fig = plt.figure()
-    plt.plot(es.wave, es.flux_norm)
+    plt.plot(me.wave, me.flux_norm)
+
+
