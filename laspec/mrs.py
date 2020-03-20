@@ -1,7 +1,12 @@
+import glob
 import os
+
+import matplotlib.pyplot as plt
 import numpy as np
+from astropy import constants as const
 from astropy.io import fits
 from astropy.table import Table
+
 from .normalization import normalize_spectrum_iter
 
 
@@ -26,6 +31,7 @@ class MrsSpec:
     lmjmlist = ""
     lamplist = None
     info = {}
+    rv = 0.
 
     # status
     isempty = True
@@ -137,6 +143,17 @@ class MrsSpec:
             self.flux_norm, self.flux_cont, self.ivar_norm = None, None, None
             return
 
+    def wave_rv(self, rv=None):
+        """ return RV-corrected wavelength array
+        Parameter
+        ---------
+        rv:
+            float, radial velocity [km/s]
+        """
+        if rv is None:
+            rv = self.rv
+        return self.wave / (1 + rv * 1000 / const.c.value)
+
 
 class MrsEpoch:
     """ MRS epoch spcetrum """
@@ -146,6 +163,7 @@ class MrsEpoch:
     # the most important attributes
     epoch = -1
     snr = []
+    rv = 0.
 
     wave = np.array([], dtype=np.float)
     flux = np.array([], dtype=np.float)
@@ -244,6 +262,17 @@ class MrsEpoch:
                 self.flux_cont = np.append(self.flux_cont, self.speclist[i_spec].flux_cont)
         return
 
+    def wave_rv(self, rv=0.):
+        """ return RV-corrected wavelength array
+        Parameter
+        ---------
+        rv:
+            float, radial velocity [km/s]
+        """
+        if rv is None:
+            rv = self.rv
+        return self.wave / (1 + rv * 1000 / const.c.value)
+
 
 class MrsFits(fits.HDUList):
     nhdu = 0
@@ -293,11 +322,6 @@ class MrsFits(fits.HDUList):
             elif not self.hdunames[i] == "Information":
                 raise RuntimeError("@MrsSpec: error during processing HDU name")
 
-    # get one spec (specify a key)
-    # get one epoch (specify a lmjm)
-    # get all epochs (specify a file path)
-    # get all
-
     def __repr__(self):
         """ as self.info()
         Summarize the info of the HDUs in this `HDUList`.
@@ -320,6 +344,7 @@ class MrsFits(fits.HDUList):
             results.append(format.format(*summary))
         return "\n".join(results[1:])
 
+    # or get one spec (specify a key)?
     def get_one_spec(self, lmjm="COADD", band="B"):
         if lmjm == "COADD":
             k = "COADD_{}".format(band)
@@ -371,12 +396,24 @@ class MrsFits(fits.HDUList):
 
     @property
     def ls_snr(self):
-        return np.unique(self.lmjm[self.lmjm > 0])
+        return np.unique(self.snr[self.lmjm > 0])
+
+    @property
+    def epoch(self):
+        return self.lmjm
+
+    @property
+    def snr(self):
+        _snr = np.zeros((self.nhdu,), dtype=np.float)
+        for i in range(self.nhdu):
+            if "SNR" in self[i].header.keys():
+                _snr[i] = self[i].header["SNR"]
+        return _snr
 
 
 class MrsSource(np.ndarray):
     """ array of MrsEpoch instances, """
-    mes = []    # MrsEpoch list #
+    mes = []  # MrsEpoch list #
     name = ""  # source name
 
     @property
@@ -390,6 +427,10 @@ class MrsSource(np.ndarray):
     @property
     def nepoch(self):
         return len(self)
+
+    @property
+    def rv(self):
+        return np.array([_.rv for _ in self], dtype=np.float)
 
     def __new__(cls, data, name="", normalize=True, norm_kwargs={}, **kwargs):
         # prepare
@@ -425,12 +466,9 @@ class MrsSource(np.ndarray):
             self[i].normalize(**norm_kwargs)
         return
 
-    # TODO: MrsFits: MJD & S/N of each epoch spec, and other information?
-
 
 if __name__ == "__main__":
     fp = "/Users/cham/PycharmProjects/laspec/laspec/data/KIC8098300/DR7_medium/med-58625-TD192102N424113K01_sp12-076.fits.gz"
-    import glob
     fps = glob.glob("/Users/cham/PycharmProjects/laspec/laspec/data/KIC8098300/DR7_medium/*.fits.gz")
     # read fits
     mf = MrsFits(fp)
@@ -464,6 +502,5 @@ if __name__ == "__main__":
     msrc = MrsSource(mes)
     msrc1 = MrsSource.read(fps)
 
-    import matplotlib.pyplot as plt
     fig = plt.figure()
     plt.plot(me.wave, me.flux_norm)
