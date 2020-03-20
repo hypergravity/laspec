@@ -262,7 +262,7 @@ class MrsEpoch:
                 self.flux_cont = np.append(self.flux_cont, self.speclist[i_spec].flux_cont)
         return
 
-    def wave_rv(self, rv=0.):
+    def wave_rv(self, rv=None):
         """ return RV-corrected wavelength array
         Parameter
         ---------
