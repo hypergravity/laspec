@@ -1,4 +1,4 @@
-## laspec
+## laspec [![DOI](https://zenodo.org/badge/202476664.svg)](https://zenodo.org/badge/latestdoi/202476664)
 
 Modules for basic operations on **LA**MOST **spec**tra, etc.
 
