@@ -70,7 +70,7 @@ class MrsSpec:
         if mask is None:
             self.mask = np.zeros_like(self.flux, dtype=np.bool)
         else:
-            self.ivar = ivar
+            self.mask = mask
         # set info
         for k, v in info.items():
             self.__setattr__(k, v)
@@ -87,7 +87,7 @@ class MrsSpec:
         return "<MrsSpec name={} snr={:.1f}>".format(self.name, self.snr)
 
     @staticmethod
-    def read_mrs(hdu=None, normalize=True, **norm_kwargs):
+    def from_hdu(hdu=None, normalize=True, **norm_kwargs):
         """ convert MRS HDU to spec """
         if hdu is None or hdu.header["EXTNAME"] == "Information":
             return MrsSpec()
@@ -325,7 +325,7 @@ class MrsFits(fits.HDUList):
             k = "COADD_{}".format(band)
         else:
             k = "{}-{}".format(band, lmjm)
-        return MrsSpec(self[k])
+        return MrsSpec.from_hdu(self[k])
 
     def get_one_epoch(self, lmjm=84420148, normalize=True, norm_kwargs={}):
         """ get one epoch spec from fits """
@@ -344,9 +344,14 @@ class MrsFits(fits.HDUList):
             kB = "B-{}".format(lmjm)
             kR = "R-{}".format(lmjm)
         # read B & R band spec
-        msB = MrsSpec.read_mrs(self[kB], normalize=normalize, **norm_kwargs)
-        msR = MrsSpec.read_mrs(self[kR], normalize=normalize, **norm_kwargs)
-
+        if kB in self.hdunames:
+            msB = MrsSpec.from_hdu(self[kB], normalize=normalize, **norm_kwargs)
+        else:
+            msB = MrsSpec(normalize=normalize, **norm_kwargs)
+        if kR in self.hdunames:
+            msR = MrsSpec.from_hdu(self[kR], normalize=normalize, **norm_kwargs)
+        else:
+            msR = MrsSpec(normalize=normalize, **norm_kwargs)
         # return MrsSpec
         return MrsEpoch((msB, msR), epoch=lmjm)
 
@@ -357,7 +362,6 @@ class MrsFits(fits.HDUList):
         else:
             all_keys = ["COADD", ]
         all_keys.extend(np.unique(self.lmjm[self.lmjm > 0]))
-
         # return epochs
         return [self.get_one_epoch(k, normalize=normalize, norm_kwargs=norm_kwargs) for k in all_keys]
 
@@ -439,9 +443,9 @@ if __name__ == "__main__":
     print(mf.ls_epoch)
 
     # get MRS spec from MrsFits
-    specCoaddB = MrsSpec.read_mrs(mf["COADD_B"], normalize=False)
-    msB = MrsSpec.read_mrs(mf["B-84420148"], normalize=True)
-    msR = MrsSpec.read_mrs(mf["R-84420148"], normalize=True)
+    specCoaddB = MrsSpec.from_hdu(mf["COADD_B"], normalize=False)
+    msB = MrsSpec.from_hdu(mf["B-84420148"], normalize=True)
+    msR = MrsSpec.from_hdu(mf["R-84420148"], normalize=True)
     print(msB, msR)
     print(msB.snr, msR.snr)
 
