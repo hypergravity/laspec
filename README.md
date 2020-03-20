@@ -33,6 +33,12 @@ Bo Zhang, [bozhang@nao.cas.cn](mailto:bozhang@nao.cas.cn)
     - lamost_filepath(planid, mjd, spid, fiberid)
     - lamost_filepath_med(planid, mjd, spid, fiberid)
     - sdss_filepath(plate, mjd, fiberid)
+- **mrs** \
+    MRS module
+    - MrsSpec: MRS spectrum (B / R)
+    - MrsEpoch: MRS epoch spectrum (B + R)
+    - MrsFits(astropy.io.fits.HDUList): MRS fits reader
+    - MrsSource(numpy.ndarray): MRS source constructor 
 - **line_indices** \
     module to measure spectral line index (EW)
     - measure_line_index: measure line index (EW)
