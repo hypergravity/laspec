@@ -24,7 +24,11 @@ setuptools.setup(
     package_dir={'laspec': 'laspec'},
     # include_package_data=True,
     package_data={"laspec": ["data/*",
-                             "data/phoenix/*"],
+                             "data/FERRESun/*",
+                             "data/KIC8098300/*/*",
+                             "data/lamost/*",
+                             "data/phoenix/*",
+                             "data/songmgb/*"],
                   "": ["LICENSE"]
                   },
     requires=['numpy', 'scipy', 'astropy', 'lmfit']
