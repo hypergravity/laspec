@@ -270,9 +270,13 @@ class MrsEpoch:
             self.flux = np.append(self.flux, self.speclist[i_spec].flux)
             self.ivar = np.append(self.ivar, self.speclist[i_spec].ivar)
             self.mask = np.append(self.mask, self.speclist[i_spec].mask)
+            self.flux_err = np.append(self.flux_err, self.speclist[i_spec].flux_err)
+
             self.flux_norm = np.append(self.flux_norm, self.speclist[i_spec].flux_norm)
             self.ivar_norm = np.append(self.ivar_norm, self.speclist[i_spec].ivar_norm)
             self.flux_cont = np.append(self.flux_cont, self.speclist[i_spec].flux_cont)
+            self.flux_norm_err = np.append(self.flux_norm_err, self.speclist[i_spec].flux_norm_err)
+
         return
 
     def __repr__(self):
@@ -293,8 +297,8 @@ class MrsEpoch:
         self.flux_norm = np.array([], dtype=np.float)
         self.ivar_norm = np.array([], dtype=np.float)
         self.flux_cont = np.array([], dtype=np.float)
-        self.flux_err = np.array([], dtype=np.float)
         self.flux_norm_err = np.array([], dtype=np.float)
+
         # concatenate into one epoch spec
         for i_spec in range(self.nspec):
             if not self.speclist[i_spec].isempty:
@@ -305,7 +309,7 @@ class MrsEpoch:
                 self.flux_norm = np.append(self.flux_norm, self.speclist[i_spec].flux_norm)
                 self.ivar_norm = np.append(self.ivar_norm, self.speclist[i_spec].ivar_norm)
                 self.flux_cont = np.append(self.flux_cont, self.speclist[i_spec].flux_cont)
-                self.flux_err = np.append(self.flux_norm, self.speclist[i_spec].flux_norm)
+                self.flux_norm_err = np.append(self.flux_norm_err, self.speclist[i_spec].flux_norm_err)
         return
 
     def wave_rv(self, rv=None):
@@ -318,13 +322,6 @@ class MrsEpoch:
         if rv is None:
             rv = self.rv
         return self.wave / (1 + rv * 1000 / const.c.value)
-
-    @property
-    def flux_err(self):
-        """ hidden attribute flux_err, converted from ivar"""
-        flux_err = self.ivar ** -0.5
-        flux_err[np.isinf(flux_err.data)] = np.nan
-        return flux_err
 
 
 class MrsFits(fits.HDUList):
