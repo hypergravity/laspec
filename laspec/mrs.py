@@ -17,11 +17,13 @@ class MrsSpec:
     flux = np.array([], dtype=np.float)
     ivar = np.array([], dtype=np.float)
     mask = np.array([], dtype=np.bool)  # True for problematic
+    flux_err = np.array([], dtype=np.float)
 
     # normalized quantities
     flux_norm = np.array([], dtype=np.float)
     flux_cont = np.array([], dtype=np.float)
     ivar_norm = np.array([], dtype=np.float)
+    flux_norm_err = np.array([], dtype=np.float)
 
     # other information (optional)
     name = ""
@@ -77,6 +79,9 @@ class MrsSpec:
             self.mask = np.zeros_like(self.flux, dtype=np.bool)
         else:
             self.mask = mask
+        # flux_err
+        flux_err = self.ivar ** -0.5
+        self.flux_err = np.where(np.isfinite(flux_err), flux_err, np.nan)
         # set info
         for k, v in info.items():
             self.__setattr__(k, v)
@@ -126,6 +131,34 @@ class MrsSpec:
             # initiate MrsSpec
             return MrsSpec(wave, flux, ivar, mask, info=info, normalize=normalize, **norm_kwargs)
 
+    @staticmethod
+    def from_mrs(fp_mrs, hduname="COADD_B", normalize=True, **norm_kwargs):
+        """ read from MRS fits file """
+        hl = fits.open(fp_mrs)
+        return MrsSpec.from_hdu(hl[hduname], normalize=normalize, **norm_kwargs)
+
+    @staticmethod
+    def from_lrs(fp_lrs, normalize=True, **norm_kwargs):
+        """ read from LRS fits file """
+        hl = fits.open(fp_lrs)
+        hdr = hl[0].header
+        flux, ivar, wave, andmask, ormask = hl[0].data
+        info = dict(name=hdr["OBSID"],
+                    obsid=hdr["OBSID"],
+                    ra=hdr["RA"],
+                    dec=hdr["DEC"],
+                    rv=hdr["Z"] * const.c.value / 1000.,
+                    rv_err=hdr["Z_ERR"] * const.c.value / 1000.,
+                    subclass=hdr["SUBCLASS"],
+                    tsource=hdr["TSOURCE"],
+                    snr=hdr["SNRG"],
+                    snru=hdr["SNRU"],
+                    snrg=hdr["SNRG"],
+                    snrr=hdr["SNRR"],
+                    snri=hdr["SNRI"],
+                    snrz=hdr["SNRZ"])
+        return MrsSpec(wave, flux, ivar, ormask, info=info, normalize=normalize, **norm_kwargs)
+
     def normalize(self, **norm_kwargs):
         """ normalize spectrum with (optional) new settings """
         if not self.isempty:
@@ -135,12 +168,16 @@ class MrsSpec:
             # normalize spectrum
             self.flux_norm, self.flux_cont = normalize_spectrum_iter(self.wave, self.flux, **self.norm_kwargs)
             self.ivar_norm = self.ivar * self.flux_cont ** 2
+            self.flux_norm_err = self.flux_err / self.flux_cont
         else:
             # for empty spec
             # update norm kwargs
             self.norm_kwargs.update(norm_kwargs)
             # normalize spectrum
-            self.flux_norm, self.flux_cont, self.ivar_norm = None, None, None
+            self.flux_norm = np.array([], dtype=np.float)
+            self.flux_cont = np.array([], dtype=np.float)
+            self.ivar_norm = np.array([], dtype=np.float)
+            self.flux_norm_err = np.array([], dtype=np.float)
             return
 
     def wave_rv(self, rv=None):
@@ -169,9 +206,12 @@ class MrsEpoch:
     flux = np.array([], dtype=np.float)
     ivar = np.array([], dtype=np.float)
     mask = np.array([], dtype=np.int)
+    flux_err = np.array([], dtype=np.float)
+
     flux_norm = np.array([], dtype=np.float)
     ivar_norm = np.array([], dtype=np.float)
     flux_cont = np.array([], dtype=np.float)
+    flux_norm_err = np.array([], dtype=np.float)
 
     # default settings for normalize_spectrum_iter
     norm_kwargs = dict(p=1e-6, q=0.5, binwidth=100, lu=(-2, 3), niter=3)
@@ -217,9 +257,12 @@ class MrsEpoch:
             self.__setattr__("flux_{}".format(specnames[i_spec]), self.speclist[i_spec].flux)
             self.__setattr__("ivar_{}".format(specnames[i_spec]), self.speclist[i_spec].ivar)
             self.__setattr__("mask_{}".format(specnames[i_spec]), self.speclist[i_spec].mask)
+            self.__setattr__("flux_err_{}".format(specnames[i_spec]), self.speclist[i_spec].flux_err)
+
             self.__setattr__("flux_norm_{}".format(specnames[i_spec]), self.speclist[i_spec].flux_norm)
             self.__setattr__("ivar_norm_{}".format(specnames[i_spec]), self.speclist[i_spec].ivar_norm)
             self.__setattr__("flux_cont_{}".format(specnames[i_spec]), self.speclist[i_spec].flux_cont)
+            self.__setattr__("flux_norm_err_{}".format(specnames[i_spec]), self.speclist[i_spec].flux_norm_err)
 
         # concatenate into one epoch spec *
         for i_spec in range(self.nspec):
@@ -250,6 +293,8 @@ class MrsEpoch:
         self.flux_norm = np.array([], dtype=np.float)
         self.ivar_norm = np.array([], dtype=np.float)
         self.flux_cont = np.array([], dtype=np.float)
+        self.flux_err = np.array([], dtype=np.float)
+        self.flux_norm_err = np.array([], dtype=np.float)
         # concatenate into one epoch spec
         for i_spec in range(self.nspec):
             if not self.speclist[i_spec].isempty:
@@ -260,6 +305,7 @@ class MrsEpoch:
                 self.flux_norm = np.append(self.flux_norm, self.speclist[i_spec].flux_norm)
                 self.ivar_norm = np.append(self.ivar_norm, self.speclist[i_spec].ivar_norm)
                 self.flux_cont = np.append(self.flux_cont, self.speclist[i_spec].flux_cont)
+                self.flux_err = np.append(self.flux_norm, self.speclist[i_spec].flux_norm)
         return
 
     def wave_rv(self, rv=None):
@@ -272,6 +318,13 @@ class MrsEpoch:
         if rv is None:
             rv = self.rv
         return self.wave / (1 + rv * 1000 / const.c.value)
+
+    @property
+    def flux_err(self):
+        """ hidden attribute flux_err, converted from ivar"""
+        flux_err = self.ivar ** -0.5
+        flux_err[np.isinf(flux_err.data)] = np.nan
+        return flux_err
 
 
 class MrsFits(fits.HDUList):
@@ -468,10 +521,12 @@ class MrsSource(np.ndarray):
 
 
 if __name__ == "__main__":
-    fp = "/Users/cham/PycharmProjects/laspec/laspec/data/KIC8098300/DR7_medium/med-58625-TD192102N424113K01_sp12-076.fits.gz"
-    fps = glob.glob("/Users/cham/PycharmProjects/laspec/laspec/data/KIC8098300/DR7_medium/*.fits.gz")
+    os.chdir("/Users/cham/PycharmProjects/laspec/laspec/")
+    fp_lrs = "./data/KIC8098300/DR6_low/spec-57287-KP193637N444141V03_sp10-161.fits.gz"
+    fp_mrs = "./data/KIC8098300/DR7_medium/med-58625-TD192102N424113K01_sp12-076.fits.gz"
+    fps = glob.glob("./data/KIC8098300/DR7_medium/*.fits.gz")
     # read fits
-    mf = MrsFits(fp)
+    mf = MrsFits(fp_mrs)
 
     # print info
     mf.info()
@@ -504,3 +559,7 @@ if __name__ == "__main__":
 
     fig = plt.figure()
     plt.plot(me.wave, me.flux_norm)
+
+    # test lrs
+    ls = MrsSpec.from_lrs(fp_lrs)
+    ls.snr
