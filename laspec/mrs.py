@@ -42,7 +42,7 @@ class MrsSpec:
     # default settings for normalize_spectrum_iter
     norm_kwargs = dict(p=1e-6, q=0.5, binwidth=100., lu=(-2, 3), niter=3)
 
-    def __init__(self, wave=None, flux=None, ivar=None, mask=None, info={}, normalize=False, **norm_kwargs):
+    def __init__(self, wave=None, flux=None, ivar=None, mask=None, info={}, normalize=True, **norm_kwargs):
         """ a general form of spectrum
         Parameters
         ----------
