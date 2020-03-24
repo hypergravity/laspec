@@ -74,5 +74,5 @@ def wave_log10(wave, osr_ext=1., dwave=None):
     if dwave is not None:
         npix = np.int(np.ptp(wave) / dwave) * osr_ext + 1
     else:
-        npix = np.int(len(wave) * osr_ext) + 1
+        npix = np.int(len(wave) * osr_ext + 1)
     return np.logspace(np.log10(np.min(wave)), np.log10(np.max(wave)), npix, base=10.0)
