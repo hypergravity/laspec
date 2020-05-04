@@ -70,5 +70,5 @@ class NNR:
                 self.regressor.predict(self.transform(xtest)))
         
     def predict_proba(self, xtest):
-        if self.regression:
-            return self.regressor.predict_proba(self.transform(xtest))
+        assert not self.regression
+        return self.regressor.predict_proba(self.transform(xtest))
