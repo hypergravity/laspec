@@ -135,11 +135,11 @@ def lamost_filepath_med(planid, mjd, spid, fiberid, dirpath="",
         # return file name
         if np.isscalar(mjd):
             # if only input one item
-            return "spec-%05d-%s_sp%02d-%03d%s" \
+            return "med-%05d-%s_sp%02d-%03d%s" \
                    % (mjd, planid, spid, fiberid, extname)
         else:
             # if input a list of items
-            return np.array(["spec-%05d-%s_sp%02d-%03d%s" %
+            return np.array(["med-%05d-%s_sp%02d-%03d%s" %
                              (mjd[i], planid[i], spid[i], fiberid[i],
                               extname)
                              for i in range(len(mjd))])
@@ -150,12 +150,12 @@ def lamost_filepath_med(planid, mjd, spid, fiberid, dirpath="",
 
         if np.isscalar(mjd):
             # if only input one item
-            return "%s%s%sspec-%05d-%s_sp%02d-%03d%s" \
+            return "%s%s%smed-%05d-%s_sp%02d-%03d%s" \
                    % (dirpath, planid, os.path.sep,
                       mjd, planid, spid, fiberid, extname)
         else:
             # if input a list of items
-            return np.array(["%s%s%sspec-%05d-%s_sp%02d-%03d%s" %
+            return np.array(["%s%s%smed-%05d-%s_sp%02d-%03d%s" %
                              (dirpath, planid[i], os.path.sep, mjd[i],
                               planid[i], spid[i], fiberid[i], extname)
                              for i in range(len(mjd))])
