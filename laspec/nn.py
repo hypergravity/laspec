@@ -43,7 +43,7 @@ class NN:
         print("xtrain.shape=", xtrain_scaled.shape, "ytrain.shape=", ytrain_scaled.shape)
         
         # NN
-        _mlp_kwargs = dict(hidden_layer_sizes=hidden_layer_sizes, activation=activation,
+        _mlp_kwargs = dict(hidden_layer_sizes=(128, 12), activation="sigmoid",
                            solver="adam", learning_rate="invscaling", learning_rate_init=0.001, verbose=True)
         _mlp_kwargs.update(mlp_kwargs)
         if regression:
