@@ -3,7 +3,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.neural_network import MLPClassifier, MLPRegressor
 
 
-class NNR:
+class NN:
     usepca = False
     pca = None
 
@@ -21,8 +21,7 @@ class NNR:
     def __init__(self,
                  xtrain, ytrain, regression=True,
                  usepca=False, n_components=0.99,
-                 hidden_layer_sizes=(150, 30),
-                 activation="relu", **kwargs):
+                 **mlp_kwargs):
         
         # if PCA
         self.usepca = usepca
@@ -30,7 +29,7 @@ class NNR:
         if usepca:
             self.pca = KernelPCA(n_components=n_components, kernel="rbf")
             xtrain_pca = self.pca.fit_transform(xtrain)
-            print("@nnr: explained variance ratio = ", self.pca.explained_variance_ratio_)
+            print("@nn: explained variance ratio = ", self.pca.explained_variance_ratio_)
             # scale
             xtrain_scaled = self.xscaler.fit_transform(xtrain_pca)
         else:
@@ -44,16 +43,15 @@ class NNR:
         print("xtrain.shape=", xtrain_scaled.shape, "ytrain.shape=", ytrain_scaled.shape)
         
         # NN
+        _mlp_kwargs = dict(hidden_layer_sizes=hidden_layer_sizes, activation=activation,
+                           solver="adam", learning_rate="invscaling", learning_rate_init=0.001, verbose=True)
+        _mlp_kwargs.update(mlp_kwargs)
         if regression:
-            self.regressor = MLPRegressor(hidden_layer_sizes=hidden_layer_sizes, activation=activation,
-                                          solver="adam", learning_rate="invscaling", learning_rate_init=0.001,
-                                          verbose=True, **kwargs)
+            self.regressor = MLPRegressor(**_mlp_kwargs)
         else:
-            self.regressor = MLPClassifier(hidden_layer_sizes=hidden_layer_sizes, activation=activation,
-                                           solver="adam", learning_rate="invscaling", learning_rate_init=0.001,
-                                           verbose=True, **kwargs)
-                
-        print("@nnr: fitting NN ...")
+            self.regressor = MLPClassifier(**_mlp_kwargs)
+
+        print("@nn: fitting NN ...")
         self.regressor.fit(xtrain_scaled, ytrain_scaled)
 
     def transform(self, x):
