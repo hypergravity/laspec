@@ -6,8 +6,49 @@ import numpy as np
 from astropy import constants as const
 from astropy.io import fits
 from astropy.table import Table
+from scipy.optimize import minimize
+from scipy.signal import medfilt, gaussian
 
+from .ccf import xcorr_rvgrid, xcorr
 from .normalization import normalize_spectrum_iter
+
+
+def debad(wave, fluxnorm, nsigma=(3, 6), mfarg=21, gkarg=(51, 9), maskconv=7):
+    """
+
+    :param wave:
+    :param fluxnorm:
+    :param nsigma:
+    :param mfarg:
+    :param gkarg:
+    :param maskconv:
+    :return:
+    """
+    npix = len(fluxnorm)
+    indclip = np.zeros_like(fluxnorm, dtype=bool)
+    while True:
+        # median filter
+        fluxmf = medfilt(fluxnorm, mfarg)
+        # gaussian filter
+        gk = gaussian(5, 0.5)
+        gk /= np.sum(gk)
+        fluxmf = np.convolve(fluxmf, gk, "same")
+        # residuals
+        fluxres = fluxnorm - fluxmf
+        # gaussian filter --> sigma
+        gk = gaussian(*gkarg)
+        gk /= np.sum(gk)
+        fluxsigma = np.convolve(np.abs(fluxres), gk, "same")
+        # clip
+        indout = np.logical_or(fluxres > fluxsigma * nsigma[0], fluxres < -fluxsigma * nsigma[1])
+        indclip &= indout
+        if np.sum(indclip) > 0.5 * npix:
+            raise RuntimeError("Too many bad pixels!")
+        if np.sum(indout) == 0:
+            return fluxnorm
+        else:
+            indout = np.convolve(indout * 1., np.ones((maskconv,)), "same") > 0
+            fluxnorm = np.interp(wave, wave[~indout], fluxnorm[~indout])
 
 
 class MrsSpec:
@@ -323,6 +364,10 @@ class MrsEpoch:
             rv = self.rv
         return self.wave / (1 + rv * 1000 / const.c.value)
 
+    def flux_norm_dbd(self, **kwargs):
+        """ return fixed flux_norm """
+        return debad(self.wave, self.flux_norm, *kwargs)
+
 
 class MrsFits(fits.HDUList):
     nhdu = 0
@@ -507,7 +552,7 @@ class MrsSource(np.ndarray):
         mes = []
         for fp in fps:
             mf = MrsFits(fp)
-            mes.extend(mf.get_all_epochs(normalize=normalize, norm_kwargs={}))
+            mes.extend(mf.get_all_epochs(normalize=False, norm_kwargs={}))
         return MrsSource(mes, normalize=normalize, norm_kwargs=norm_kwargs)
 
     def normalize(self, **norm_kwargs):
@@ -515,6 +560,52 @@ class MrsSource(np.ndarray):
         for i in range(self.nepoch):
             self[i].normalize(**norm_kwargs)
         return
+
+
+def ccf_cost(rv, wave_obs, flux_obs, wave_mod, flux_mod):
+    flux_mod_interp = np.interp(wave_obs, wave_mod * (1 + rv / 299792.458), flux_mod)
+    return - xcorr(flux_obs, flux_mod_interp)
+
+
+class RVM:
+    def __init__(self, pmod, wave_mod, flux_mod, **norm_kwargs):
+        self.pmod = pmod
+        self.wave_mod = wave_mod
+        self.flux_mod = flux_mod
+        self.norm_kwargs = norm_kwargs
+        self.flux_mod_norm = np.array([MrsSpec(wave_mod, _, **norm_kwargs).flux_norm for _ in flux_mod])
+
+    def measure(self, wave_obs, flux_obs, rv_grid=np.linspace(-600, 600, 100)):
+        # normalize
+        flux_obs_norm = MrsSpec(wave_obs, flux_obs, **self.norm_kwargs).flux_norm
+        # clip extreme values
+        ind3 = (flux_obs_norm < 3) & (flux_obs_norm > 0.)
+        flux_obs_norm = np.interp(wave_obs, wave_obs[ind3], flux_obs_norm[ind3])
+        # CCF grid
+        ccf = np.zeros((self.flux_mod_norm.shape[0], rv_grid.shape[0]))
+        for j in range(self.flux_mod_norm.shape[0]):
+            ccf[j] = xcorr_rvgrid(wave_obs, flux_obs_norm, self.wave_mod, self.flux_mod_norm[j], rv_grid=rv_grid)[1]
+        # CCF max
+        ccfmax = np.max(ccf)
+        ind_best = np.where(ccfmax == ccf)
+        ipmod_best, irv_best = np.array(ind_best).flatten()
+        rv_best = rv_grid[irv_best]
+        # CCF opt
+        opt = minimize(ccf_cost, x0=rv_best,
+                       args=(wave_obs, flux_obs_norm, self.wave_mod, self.flux_mod_norm[ipmod_best]), method="Powell")
+        # opt = minimize(ccf_cost_interp, x0=rv_best, args=(wave_obs, flux_obs, wave_mod, flux_mod[imod_best]), method="Powell")
+        # x = np.interp(wave, wave_obs/(1+opt.x/299792.458), flux_obs_norm).reshape(1, -1)
+        return dict(rv_opt=np.float(opt.x),
+                    rv_best=rv_best,
+                    ccfmax=ccfmax,
+                    success=opt.success,
+                    ipmod_best=ipmod_best,
+                    pmod_best=self.pmod[ipmod_best])
+
+# nrvmod = 32
+# tgma_rvmod = tgma1[np.random.choice(np.arange(nstar, dtype=int), nrvmod)]
+# flux_rvmod = np.array([predict_single_star(r,r.wave,_,0,True) for _ in tgma_rvmod])
+# rvm = RVM(tgma_rvmod, r.wave, flux_rvmod)
 
 
 if __name__ == "__main__":
