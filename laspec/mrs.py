@@ -13,7 +13,7 @@ from .ccf import xcorr_rvgrid, xcorr
 from .normalization import normalize_spectrum_iter
 
 
-def debad(wave, fluxnorm, nsigma=(3, 6), mfarg=21, gkarg=(51, 9), maskconv=7):
+def debad(wave, fluxnorm, nsigma=(3, 6), mfarg=21, gkarg=(51, 9), maskconv=7, maxiter=10):
     """
 
     :param wave:
@@ -26,6 +26,7 @@ def debad(wave, fluxnorm, nsigma=(3, 6), mfarg=21, gkarg=(51, 9), maskconv=7):
     """
     npix = len(fluxnorm)
     indclip = np.zeros_like(fluxnorm, dtype=bool)
+    countiter = 0
     while True:
         # median filter
         fluxmf = medfilt(fluxnorm, mfarg)
@@ -44,7 +45,8 @@ def debad(wave, fluxnorm, nsigma=(3, 6), mfarg=21, gkarg=(51, 9), maskconv=7):
         indclip |= indout
         if np.sum(indclip) > 0.5 * npix:
             raise RuntimeError("Too many bad pixels!")
-        if np.sum(indout) == 0:
+        countiter += 1
+        if np.sum(indout) == 0 or countiter >= maxiter:
             return fluxnorm
         else:
             indout = np.convolve(indout * 1., np.ones((maskconv,)), "same") > 0
@@ -588,7 +590,8 @@ class RVM:
         # CCF max
         ccfmax = np.max(ccf)
         ind_best = np.where(ccfmax == ccf)
-        ipmod_best, irv_best = np.array(ind_best).flatten()
+        ipmod_best = ind_best[0][0]
+        irv_best = ind_best[0][0]
         rv_best = rv_grid[irv_best]
         # CCF opt
         opt = minimize(ccf_cost, x0=rv_best,
