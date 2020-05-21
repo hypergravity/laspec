@@ -591,7 +591,7 @@ class RVM:
         ccfmax = np.max(ccf)
         ind_best = np.where(ccfmax == ccf)
         ipmod_best = ind_best[0][0]
-        irv_best = ind_best[0][0]
+        irv_best = ind_best[1][0]
         rv_best = rv_grid[irv_best]
         # CCF opt
         opt = minimize(ccf_cost, x0=rv_best,
