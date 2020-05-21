@@ -578,15 +578,13 @@ class RVM:
         self.flux_mod_norm = np.array([MrsSpec(wave_mod, _, **norm_kwargs).flux_norm for _ in flux_mod])
 
     def measure(self, wave_obs, flux_obs, rv_grid=np.linspace(-600, 600, 100)):
-        # normalize
-        flux_obs_norm = MrsSpec(wave_obs, flux_obs, **self.norm_kwargs).flux_norm
         # clip extreme values
-        ind3 = (flux_obs_norm < 3) & (flux_obs_norm > 0.)
-        flux_obs_norm = np.interp(wave_obs, wave_obs[ind3], flux_obs_norm[ind3])
+        ind3 = (flux_obs < 3) & (flux_obs > 0.)
+        flux_obs = np.interp(wave_obs, wave_obs[ind3], flux_obs[ind3])
         # CCF grid
         ccf = np.zeros((self.flux_mod_norm.shape[0], rv_grid.shape[0]))
         for j in range(self.flux_mod_norm.shape[0]):
-            ccf[j] = xcorr_rvgrid(wave_obs, flux_obs_norm, self.wave_mod, self.flux_mod_norm[j], rv_grid=rv_grid)[1]
+            ccf[j] = xcorr_rvgrid(wave_obs, flux_obs, self.wave_mod, self.flux_mod_norm[j], rv_grid=rv_grid)[1]
         # CCF max
         ccfmax = np.max(ccf)
         ind_best = np.where(ccfmax == ccf)
@@ -595,9 +593,9 @@ class RVM:
         rv_best = rv_grid[irv_best]
         # CCF opt
         opt = minimize(ccf_cost, x0=rv_best,
-                       args=(wave_obs, flux_obs_norm, self.wave_mod, self.flux_mod_norm[ipmod_best]), method="Powell")
+                       args=(wave_obs, flux_obs, self.wave_mod, self.flux_mod_norm[ipmod_best]), method="Powell")
         # opt = minimize(ccf_cost_interp, x0=rv_best, args=(wave_obs, flux_obs, wave_mod, flux_mod[imod_best]), method="Powell")
-        # x = np.interp(wave, wave_obs/(1+opt.x/299792.458), flux_obs_norm).reshape(1, -1)
+        # x = np.interp(wave, wave_obs/(1+opt.x/299792.458), flux_obs).reshape(1, -1)
         return dict(rv_opt=np.float(opt.x),
                     rv_best=rv_best,
                     ccfmax=ccfmax,
