@@ -41,7 +41,7 @@ def debad(wave, fluxnorm, nsigma=(3, 6), mfarg=21, gkarg=(51, 9), maskconv=7):
         fluxsigma = np.convolve(np.abs(fluxres), gk, "same")
         # clip
         indout = np.logical_or(fluxres > fluxsigma * nsigma[0], fluxres < -fluxsigma * nsigma[1])
-        indclip &= indout
+        indclip |= indout
         if np.sum(indclip) > 0.5 * npix:
             raise RuntimeError("Too many bad pixels!")
         if np.sum(indout) == 0:
