@@ -22,7 +22,6 @@ Aims
 - normalization
 
 """
-from __future__ import division
 
 import numpy as np
 from scipy.interpolate import interp1d
@@ -33,7 +32,7 @@ from .extern.interpolate import SmoothSpline
 
 
 def normalize_spectrum_null(wave):
-    return np.ones_like(wave)*np.nan, np.ones_like(wave)*np.nan
+    return np.ones_like(wave) * np.nan, np.ones_like(wave) * np.nan
 
 
 def normalize_spectrum(wave, flux, norm_range, dwave,
@@ -129,8 +128,8 @@ def normalize_spectrum(wave, flux, norm_range, dwave,
             bin_std = np.median(np.abs(dflux - bin_median))
             # within 1 sigma with q-percentile
             ind_good_ = ind_bin * (
-                np.abs(dflux - np.nanpercentile(dflux[ind_bin], q * 100.)) < (
-                rsv_frac * bin_std))
+                    np.abs(dflux - np.nanpercentile(dflux[ind_bin], q * 100.)) < (
+                    rsv_frac * bin_std))
             ind_good = np.logical_or(ind_good, ind_good_)
 
     ind_good = np.logical_and(ind_good, ind_good_init)
@@ -221,7 +220,7 @@ def normalize_spectrum_iter(wave, flux, p=1E-6, q=0.5, lu=(-1, 3), binwidth=30,
         # determine sigma
         stdres = np.zeros(nbins)
         for ibin in range(nbins):
-            ind_this_bin = ind_good & (np.abs(wave-bincenters[ibin]) <= binwidth)
+            ind_this_bin = ind_good & (np.abs(wave - bincenters[ibin]) <= binwidth)
             if 0 <= q <= 0:
                 stdres[ibin] = np.std(
                     res[ind_this_bin] - np.percentile(res[ind_this_bin], 100 * q))
@@ -346,47 +345,49 @@ def get_stable_pixels(pixel_disp, wave_arm=100, frac=0.20):
     return ind_stable
 
 
-# TODO: this is a generalized version
-def normalize_spectra(wave_flux_tuple_list, norm_range, dwave,
-                      p=(1E-6, 1E-6), q=50, n_jobs=1, verbose=False):
-    """ normalize multiple spectra using the same configuration
+def normalize_spectrum_general(wave, flux, norm_type="poly",
+                               deg=4, lu=(-1, 4), q=0.5, binwidth=100., niter=3, pw=1., p=1e-6):
+    """ poly / spline normalization
+    spline --> normalize_spectrum_iter: dict(p=1e-6, q=0.5, lu=(-2, 3), binwidth=100., niter=3)
+    poly   --> normalize_spectrum_poly: (deg=4, lu=(-2, 3), q=0.5, binwidth=100., niter=3, pw=1.)
 
     Parameters
     ----------
-    wave_flux_tuple_list: list[n_obs]
-        a list of (wave, flux) tuple
-    norm_range: tuple
+    wave: numpy.array
+        wavelength
+    flux: numpy.array
+        flux
+    norm_type: str
         a tuple consisting (wave_start, wave_stop)
-    dwave: float
-        binning width
-    p: tuple of 2 ps
-        smoothing parameter between 0 and 1:
-        0 -> LS-straight line
-        1 -> cubic spline interpolant
-    q: float in range of [0, 100]
-        percentile, between 0 and 1
-    n_jobs: int
-        number of processes launched by joblib
-    verbose: int / bool
-        verbose level
-
-    Returns
-    -------
-    flux_norm: ndarray
-        normalized flux
-
+    deg:
+        poly deg
+    lu:
+        defaults to (-1, 4)
+    q: float
+        percentile default is 0.5
+    binwidth:
+        bin width / A, detault to 100.
+    niter:
+        number of iterations, detaults to 3
+    pw:
+        power of residuals, defaults to 1.
+    p:
+        spline smoothness, defaults to 1e-6
     """
-    pass
+
+    if norm_type is "poly":
+        flux_norm, flux_cont = normalize_spectrum_poly(
+            wave, flux, deg=deg, lu=lu, q=q, binwidth=binwidth, niter=niter, pw=pw)
+    elif norm_type is "spline":
+        flux_norm, flux_cont = normalize_spectrum_iter(
+            wave, flux, p=p, lu=lu, q=q, binwidth=binwidth, niter=niter)
+    else:
+        assert norm_type in ("poly", "spline")
+    return flux_norm, flux_cont
 
 
 def normalize_spectrum_poly(wave, flux, deg=10, pw=1., lu=(-1, 5), q=0.5, binwidth=100., niter=3):
-    xs = np.nanstd(wave)
-    xc = np.nanmedian(wave)
-    ys = np.nanstd(flux)
-    yc = np.nanmedian(flux)
-    wave = (wave - xc) / xs
-    flux = (flux - yc) / ys
-
+    """ normalize spectrum using polynomial """
     if np.sum(np.logical_and(np.isfinite(flux), flux > 0)) <= 10:
         return normalize_spectrum_null(wave)
 
@@ -398,24 +399,20 @@ def normalize_spectrum_poly(wave, flux, deg=10, pw=1., lu=(-1, 5), q=0.5, binwid
 
     # iteratively smoothing
     ind_good = np.ones_like(flux, dtype=bool)
-    p = np.zeros(deg)
 
     for _ in range(niter):
         # poly smooth
-        flux_smoothed1 = PolySmooth(wave[ind_good], flux[ind_good], pw=pw)(wave)
-
+        flux_smoothed1 = PolySmooth(wave[ind_good], flux[ind_good], deg=deg, pw=pw)(wave)
         # residual
         res = flux - flux_smoothed1
-
         # determine sigma
         stdres = np.zeros(nbins)
         for ibin in range(nbins):
             ind_this_bin = ind_good & (
-                        np.abs(wave - bincenters[ibin]) <= binwidth)
+                    np.abs(wave - bincenters[ibin]) <= binwidth)
             if 0 <= q <= 0:
                 stdres[ibin] = np.std(
-                    res[ind_this_bin] - np.percentile(res[ind_this_bin],
-                                                      100 * q))
+                    res[ind_this_bin] - np.percentile(res[ind_this_bin], 100 * q))
             else:
                 stdres[ibin] = np.std(res[ind_this_bin])
         stdres_interp = interp1d(bincenters, stdres, kind="linear")(wave)
@@ -433,27 +430,38 @@ def normalize_spectrum_poly(wave, flux, deg=10, pw=1., lu=(-1, 5), q=0.5, binwid
             ind_good = np.ones(wave.shape, dtype=np.bool)
 
     # final smoothing
-    flux_smoothed2 = PolySmooth(wave[ind_good], flux[ind_good], pw=pw)(wave)*ys+yc
+    flux_smoothed2 = PolySmooth(wave[ind_good], flux[ind_good], deg=deg, pw=pw)(wave)
 
     # normalized flux
-    flux_norm = (flux*ys+yc) / flux_smoothed2
+    flux_norm = flux / flux_smoothed2
 
     return flux_norm, flux_smoothed2
 
 
 class PolySmooth:
     def __init__(self, x, y, deg=4, pw=2.):
-        result = minimize(cost_poly, x0=np.zeros(deg), args=(x, y, pw),
-                          method="powell")
+        # determine scales
+        x_pct = np.percentile(x, q=[16, 50, 84])
+        y_pct = np.percentile(y, q=[16, 50, 84])
+        self.x_mean = x_pct[1]
+        self.y_mean = y_pct[1]
+        self.x_scale = (x_pct[2] - x_pct[0]) / 2
+        self.y_scale = (y_pct[2] - y_pct[0]) / 2
+        # scale data
+        x_scaled = (x - self.x_mean) / self.x_scale
+        y_scaled = (y - self.y_mean) / self.y_scale
+        # optimization
+        result = minimize(cost_poly, x0=np.zeros(deg+1), args=(x_scaled, y_scaled, pw), method="powell")
         self.p = result["x"]
 
     def __call__(self, x):
-        return np.polyval(self.p, x)
+        """ prediction """
+        return np.polyval(self.p, (x - self.x_mean) / self.x_scale) * self.y_scale + self.y_mean
 
 
 def cost_poly(p, x, y, pw=2.):
-    res = np.abs(np.polyval(p, x) - y)
-    return 0.5*np.sum(res[np.isfinite(res)]**(pw/2))
+    res = np.square(np.polyval(p, x) - y)
+    return np.sum(res[np.isfinite(res)] ** (pw / 2))
 
 
 # def test_normaliza_spectra_block():
