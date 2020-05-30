@@ -205,7 +205,7 @@ class MrsSpec:
                     snrz=hdr["SNRZ"])
         return MrsSpec(wave, flux, ivar, ormask, info=info, norm_type=norm_type, **norm_kwargs)
 
-    def normalize(self, norm_type=None, **norm_kwargs):
+    def normalize(self, llim=0., norm_type=None, **norm_kwargs):
         """ normalize spectrum with (optional) new settings """
         if norm_type is None:
             self.norm_type = norm_type
@@ -220,7 +220,7 @@ class MrsSpec:
             self.norm_kwargs.update(norm_kwargs)
             # normalize spectrum
             self.flux_norm, self.flux_cont = normalize_spectrum_general(
-                self.wave, self.flux, self.norm_type, **self.norm_kwargs)
+                self.wave, np.where(self.flux < llim, llim, self.flux), self.norm_type, **self.norm_kwargs)
             self.ivar_norm = self.ivar * self.flux_cont ** 2
             self.flux_norm_err = self.flux_err / self.flux_cont
         else:
@@ -354,14 +354,14 @@ class MrsEpoch:
             s += "\n{}".format(self.speclist[i])
         return s
 
-    def normalize(self, norm_type="poly", **norm_kwargs):
+    def normalize(self, llim=0., norm_type="poly", **norm_kwargs):
         """ normalize each spectrum with (optional) new settings """
         # update norm kwargs
         self.norm_kwargs.update(norm_kwargs)
 
         # normalize each spectrum
         for i_spec in range(self.nspec):
-            self.speclist[i_spec].normalize(norm_type=norm_type, **self.norm_kwargs)
+            self.speclist[i_spec].normalize(llim=llim, norm_type=norm_type, **self.norm_kwargs)
 
         self.flux_norm = np.array([], dtype=np.float)
         self.ivar_norm = np.array([], dtype=np.float)
