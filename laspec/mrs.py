@@ -10,7 +10,7 @@ from scipy.optimize import minimize
 from scipy.signal import medfilt, gaussian
 
 from .ccf import xcorr_rvgrid, xcorr
-from .normalization import normalize_spectrum_iter
+from .normalization import normalize_spectrum_general
 
 
 def debad(wave, fluxnorm, nsigma=(3, 6), mfarg=21, gkarg=(51, 9), maskconv=7, maxiter=10):
@@ -82,10 +82,11 @@ class MrsSpec:
     isempty = True
     isnormalized = False
 
-    # default settings for normalize_spectrum_iter
-    norm_kwargs = dict(p=1e-6, q=0.5, binwidth=100., lu=(-2, 3), niter=3)
+    # default settings for normalize_spectrum_iter / normlize_spectrum_poly
+    norm_type = None
+    norm_kwargs = {}
 
-    def __init__(self, wave=None, flux=None, ivar=None, mask=None, info={}, normalize=True, **norm_kwargs):
+    def __init__(self, wave=None, flux=None, ivar=None, mask=None, info={}, norm_type="poly", **norm_kwargs):
         """ a general form of spectrum
         Parameters
         ----------
@@ -99,10 +100,10 @@ class MrsSpec:
             array(int), 1 for problematic
         info:
             dict, information of this spectrum
-        normalize:
-            bool, if True, normalize spectrum after initialization
+        norm_type:
+            poly/spline/None, if set, normalize spectrum after initialization
         norm_kwargs:
-            normalization settings passed to normalize_spectrum_iter()
+            normalization settings passed to normalize_spectrum_general()
         """
         # set data
         if wave is not None and flux is not None:
@@ -129,11 +130,13 @@ class MrsSpec:
         for k, v in info.items():
             self.__setattr__(k, v)
         self.info = info
-        # update norm kwargs
-        self.norm_kwargs.update(norm_kwargs)
+
         # normalize spectrum
-        if normalize:
-            self.normalize()
+        self.norm_type = norm_type
+        self.norm_kwargs = norm_kwargs
+        if norm_type in ["poly", "spline"]:
+            # normalize
+            self.normalize(norm_type=norm_type, **norm_kwargs)
             self.isnormalized = True
         return
 
@@ -141,7 +144,7 @@ class MrsSpec:
         return "<MrsSpec name={} snr={:.1f}>".format(self.name, self.snr)
 
     @staticmethod
-    def from_hdu(hdu=None, normalize=True, **norm_kwargs):
+    def from_hdu(hdu=None, norm_type="poly", **norm_kwargs):
         """ convert MRS HDU to spec """
         if hdu is None or hdu.header["EXTNAME"] == "Information":
             return MrsSpec()
@@ -172,16 +175,16 @@ class MrsSpec:
             else:
                 raise ValueError("@MrsFits: error in reading epoch spec!")
             # initiate MrsSpec
-            return MrsSpec(wave, flux, ivar, mask, info=info, normalize=normalize, **norm_kwargs)
+            return MrsSpec(wave, flux, ivar, mask, info=info, norm_type=norm_type, **norm_kwargs)
 
     @staticmethod
-    def from_mrs(fp_mrs, hduname="COADD_B", normalize=True, **norm_kwargs):
+    def from_mrs(fp_mrs, hduname="COADD_B", norm_type="poly", **norm_kwargs):
         """ read from MRS fits file """
         hl = fits.open(fp_mrs)
-        return MrsSpec.from_hdu(hl[hduname], normalize=normalize, **norm_kwargs)
+        return MrsSpec.from_hdu(hl[hduname], norm_type=norm_type, **norm_kwargs)
 
     @staticmethod
-    def from_lrs(fp_lrs, normalize=True, **norm_kwargs):
+    def from_lrs(fp_lrs, norm_type="poly", **norm_kwargs):
         """ read from LRS fits file """
         hl = fits.open(fp_lrs)
         hdr = hl[0].header
@@ -200,16 +203,24 @@ class MrsSpec:
                     snrr=hdr["SNRR"],
                     snri=hdr["SNRI"],
                     snrz=hdr["SNRZ"])
-        return MrsSpec(wave, flux, ivar, ormask, info=info, normalize=normalize, **norm_kwargs)
+        return MrsSpec(wave, flux, ivar, ormask, info=info, norm_type=norm_type, **norm_kwargs)
 
-    def normalize(self, **norm_kwargs):
+    def normalize(self, norm_type=None, **norm_kwargs):
         """ normalize spectrum with (optional) new settings """
+        if norm_type is None:
+            self.norm_type = norm_type
+            # do nothing
+        else:
+            assert norm_type in ["poly", "spline"]
+            self.norm_type = norm_type
+
         if not self.isempty:
             # for normal spec
             # update norm kwargs
             self.norm_kwargs.update(norm_kwargs)
             # normalize spectrum
-            self.flux_norm, self.flux_cont = normalize_spectrum_iter(self.wave, self.flux, **self.norm_kwargs)
+            self.flux_norm, self.flux_cont = normalize_spectrum_general(
+                self.wave, self.flux, self.norm_type, **self.norm_kwargs)
             self.ivar_norm = self.ivar * self.flux_cont ** 2
             self.flux_norm_err = self.flux_err / self.flux_cont
         else:
@@ -234,6 +245,21 @@ class MrsSpec:
             rv = self.rv
         return self.wave / (1 + rv * 1000 / const.c.value)
 
+    def plot(self):
+        plt.plot(self.wave, self.flux)
+
+    def plot_norm(self):
+        plt.plot(self.wave, self.flux_norm)
+
+    def plot_cont(self):
+        plt.plot(self.wave, self.flux_cont)
+
+    def plot_err(self):
+        plt.plot(self.wave, self.flux_err)
+
+    def plot_norm_err(self):
+        plt.plot(self.wave, self.flux_norm_err)
+
 
 class MrsEpoch:
     """ MRS epoch spcetrum """
@@ -256,10 +282,10 @@ class MrsEpoch:
     flux_cont = np.array([], dtype=np.float)
     flux_norm_err = np.array([], dtype=np.float)
 
-    # default settings for normalize_spectrum_iter
-    norm_kwargs = dict(p=1e-6, q=0.5, binwidth=100, lu=(-2, 3), niter=3)
+    # # default settings for normalize_spectrum_iter/poly
+    norm_kwargs = {}
 
-    def __init__(self, speclist, specnames=("B", "R"), epoch=-1, normalize=False, **norm_kwargs):
+    def __init__(self, speclist, specnames=("B", "R"), epoch=-1, norm_type="poly", **norm_kwargs):
         """ combine B & R to an epoch spectrum
         In this list form, it is compatible with even echelle spectra
 
@@ -269,7 +295,7 @@ class MrsEpoch:
             the names of spectra, will be used as suffix
         epoch:
             the epoch of this epoch spectrum
-        normalize:
+        norm_type:
             if True, normalize spectra in initialization
         norm_kwargs:
             the normalization settings
@@ -293,7 +319,7 @@ class MrsEpoch:
             # get info
             self.snr.append(self.speclist[i_spec].snr)
             # normalize if necessary
-            if normalize and not self.speclist[i_spec].isnormalized:
+            if norm_type is not None and not self.speclist[i_spec].isnormalized:
                 self.speclist[i_spec].normalize(**self.norm_kwargs)
             # store each spec
             self.__setattr__("wave_{}".format(specnames[i_spec]), self.speclist[i_spec].wave)
@@ -328,14 +354,14 @@ class MrsEpoch:
             s += "\n{}".format(self.speclist[i])
         return s
 
-    def normalize(self, **norm_kwargs):
+    def normalize(self, norm_type="poly", **norm_kwargs):
         """ normalize each spectrum with (optional) new settings """
         # update norm kwargs
         self.norm_kwargs.update(norm_kwargs)
 
         # normalize each spectrum
         for i_spec in range(self.nspec):
-            self.speclist[i_spec].normalize(**self.norm_kwargs)
+            self.speclist[i_spec].normalize(norm_type=norm_type, **self.norm_kwargs)
 
         self.flux_norm = np.array([], dtype=np.float)
         self.ivar_norm = np.array([], dtype=np.float)
@@ -369,6 +395,21 @@ class MrsEpoch:
     def flux_norm_dbd(self, **kwargs):
         """ return fixed flux_norm """
         return debad(self.wave, self.flux_norm, *kwargs)
+
+    def plot(self):
+        plt.plot(self.wave, self.flux)
+
+    def plot_norm(self):
+        plt.plot(self.wave, self.flux_norm)
+
+    def plot_cont(self):
+        plt.plot(self.wave, self.flux_cont)
+
+    def plot_err(self):
+        plt.plot(self.wave, self.flux_err)
+
+    def plot_norm_err(self):
+        plt.plot(self.wave, self.flux_norm_err)
 
 
 class MrsFits(fits.HDUList):
@@ -449,7 +490,7 @@ class MrsFits(fits.HDUList):
             k = "{}-{}".format(band, lmjm)
         return MrsSpec.from_hdu(self[k])
 
-    def get_one_epoch(self, lmjm=84420148, normalize=True, norm_kwargs={}):
+    def get_one_epoch(self, lmjm=84420148, norm_type="poly", **norm_kwargs):
         """ get one epoch spec from fits """
         try:
             if isinstance(lmjm, str):
@@ -467,17 +508,17 @@ class MrsFits(fits.HDUList):
             kR = "R-{}".format(lmjm)
         # read B & R band spec
         if kB in self.hdunames:
-            msB = MrsSpec.from_hdu(self[kB], normalize=normalize, **norm_kwargs)
+            msB = MrsSpec.from_hdu(self[kB], norm_type=norm_type, **norm_kwargs)
         else:
-            msB = MrsSpec(normalize=normalize, **norm_kwargs)
+            msB = MrsSpec(norm_type=norm_type, **norm_kwargs)
         if kR in self.hdunames:
-            msR = MrsSpec.from_hdu(self[kR], normalize=normalize, **norm_kwargs)
+            msR = MrsSpec.from_hdu(self[kR], norm_type=norm_type, **norm_kwargs)
         else:
-            msR = MrsSpec(normalize=normalize, **norm_kwargs)
+            msR = MrsSpec(norm_type=norm_type, **norm_kwargs)
         # return MrsSpec
         return MrsEpoch((msB, msR), epoch=lmjm)
 
-    def get_all_epochs(self, normalize=True, norm_kwargs={}, including_coadd=False):
+    def get_all_epochs(self, including_coadd=False, norm_type="poly", **norm_kwargs):
         # make keys
         if not including_coadd:
             all_keys = []
@@ -485,7 +526,7 @@ class MrsFits(fits.HDUList):
             all_keys = ["COADD", ]
         all_keys.extend(np.unique(self.lmjm[self.lmjm > 0]))
         # return epochs
-        return [self.get_one_epoch(k, normalize=normalize, norm_kwargs=norm_kwargs) for k in all_keys]
+        return [self.get_one_epoch(k, norm_type=norm_type, **norm_kwargs) for k in all_keys]
 
     @property
     def ls_epoch(self):
@@ -529,17 +570,16 @@ class MrsSource(np.ndarray):
     def rv(self):
         return np.array([_.rv for _ in self], dtype=np.float)
 
-    def __new__(cls, data, name="", normalize=True, norm_kwargs={}, **kwargs):
+    def __new__(cls, data, name="", norm_type="poly", **norm_kwargs):
         # prepare
         data = np.array(data, dtype=MrsEpoch)
         # sort
         indsort = np.argsort([_.epoch for _ in data])
         data = data[indsort]
         # substantiate
-        msrc = super(MrsSource, cls).__new__(cls, buffer=data, dtype=data.dtype, shape=data.shape, **kwargs)
+        msrc = super(MrsSource, cls).__new__(cls, buffer=data, dtype=data.dtype, shape=data.shape)
         # normalize if necessary
-        if normalize:
-            msrc.normalize(**norm_kwargs)
+        msrc.normalize(norm_type=norm_type, **norm_kwargs)
         return msrc
 
     # def __repr__(self):
@@ -550,17 +590,17 @@ class MrsSource(np.ndarray):
     #     return s
 
     @staticmethod
-    def read(fps, normalize=True, **norm_kwargs):
+    def read(fps, norm_type="poly", **norm_kwargs):
         mes = []
         for fp in fps:
             mf = MrsFits(fp)
-            mes.extend(mf.get_all_epochs(normalize=False, norm_kwargs={}))
-        return MrsSource(mes, normalize=normalize, norm_kwargs=norm_kwargs)
+            mes.extend(mf.get_all_epochs(norm_type=norm_type, **norm_kwargs))
+        return MrsSource(mes, norm_type=norm_type, **norm_kwargs)
 
-    def normalize(self, **norm_kwargs):
+    def normalize(self, norm_type="poly", **norm_kwargs):
         # normalization
         for i in range(self.nepoch):
-            self[i].normalize(**norm_kwargs)
+            self[i].normalize(norm_type=norm_type, **norm_kwargs)
         return
 
 
@@ -625,9 +665,9 @@ if __name__ == "__main__":
     print(mf.ls_epoch)
 
     # get MRS spec from MrsFits
-    specCoaddB = MrsSpec.from_hdu(mf["COADD_B"], normalize=False)
-    msB = MrsSpec.from_hdu(mf["B-84420148"], normalize=True)
-    msR = MrsSpec.from_hdu(mf["R-84420148"], normalize=True)
+    specCoaddB = MrsSpec.from_hdu(mf["COADD_B"], norm_type="poly")
+    msB = MrsSpec.from_hdu(mf["B-84420148"], norm_type="poly")
+    msR = MrsSpec.from_hdu(mf["R-84420148"], norm_type="poly")
     print(msB, msR)
     print(msB.snr, msR.snr)
 

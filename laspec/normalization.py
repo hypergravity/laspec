@@ -386,7 +386,7 @@ def normalize_spectrum_general(wave, flux, norm_type="poly",
     return flux_norm, flux_cont
 
 
-def normalize_spectrum_poly(wave, flux, deg=10, pw=1., lu=(-1, 5), q=0.5, binwidth=100., niter=3):
+def normalize_spectrum_poly(wave, flux, deg=10, pw=1., lu=(-1, 4), q=0.5, binwidth=100., niter=3):
     """ normalize spectrum using polynomial """
     if np.sum(np.logical_and(np.isfinite(flux), flux > 0)) <= 10:
         return normalize_spectrum_null(wave)
