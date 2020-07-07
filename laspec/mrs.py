@@ -610,21 +610,34 @@ def ccf_cost(rv, wave_obs, flux_obs, wave_mod, flux_mod):
 
 
 class RVM:
-    def __init__(self, pmod, wave_mod, flux_mod, **norm_kwargs):
+    def __init__(self, pmod, wave_mod, flux_mod):
+        """
+        Parameters:
+        -----------
+        pmod: (n_model, *)
+            parameters of model spectra
+        wave_mod: (n_pixel,)
+            wavelength of model spectra
+        flux_mod: (n_model, n_pixel)
+            normalized flux of model spectra
+        """
         self.pmod = pmod
         self.wave_mod = wave_mod
-        self.flux_mod = flux_mod
-        self.norm_kwargs = norm_kwargs
-        self.flux_mod_norm = np.array([MrsSpec(wave_mod, _, **norm_kwargs).flux_norm for _ in flux_mod])
+        if flux_mod.dim == 2:
+            self.flux_mod = flux_mod
+        else:
+            self.flux_mod = flux_mod.reshape(1, -1)
+        # self.norm_kwargs = norm_kwargs
+        # self.flux_mod = np.array([MrsSpec(wave_mod, _, **norm_kwargs).flux_norm for _ in flux_mod])
 
     def measure(self, wave_obs, flux_obs, rv_grid=np.linspace(-600, 600, 100)):
         # clip extreme values
         ind3 = (flux_obs < 3) & (flux_obs > 0.)
         flux_obs = np.interp(wave_obs, wave_obs[ind3], flux_obs[ind3])
         # CCF grid
-        ccf = np.zeros((self.flux_mod_norm.shape[0], rv_grid.shape[0]))
-        for j in range(self.flux_mod_norm.shape[0]):
-            ccf[j] = xcorr_rvgrid(wave_obs, flux_obs, self.wave_mod, self.flux_mod_norm[j], rv_grid=rv_grid)[1]
+        ccf = np.zeros((self.flux_mod.shape[0], rv_grid.shape[0]))
+        for j in range(self.flux_mod.shape[0]):
+            ccf[j] = xcorr_rvgrid(wave_obs, flux_obs, self.wave_mod, self.flux_mod[j], rv_grid=rv_grid)[1]
         # CCF max
         ccfmax = np.max(ccf)
         ind_best = np.where(ccfmax == ccf)
@@ -633,10 +646,11 @@ class RVM:
         rv_best = rv_grid[irv_best]
         # CCF opt
         opt = minimize(ccf_cost, x0=rv_best,
-                       args=(wave_obs, flux_obs, self.wave_mod, self.flux_mod_norm[ipmod_best]), method="Powell")
+                       args=(wave_obs, flux_obs, self.wave_mod, self.flux_mod[ipmod_best]), method="BFGS")
         # opt = minimize(ccf_cost_interp, x0=rv_best, args=(wave_obs, flux_obs, wave_mod, flux_mod[imod_best]), method="Powell")
         # x = np.interp(wave, wave_obs/(1+opt.x/299792.458), flux_obs).reshape(1, -1)
         return dict(rv_opt=np.float(opt.x),
+                    rv_err=np.float(opt.hess_inv),
                     rv_best=rv_best,
                     ccfmax=ccfmax,
                     success=opt.success,
