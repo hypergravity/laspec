@@ -623,7 +623,7 @@ class RVM:
         """
         self.pmod = pmod
         self.wave_mod = wave_mod
-        if flux_mod.dim == 2:
+        if flux_mod.ndim == 2:
             self.flux_mod = flux_mod
         else:
             self.flux_mod = flux_mod.reshape(1, -1)
