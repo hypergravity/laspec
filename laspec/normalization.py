@@ -150,8 +150,8 @@ def normalize_spectrum(wave, flux, norm_range, dwave,
     return flux_norm, flux_smoothed2
 
 
-def normalize_spectrum_iter(wave, flux, p=1E-6, q=0.5, lu=(-1, 3), binwidth=30,
-                            niter=5):
+def normalize_spectrum_spline(wave, flux, p=1E-6, q=0.5, lu=(-1, 3), binwidth=30,
+                              niter=5):
     """ A double smooth normalization of a spectrum
 
     Converted from Chao Liu's normSpectrum.m
@@ -184,7 +184,7 @@ def normalize_spectrum_iter(wave, flux, p=1E-6, q=0.5, lu=(-1, 3), binwidth=30,
 
     Example
     -------
-    >>> fnorm, fcont=normalize_spectrum_iter(
+    >>> fnorm, fcont=normalize_spectrum_spline(
     >>>     wave, flux, p=1e-6, q=0.6, binwidth=200, lu=(-1,5),niter=niter)
 
     """
@@ -316,33 +316,33 @@ def normalize_spectra_block(wave, flux_block, norm_range, dwave,
     return np.array(flux_norm_block), np.array(flux_cont_block)
 
 
-def get_stable_pixels(pixel_disp, wave_arm=100, frac=0.20):
-    """
-
-    Parameters
-    ----------
-    pixel_disp: np.ndarray
-        dispersion array
-    wave_arm: int
-        the arm length in terms of pixels
-    frac: float
-        the reserved fraction, between 0.00 and 1.00
-
-    Returns
-    -------
-    ind_stable
-
-    """
-    ind_stable = np.zeros_like(pixel_disp, dtype=np.bool)
-
-    for i in range(len(ind_stable)):
-        edge_l = np.max([i - wave_arm, 0])
-        edge_r = np.min([i + wave_arm, len(pixel_disp)])
-        if pixel_disp[i] <= \
-                np.percentile(pixel_disp[edge_l:edge_r], frac * 100.):
-            ind_stable[i] = True
-
-    return ind_stable
+# def get_stable_pixels(pixel_disp, wave_arm=100, frac=0.20):
+#     """
+#
+#     Parameters
+#     ----------
+#     pixel_disp: np.ndarray
+#         dispersion array
+#     wave_arm: int
+#         the arm length in terms of pixels
+#     frac: float
+#         the reserved fraction, between 0.00 and 1.00
+#
+#     Returns
+#     -------
+#     ind_stable
+#
+#     """
+#     ind_stable = np.zeros_like(pixel_disp, dtype=np.bool)
+#
+#     for i in range(len(ind_stable)):
+#         edge_l = np.max([i - wave_arm, 0])
+#         edge_r = np.min([i + wave_arm, len(pixel_disp)])
+#         if pixel_disp[i] <= \
+#                 np.percentile(pixel_disp[edge_l:edge_r], frac * 100.):
+#             ind_stable[i] = True
+#
+#     return ind_stable
 
 
 def normalize_spectrum_general(wave, flux, norm_type="poly",
@@ -379,7 +379,7 @@ def normalize_spectrum_general(wave, flux, norm_type="poly",
         flux_norm, flux_cont = normalize_spectrum_poly(
             wave, flux, deg=deg, lu=lu, q=q, binwidth=binwidth, niter=niter, pw=pw)
     elif norm_type is "spline":
-        flux_norm, flux_cont = normalize_spectrum_iter(
+        flux_norm, flux_cont = normalize_spectrum_spline(
             wave, flux, p=p, lu=lu, q=q, binwidth=binwidth, niter=niter)
     else:
         assert norm_type in ("poly", "spline")
