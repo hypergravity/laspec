@@ -120,11 +120,13 @@ def test_xcorr_rvgrid():
     return
 
 
-def xcorr(x1, x2, w1=None):
+def cov(x1, x2):
+    return np.mean((x1 - np.mean(x1)) * (x2 - np.mean(x2)))
+
+
+def xcorr(x1, x2):
     """ Pearson correlation coef """
-    x1n = x1 - np.mean(x1)
-    x2n = x2 - np.mean(x2)
-    return np.dot(x1n, x2n) / np.sqrt(np.dot(x1n, x1n) * np.dot(x2n, x2n))
+    return cov(x1, x2) / np.sqrt(cov(x1, x1) * cov(x2, x2))
 
 
 def test_lmfit():

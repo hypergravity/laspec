@@ -611,7 +611,9 @@ def ccf_cost(rv, wave_obs, flux_obs, wave_mod, flux_mod):
 
 def pw_cost(rv, wave_obs, flux_obs, wave_mod, flux_mod, pw=1):
     flux_mod_interp = np.interp(wave_obs, wave_mod * (1 + rv / 299792.458), flux_mod)
-    return - np.sum(np.abs(flux_obs - flux_mod_interp)**pw)
+    cost = np.sum(np.abs(flux_obs - flux_mod_interp)**pw)
+    print(rv, cost)
+    return cost
 
 
 class RVM:
@@ -662,7 +664,7 @@ class RVM:
                     ipmod_best=ipmod_best,
                     pmod_best=self.pmod[ipmod_best])
 
-    def measure_pw(self, wave_obs, flux_obs, pw=1, rv_grid=np.linspace(-600, 600, 100)):
+    def measure_pw(self, wave_obs, flux_obs, rv_grid=np.linspace(-600, 600, 100), method="BFGS", pw=1):
         # clip extreme values
         ind3 = (flux_obs < 3) & (flux_obs > 0.)
         flux_obs = np.interp(wave_obs, wave_obs[ind3], flux_obs[ind3])
@@ -678,16 +680,17 @@ class RVM:
         rv_best = rv_grid[irv_best]
         # CCF opt
         opt = minimize(pw_cost, x0=rv_best,
-                       args=(wave_obs, flux_obs, self.wave_mod, self.flux_mod[ipmod_best], pw), method="BFGS")
+                       args=(wave_obs, flux_obs, self.wave_mod, self.flux_mod[ipmod_best], pw), method=method)
         # opt = minimize(ccf_cost_interp, x0=rv_best, args=(wave_obs, flux_obs, wave_mod, flux_mod[imod_best]), method="Powell")
         # x = np.interp(wave, wave_obs/(1+opt.x/299792.458), flux_obs).reshape(1, -1)
         return dict(rv_opt=np.float(opt.x),
-                    rv_err=np.float(opt.hess_inv),
+                    rv_err=np.float(opt.hess_inv) if method is "BFGS" else np.nan,
                     rv_best=rv_best,
                     ccfmax=ccfmax,
                     success=opt.success,
                     ipmod_best=ipmod_best,
-                    pmod_best=self.pmod[ipmod_best])
+                    pmod_best=self.pmod[ipmod_best],
+                    opt=opt)
 
 # nrvmod = 32
 # tgma_rvmod = tgma1[np.random.choice(np.arange(nstar, dtype=int), nrvmod)]
