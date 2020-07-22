@@ -13,16 +13,29 @@ from .ccf import xcorr_rvgrid, xcorr
 from .normalization import normalize_spectrum_general
 
 
-def debad(wave, fluxnorm, nsigma=(3, 6), mfarg=21, gkarg=(51, 9), maskconv=7, maxiter=10):
+def debad(wave, fluxnorm, nsigma=(3, 6), mfarg=21, gfarg=(51, 9), maskconv=7, maxiter=10):
     """
+    Parameters
+    ----------
+    wave:
+        wavelength
+    fluxnorm:
+        normalized flux
+    nsigma:
+        lower & upper sigma levels
+    mfarg:
+        median filter width / pixel
+    gkarg:
+        Gaussian filter length & width / pixel
+    maskconv:
+        mask convolution --> cushion
+    maxiter:
+        max iteration
 
-    :param wave:
-    :param fluxnorm:
-    :param nsigma:
-    :param mfarg:
-    :param gkarg:
-    :param maskconv:
-    :return:
+    Return:
+    -------
+    fluxnorm
+
     """
     npix = len(fluxnorm)
     indclip = np.zeros_like(fluxnorm, dtype=bool)
@@ -37,7 +50,7 @@ def debad(wave, fluxnorm, nsigma=(3, 6), mfarg=21, gkarg=(51, 9), maskconv=7, ma
         # residuals
         fluxres = fluxnorm - fluxmf
         # gaussian filter --> sigma
-        gk = gaussian(*gkarg)
+        gk = gaussian(*gfarg)
         gk /= np.sum(gk)
         fluxsigma = np.convolve(np.abs(fluxres), gk, "same")
         # clip
@@ -612,7 +625,6 @@ def ccf_cost(rv, wave_obs, flux_obs, wave_mod, flux_mod):
 def pw_cost(rv, wave_obs, flux_obs, wave_mod, flux_mod, pw=1):
     flux_mod_interp = np.interp(wave_obs, wave_mod * (1 + rv / 299792.458), flux_mod)
     cost = np.sum(np.abs(flux_obs - flux_mod_interp)**pw)
-    print(rv, cost)
     return cost
 
 
