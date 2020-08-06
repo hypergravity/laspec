@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
+import joblib
 import numpy as np
 from astropy import constants
 from matplotlib import pyplot as plt
-from scipy.interpolate import interp1d
 from scipy.optimize import minimize
-import joblib
-
 
 SOL_kms = constants.c.value / 1000
 
@@ -56,7 +54,7 @@ def wcov(x1, x2, w=None):
     return wmean((x1 - wmean(x1, w)) * (x2 - wmean(x2, w)), w)
 
 
-def wxcorr(x1, x2, w):
+def wxcorr(x1, x2, w=None):
     """ weighted cross-correlation """
     return wcov(x1, x2, w) / np.sqrt(wcov(x1, x1, w) * wcov(x2, x2, w))
 
@@ -82,6 +80,49 @@ def wxcorr_spec(rv, wave_obs, flux_obs, wave_mod, flux_mod, w_mod=None, w_obs=No
 def wxcorr_spec_cost(rv, wave_obs, flux_obs, wave_mod, flux_mod, w_mod=None, w_obs=None):
     """ the negative of wxcorr_spec, used as cost function for minimiztion """
     return - wxcorr_spec(rv, wave_obs, flux_obs, wave_mod, flux_mod, w_mod, w_obs)
+
+
+def wxcorr_spec_binary(rv1, drv, eta, wave_obs, flux_obs, wave_mod, flux_mod, w_obs=None):
+    """ weighted cross correlation of two spectra
+    Note
+    ----
+    w_mod is not supported in this case
+    """
+    flux_mod_interp = np.interp(wave_obs, wave_mod * (1 + rv1 / SOL_kms), flux_mod) + \
+                      eta * np.interp(wave_obs, wave_mod * (1 + (rv1 + drv) / SOL_kms), flux_mod)
+    return wxcorr(flux_obs, flux_mod_interp, w=w_obs)
+
+
+def wxcorr_spec_cost_binary(rv1_drv_eta, wave_obs, flux_obs, wave_mod, flux_mod, w_obs=None, eta_lim=(0.1, 1.2)):
+    """ the negative of wxcorr_spec, used as cost function for minimiztion """
+    rv1, drv, eta = rv1_drv_eta
+    if not eta_lim[0] < eta <= eta_lim[1]:
+        return np.inf
+    return - wxcorr_spec_binary(rv1, drv, eta, wave_obs, flux_obs, wave_mod, flux_mod, w_obs=w_obs)
+
+
+def wxcorr_rvgrid_binary(wave_obs, flux_obs, wave_mod, flux_mod,
+                         rv1_init=0, eta_init=0.3, eta_lim=(0.1, 1.2),
+                         drvmax=500, drvstep=5, w_obs=None, method="Powell"):
+    # make grid
+    drv_grid = np.arange(-drvmax, drvmax, drvstep)
+
+    # ccf2_grid
+    ccf2_grid = np.zeros_like(drv_grid, float)
+    for idrv, drv in enumerate(drv_grid):
+        ccf2_grid[idrv] = wxcorr_spec_binary(
+            rv1_init, drv, eta_init, wave_obs, flux_obs, wave_mod, flux_mod, w_obs=w_obs)
+
+    # find grid best
+    drv_best = drv_grid[np.argmax(ccf2_grid)]
+    x0 = np.array([rv1_init, drv_best, eta_init])
+
+    # optimization
+    opt = minimize(wxcorr_spec_cost_binary, x0, method=method, args=(wave_obs, flux_obs, wave_mod, flux_mod, w_obs, eta_lim))
+    opt["x0"] = x0
+    opt["ccfmax2"] = -opt["fun"]
+
+    return opt
 
 
 def respw_cost(rv, wave_obs, flux_obs, wave_mod, flux_mod, pw=1):
@@ -130,11 +171,6 @@ def wxcorr_rvgrid(wave_obs, flux_obs, wave_mod, flux_mod, rv_grid=np.arange(-500
         ccf_grid[i_rv] = wxcorr_spec(this_rv, wave_obs, flux_obs, wave_mod, flux_mod, w_mod, w_obs)
 
     return rv_grid, ccf_grid
-
-
-# shiftgrid = np.arange(-100, 100)
-# ccfv = [xcorr(xrand[100+shift:-100+shift],xrand[100:-100]) for shift in shiftgrid]
-# wccfv = [wxcorr(xrand[100+shift:-100+shift],xrand[100:-100], w[100+shift:-100+shift]) for shift in shiftgrid]
 
 
 def xcorr_rvgrid(wave_obs, flux_obs, wave_mod, flux_mod, mask_obs=None, rv_grid=np.arange(-500, 510, 10)):
@@ -238,7 +274,7 @@ def calculate_local_variance_multi(flux, npix_lv: int = 5, n_jobs: int = -1, ver
 
 
 class RVM:
-    def __init__(self, pmod, wave_mod, flux_mod, npix_lv=5):
+    def __init__(self, pmod, wave_mod, flux_mod, npix_lv=0):
         """
         Parameters:
         -----------
@@ -251,7 +287,7 @@ class RVM:
         npix_lv: int
             the length of chunks to evaluate local variance
         """
-        print("@RVM: initializing ...")
+        print("@RVM: initializing Radial Velocity Machine (RVM)...")
         # set wavelength
         self.wave_mod = wave_mod
         # set parameters
@@ -271,10 +307,11 @@ class RVM:
         # initialize weights
         # assert w_mod is "lv"
         # currently there is only one option
-        print("@RVM: calculating local variance ...")
-        self.weight_mod = calculate_local_variance_multi(self.flux_mod, npix_lv=npix_lv, n_jobs=-1)
+        if npix_lv > 1:
+            print("@RVM: calculating local variance ...")
+            self.weight_mod = calculate_local_variance_multi(self.flux_mod, npix_lv=npix_lv, n_jobs=-1)
 
-    def measure(self, wave_obs, flux_obs, w_mod="lv", w_obs=None, sinebell_idx=0.,
+    def measure(self, wave_obs, flux_obs, w_mod=None, w_obs=None, sinebell_idx=0.,
                 rv_grid=np.linspace(-600, 600, 100), flux_bounds=(0, 3.)):
         """ measure RV """
         # clip extreme values
@@ -311,10 +348,50 @@ class RVM:
         return dict(rv_opt=np.float(opt.x),
                     rv_err=np.float(opt.hess_inv),
                     rv_best=rv_best,
-                    ccfmax=ccf_max,
+                    ccfmax=-opt["fun"],
                     success=opt.success,
                     ipmod_best=ipmod_best,
-                    pmod_best=self.pmod[ipmod_best])
+                    pmod_best=self.pmod[ipmod_best],
+                    status=opt["status"])
+
+    def measure2(self, wave_obs, flux_obs, wave_mod, flux_mod, w_obs=None,
+                 rv1_init=0, eta_init=0.3, eta_lim=(0.1, 1.0), drvmax=500, drvstep=5, method="Powell"):
+        opt = wxcorr_rvgrid_binary(wave_obs, flux_obs, wave_mod, flux_mod,
+                                   rv1_init=rv1_init, eta_init=eta_init, eta_lim=eta_lim,
+                                   drvmax=drvmax, drvstep=drvstep, w_obs=w_obs,
+                                   method=method)
+        return opt
+
+    def measure_binary(self, wave_obs, flux_obs, w_obs=None,
+                       rv_grid=np.linspace(-600, 600, 100), flux_bounds=(0, 3.),
+                       eta_init=0.3, eta_lim=(0.1, 1.0), drvmax=500, drvstep=5, method="Powell"):
+
+        # clip extreme values
+        ind3 = (flux_obs > flux_bounds[0]) & (flux_obs < flux_bounds[1])
+        flux_obs = np.interp(wave_obs, wave_obs[ind3], flux_obs[ind3])
+        # RV1
+        rvr1 = self.measure(wave_obs, flux_obs, w_obs=w_obs, rv_grid=rv_grid)
+        # best template
+        wave_mod = self.wave_mod
+        flux_mod = self.flux_mod[rvr1["ipmod_best"]]
+        # RV2
+        rvr2 = self.measure2(wave_obs, flux_obs, wave_mod, flux_mod, w_obs=w_obs,
+                             rv1_init=rvr1["rv_opt"], eta_init=eta_init, eta_lim=eta_lim,
+                             drvmax=drvmax, drvstep=drvstep, method=method)
+
+        rvr = dict(rv1=rvr1["rv_opt"],
+                   ccfmax1=rvr1["ccfmax"],
+                   rv1_best=rvr1["rv_best"],
+                   imod=rvr1["ipmod_best"],
+                   pmod=rvr1["pmod_best"],
+                   success1=rvr1["success"],
+                   ccfmax2=rvr2["ccfmax2"],
+                   success2=rvr2["success"],
+                   rv1_drv_eta0=rvr2["x0"],
+                   rv1_drv_eta=rvr2["x"],
+                   status1=rvr1["status"],
+                   status2=rvr2["status"])
+        return rvr
 
     def ccf_1mod(self, wave_mod, flux_mod, wave_obs, flux_obs, w_mod=None, w_obs=None, sinebell_idx=0.,
                  rv_grid=np.linspace(-600, 600, 100), flux_bounds=(0, 3.)):
@@ -353,7 +430,7 @@ class RVM:
         # CCF grid
         ccf = np.zeros((self.flux_mod.shape[0], rv_grid.shape[0]))
         for j in range(self.flux_mod.shape[0]):
-            ccf[j] = xcorr_rvgrid(wave_obs, flux_obs, self.wave_mod, self.flux_mod[j], rv_grid=rv_grid)[1]
+            ccf[j] = wxcorr_rvgrid(wave_obs, flux_obs, self.wave_mod, self.flux_mod[j], rv_grid=rv_grid)[1]
         # CCF max
         ccfmax = np.max(ccf)
         ind_best = np.where(ccfmax == ccf)
