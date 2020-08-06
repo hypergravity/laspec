@@ -350,9 +350,8 @@ class RVM:
                     rv_best=rv_best,
                     ccfmax=-opt["fun"],
                     success=opt.success,
-                    ipmod_best=ipmod_best,
-                    pmod_best=self.pmod[ipmod_best],
-                    status=opt["status"])
+                    imod=ipmod_best,
+                    pmod=self.pmod[ipmod_best],                status=opt["status"])
 
     def measure2(self, wave_obs, flux_obs, wave_mod, flux_mod, w_obs=None,
                  rv1_init=0, eta_init=0.3, eta_lim=(0.1, 1.0), drvmax=500, drvstep=5, method="Powell"):
@@ -382,8 +381,8 @@ class RVM:
         rvr = dict(rv1=rvr1["rv_opt"],
                    ccfmax1=rvr1["ccfmax"],
                    rv1_best=rvr1["rv_best"],
-                   imod=rvr1["ipmod_best"],
-                   pmod=rvr1["pmod_best"],
+                   imod=rvr1["imod"],
+                   pmod=rvr1["pmod"],
                    success1=rvr1["success"],
                    ccfmax2=rvr2["ccfmax2"],
                    success2=rvr2["success"],
@@ -391,6 +390,8 @@ class RVM:
                    rv1_drv_eta=rvr2["x"],
                    status1=rvr1["status"],
                    status2=rvr2["status"])
+        if method is "BFGS":
+            rvr["hess_inv"] = rvr2["hess_inv"]
         return rvr
 
     def ccf_1mod(self, wave_mod, flux_mod, wave_obs, flux_obs, w_mod=None, w_obs=None, sinebell_idx=0.,
@@ -497,6 +498,78 @@ def test_lmfit():
     plt.plot(x, y)
     plt.plot(x, out.best_fit)
     print(out.fit_report())
+
+
+def test_new_rvm():
+    import joblib
+    from laspec.ccf import RVM
+    rvm = RVM(joblib.load("/Users/cham/PycharmProjects/laspec/laspec/data/rvm/v8_rvm_pmod.dump"),
+              joblib.load("/Users/cham/PycharmProjects/laspec/laspec/data/rvm/v8_rvm_wave_mod.dump"),
+              joblib.load("/Users/cham/PycharmProjects/laspec/laspec/data/rvm/v8_rvm_flux_mod.dump"))
+
+    waveBR, spec_list = joblib.load("/Users/cham/projects/sb2/test_ccf/wave_flux_30.dump")
+    wave_obs = waveBR[waveBR < 5500]
+    npix = len(wave_obs)
+    # %%%% read spectra
+    import glob
+    fps = glob.glob("./*.fits.gz")
+
+    from laspec.mrs import MrsSource, debad
+    ms = MrsSource.read(fps)
+
+    # %%
+    fig, axs = plt.subplots(1, 2)
+    for i, me in enumerate(ms[:1]):
+        # wave_obs = me.wave_B
+        # flux_obs = me.flux_norm_B
+        wave_obs, flux_obs = me.wave_B[50:-50], debad(me.wave_B, me.flux_norm_B, nsigma=(4, 8), maxiter=5)[50:-50]
+        axs[0].plot(wave_obs, flux_obs + i, "k")
+
+        # measure RV
+        rvr = rvm.measure(wave_obs, flux_obs)
+        print(rvr)
+        ipmod_best = rvr["ipmod_best"]
+        rv_grid, ccf_grid = rvm.ccf_1mod(rvm.wave_mod, rvm.flux_mod[ipmod_best], wave_obs, flux_obs, w_mod=None,
+                                         rv_grid=np.arange(-2000, 2000, 5))
+        axs[1].plot(rv_grid, ccf_grid + i, "b")
+
+    # %%time
+    from collections import OrderedDict
+    rvr = []
+
+    for i, me in enumerate(ms[:]):
+        print(i)
+
+        # wave_obs = me.wave_B
+        # flux_obs = me.flux_norm_B
+
+        # remove cosmic rays
+        wave_obs, flux_obs = me.wave_B[50:-50], debad(me.wave_B, me.flux_norm_B, nsigma=(4, 8), maxiter=5)[50:-50]
+        # measure binary
+        this_rvr = rvm.measure_binary(wave_obs, flux_obs, w_obs=None,
+                                      rv_grid=np.arange(-600, 600, 10), flux_bounds=(0, 3.),
+                                      eta_init=0.3, drvmax=500, drvstep=5, method="Powell")
+        this_rvr["lmjm"] = me.epoch
+        this_rvr["snr"] = me.snr[0]
+        # append results
+        rvr.append(this_rvr)
+
+    from astropy.table import Table
+    trvr = Table(rvr)
+    trvr.write("./trvr.fits", overwrite=True)
+    trvr.show_in_browser()
+    # %%
+    figure()
+    plot(trvr["snr"], trvr["ccfmax1"], 'bo')
+    plot(trvr["snr"], trvr["ccfmax2"], 'ro')
+    ylim(0, 1)
+    # %%
+    figure()
+    plot(trvr["lmjm"], trvr["rv1_drv_eta"][:, 0], 'ro', label="star 1")
+    plot(trvr["lmjm"], trvr["rv1_drv_eta"][:, 0] + trvr["rv1_drv_eta"][:, 1], 'bo', label="star 2")
+    legend(loc="right")
+    xlabel("lmjm")
+    ylabel("RV[km/s]")
 
 
 if __name__ == "__main__":
