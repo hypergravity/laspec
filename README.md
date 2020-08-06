@@ -3,6 +3,8 @@
 
 Modules for basic operations on **LA**MOST **spec**tra, etc.
 
+If you make use of this package in your research, please cite the paper below:
+
 ## author
 Bo Zhang, [bozhang@nao.cas.cn](mailto:bozhang@nao.cas.cn)
 
