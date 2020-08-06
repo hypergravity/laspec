@@ -218,22 +218,25 @@ class MrsSpec:
 
     def normalize(self, llim=0., norm_type=None, **norm_kwargs):
         """ normalize spectrum with (optional) new settings """
-        if norm_type is None:
-            self.norm_type = norm_type
-            # do nothing
-        else:
-            assert norm_type in ["poly", "spline"]
-            self.norm_type = norm_type
-
         if not self.isempty:
             # for normal spec
-            # update norm kwargs
-            self.norm_kwargs.update(norm_kwargs)
-            # normalize spectrum
-            self.flux_norm, self.flux_cont = normalize_spectrum_general(
-                self.wave, np.where(self.flux < llim, llim, self.flux), self.norm_type, **self.norm_kwargs)
-            self.ivar_norm = self.ivar * self.flux_cont ** 2
-            self.flux_norm_err = self.flux_err / self.flux_cont
+            if norm_type is not None:
+                self.norm_type = norm_type
+                self.norm_kwargs.update(norm_kwargs)
+                # normalize spectrum
+                self.flux_norm, self.flux_cont = normalize_spectrum_general(
+                    self.wave, np.where(self.flux < llim, llim, self.flux), self.norm_type, **self.norm_kwargs)
+                self.ivar_norm = self.ivar * self.flux_cont ** 2
+                self.flux_norm_err = self.flux_err / self.flux_cont
+            else:
+                self.norm_type = norm_type
+                self.norm_kwargs.update(norm_kwargs)
+                # normalize spectrum
+                self.flux_norm = np.array([], dtype=np.float)
+                self.flux_cont = np.array([], dtype=np.float)
+                self.ivar_norm = np.array([], dtype=np.float)
+                self.flux_norm_err = np.array([], dtype=np.float)
+
         else:
             # for empty spec
             # update norm kwargs
@@ -330,7 +333,7 @@ class MrsEpoch:
             # get info
             self.snr.append(self.speclist[i_spec].snr)
             # normalize if necessary
-            if norm_type is not None and not self.speclist[i_spec].isnormalized:
+            if norm_type in ("poly", "spline") and not self.speclist[i_spec].isnormalized:
                 self.speclist[i_spec].normalize(**self.norm_kwargs)
             # store each spec
             self.__setattr__("wave_{}".format(specnames[i_spec]), self.speclist[i_spec].wave)
