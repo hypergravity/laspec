@@ -170,7 +170,7 @@ class MrsSpec:
                 mask = spec["ORMASK"].data > 0  # use ormask for coadded spec
                 info = dict(name=hdu.header["EXTNAME"],
                             lmjmlist=hdu.header["LMJMLIST"],
-                            snr=np.int(hdu.header["SNR"]),
+                            snr=np.float(hdu.header["SNR"]),
                             lamplist=hdu.header["LAMPLIST"])
             elif hdu.name.startswith("B-") or hdu.name.startswith("R-"):
                 # it's epoch spec
@@ -180,8 +180,8 @@ class MrsSpec:
                 mask = spec["PIXMASK"].data > 0  # use pixmask for epoch spec
                 info = dict(name=hdu.header["EXTNAME"],
                             lmjm=np.int(hdu.header["LMJM"]),
-                            exptime=np.int(hdu.header["EXPTIME"]),
-                            snr=np.int(hdu.header["SNR"]),
+                            exptime=np.float(hdu.header["EXPTIME"]),
+                            snr=np.float(hdu.header["SNR"]),
                             lamplist=hdu.header["LAMPLIST"])
             else:
                 raise ValueError("@MrsFits: error in reading epoch spec!")
