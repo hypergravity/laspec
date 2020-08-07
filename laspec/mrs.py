@@ -124,6 +124,7 @@ class MrsSpec:
     jdend = 0
     jdmid = 0
     jdltt = 0.
+    hjdmid = 0.
 
     # status
     isempty = True
@@ -478,6 +479,10 @@ class MrsEpoch:
 
     def plot_norm_err(self):
         plt.plot(self.wave, self.flux_norm_err)
+
+    @property
+    def exptime(self):
+        return np.array([_.exptime for _ in self.speclist])
 
 
 class MrsFits(fits.HDUList):
