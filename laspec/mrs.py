@@ -4,11 +4,34 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 from astropy import constants as const
+from astropy import units as u
+from astropy.coordinates import SkyCoord
+from astropy import coordinates as coord
+from astropy.time import Time, TimeDelta
 from astropy.io import fits
 from astropy.table import Table
 from scipy.signal import medfilt, gaussian
 
 from .normalization import normalize_spectrum_general
+
+
+def datetime2jd(datetime='2018-10-24T05:07:06.0', format="isot", tz_correction=8):
+    jd = Time(datetime, format=format).jd - tz_correction/24.
+    return jd
+
+
+def eval_ltt(ra=180., dec=40., jd=2456326.4583333, site=None):
+    """ evaluate the jd """
+    # defaut site is Xinglong
+    if site is None:
+        site = coord.EarthLocation.of_site('Beijing Xinglong Observatory')
+    # sky position
+    ip_peg = coord.SkyCoord(ra, dec, unit=(u.deg, u.deg), frame='icrs')
+    # time
+    times = Time(jd, format='jd', scale='utc', location=site)
+    # evaluate ltt
+    ltt_helio = times.light_travel_time(ip_peg, 'heliocentric')
+    return ltt_helio.jd
 
 
 def debad(wave, fluxnorm, nsigma=(3, 6), mfarg=21, gfarg=(51, 9), maskconv=7, maxiter=10):
@@ -89,6 +112,19 @@ class MrsSpec:
     info = {}
     rv = 0.
 
+    # time and position info
+    filename = ""
+    obsid = 0
+    seeing = 0.
+    ra = 0.
+    dec = 0.
+    fibertype = ""
+    fibermask = 0.
+    jdbeg = 0
+    jdend = 0
+    jdmid = 0
+    jdltt = 0.
+
     # status
     isempty = True
     isnormalized = False
@@ -97,7 +133,7 @@ class MrsSpec:
     norm_type = None
     norm_kwargs = {}
 
-    def __init__(self, wave=None, flux=None, ivar=None, mask=None, info={}, norm_type="poly", **norm_kwargs):
+    def __init__(self, wave=None, flux=None, ivar=None, mask=None, info={}, norm_type=None, **norm_kwargs):
         """ a general form of spectrum
         Parameters
         ----------
@@ -155,7 +191,7 @@ class MrsSpec:
         return "<MrsSpec name={} snr={:.1f}>".format(self.name, self.snr)
 
     @staticmethod
-    def from_hdu(hdu=None, norm_type="poly", **norm_kwargs):
+    def from_hdu(hdu=None, norm_type=None, **norm_kwargs):
         """ convert MRS HDU to spec """
         if hdu is None or hdu.header["EXTNAME"] == "Information":
             return MrsSpec()
@@ -189,10 +225,11 @@ class MrsSpec:
             return MrsSpec(wave, flux, ivar, mask, info=info, norm_type=norm_type, **norm_kwargs)
 
     @staticmethod
-    def from_mrs(fp_mrs, hduname="COADD_B", norm_type="poly", **norm_kwargs):
+    def from_mrs(fp_mrs, hduname="COADD_B", norm_type=None, **norm_kwargs):
         """ read from MRS fits file """
         hl = fits.open(fp_mrs)
-        return MrsSpec.from_hdu(hl[hduname], norm_type=norm_type, **norm_kwargs)
+        ms = MrsSpec.from_hdu(hl[hduname], norm_type=norm_type, **norm_kwargs)
+        return ms
 
     @staticmethod
     def from_lrs(fp_lrs, norm_type="poly", **norm_kwargs):
@@ -282,8 +319,24 @@ class MrsEpoch:
     specnames = []
     # the most important attributes
     epoch = -1
+    lmjm = 0
     snr = []
     rv = 0.
+
+    # time and position info
+    filename = ""
+    obsid = 0
+    seeing = 0.
+    ra = 0.
+    dec = 0.
+    fibertype = ""
+    fibermask = 0.
+    jdbeg = 0.
+    jdend = 0.
+    jdmid = 0.
+    jdltt = 0.
+    jdmid_delta = 0.
+    hjdmid = 0.
 
     wave = np.array([], dtype=np.float)
     flux = np.array([], dtype=np.float)
@@ -299,7 +352,8 @@ class MrsEpoch:
     # # default settings for normalize_spectrum_iter/poly
     norm_kwargs = {}
 
-    def __init__(self, speclist, specnames=("B", "R"), epoch=-1, norm_type="poly", **norm_kwargs):
+    def __init__(self, speclist, specnames=("B", "R"), epoch=-1,
+                 norm_type=None, **norm_kwargs):
         """ combine B & R to an epoch spectrum
         In this list form, it is compatible with even echelle spectra
 
@@ -368,7 +422,7 @@ class MrsEpoch:
             s += "\n{}".format(self.speclist[i])
         return s
 
-    def normalize(self, llim=0., norm_type="poly", **norm_kwargs):
+    def normalize(self, llim=0., norm_type=None, **norm_kwargs):
         """ normalize each spectrum with (optional) new settings """
         # update norm kwargs
         self.norm_kwargs.update(norm_kwargs)
@@ -504,7 +558,7 @@ class MrsFits(fits.HDUList):
             k = "{}-{}".format(band, lmjm)
         return MrsSpec.from_hdu(self[k])
 
-    def get_one_epoch(self, lmjm=84420148, norm_type="poly", **norm_kwargs):
+    def get_one_epoch(self, lmjm=84420148, norm_type=None, **norm_kwargs):
         """ get one epoch spec from fits """
         try:
             if isinstance(lmjm, str):
@@ -529,10 +583,47 @@ class MrsFits(fits.HDUList):
             msR = MrsSpec.from_hdu(self[kR], norm_type=norm_type, **norm_kwargs)
         else:
             msR = MrsSpec(norm_type=norm_type, **norm_kwargs)
-        # return MrsSpec
-        return MrsEpoch((msB, msR), epoch=lmjm)
+        # set epoch info
+        me = MrsEpoch((msB, msR), epoch=lmjm)
+        # set additional infomation
+        me.filename = self[0].header["FILENAME"]
+        me.obsid = self[0].header["OBSID"]
+        me.seeing = self[0].header["SEEING"]
+        me.ra = self[0].header["RA"]
+        me.dec = self[0].header["DEC"]
+        me.fibertype = self[0].header["FIBERTYP"]
+        me.fibermask = self[0].header["FIBERMAS"]
+        if kB in self.hdunames and kR not in self.hdunames:
+            me.jdbeg = datetime2jd(self[kB].header["DATE-BEG"], format="isot", tz_correction=8)
+            me.jdend = datetime2jd(self[kB].header["DATE-END"], format="isot", tz_correction=8)
+            me.jdmid = (me.jdbeg + me.jdend) / 2.
+            me.jdltt = eval_ltt(me.ra, me.dec, me.jdmid)
+            me.hjdmid = me.jdmid + me.jdltt
+        elif kB not in self.hdunames and kR in self.hdunames:
+            me.jdbeg = datetime2jd(self[kR].header["DATE-BEG"], format="isot", tz_correction=8)
+            me.jdend = datetime2jd(self[kR].header["DATE-END"], format="isot", tz_correction=8)
+            me.jdmid = (me.jdbeg + me.jdend) / 2.
+            me.jdltt = eval_ltt(me.ra, me.dec, me.jdmid)
+            me.hjdmid = me.jdmid + me.jdltt
+        elif kB in self.hdunames and kR in self.hdunames:
+            # both records
+            jdbeg_B = datetime2jd(self[kB].header["DATE-BEG"], format="isot", tz_correction=8)
+            jdend_B = datetime2jd(self[kB].header["DATE-END"], format="isot", tz_correction=8)
+            jdbeg_R = datetime2jd(self[kR].header["DATE-BEG"], format="isot", tz_correction=8)
+            jdend_R = datetime2jd(self[kR].header["DATE-END"], format="isot", tz_correction=8)
+            jdmid_B = (jdbeg_B + jdend_B) / 2.
+            jdmid_R = (jdbeg_R + jdend_R) / 2.
+            jdmid_delta = jdmid_B - jdmid_R
+            me.jdbeg = jdbeg_B
+            me.jdend = jdend_B
+            me.jdmid = jdmid_B
+            me.jdltt = eval_ltt(me.ra, me.dec, me.jdmid)
+            me.jdmid_delta = jdmid_delta
+            me.hjdmid = me.jdmid + me.jdltt
 
-    def get_all_epochs(self, including_coadd=False, norm_type="poly", **norm_kwargs):
+        return me
+
+    def get_all_epochs(self, including_coadd=False, norm_type=None, **norm_kwargs):
         # make keys
         if not including_coadd:
             all_keys = []
@@ -584,8 +675,9 @@ class MrsSource(np.ndarray):
     def rv(self):
         return np.array([_.rv for _ in self], dtype=np.float)
 
-    def __new__(cls, data, name="", norm_type="poly", **norm_kwargs):
+    def __new__(cls, data, name="", norm_type=None, **norm_kwargs):
         # prepare
+        print(data)
         data = np.array(data, dtype=MrsEpoch)
         # sort
         indsort = np.argsort([_.epoch for _ in data])
@@ -604,18 +696,33 @@ class MrsSource(np.ndarray):
     #     return s
 
     @staticmethod
-    def read(fps, norm_type="poly", **norm_kwargs):
+    def read(fps, norm_type=None, **norm_kwargs):
         mes = []
         for fp in fps:
             mf = MrsFits(fp)
             mes.extend(mf.get_all_epochs(norm_type=norm_type, **norm_kwargs))
         return MrsSource(mes, norm_type=norm_type, **norm_kwargs)
 
-    def normalize(self, norm_type="poly", **norm_kwargs):
+    def normalize(self, norm_type=None, **norm_kwargs):
         # normalization
         for i in range(self.nepoch):
             self[i].normalize(norm_type=norm_type, **norm_kwargs)
         return
+
+    @property
+    def jdmid(self):
+        return np.array([_.__getattribute__("jdmid") for _ in self])
+
+    @property
+    def hjdmid(self):
+        return np.array([_.__getattribute__("hjdmid") for _ in self])
+
+    @property
+    def jdltt(self):
+        return np.array([_.__getattribute__("jdltt") for _ in self])
+
+    def get_kwd(self, k):
+        return np.array([_.__getattribute__(k) for _ in self])
 
 
 if __name__ == "__main__":
