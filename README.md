@@ -4,7 +4,7 @@
 Modules for basic operations on **LA**MOST **spec**tra, etc.
 
 If you make use of this package in your research, please cite the paper below:
-
+- [Deriving the Stellar Labels of LAMOST Spectra with the Stellar LAbel Machine (SLAM)](https://ui.adsabs.harvard.edu/abs/2020ApJS..246....9Z/abstract)
 ## author
 Bo Zhang, [bozhang@nao.cas.cn](mailto:bozhang@nao.cas.cn)
 
@@ -22,9 +22,17 @@ Bo Zhang, [bozhang@nao.cas.cn](mailto:bozhang@nao.cas.cn)
     - rebin(wave, flux, flux_err, mask): rebin spectra
 - **ccf** \
     module for cross correlation function
-    - xcorr_rvgrid: cross-correlation given an RV grid
-    - xcorr: standard cross-correlation
     - sine_bell: a sine bell function
+    - wxcorr: weigted cross-correlation
+    - wxcorr_cost: negative CCF function
+    - wxcorr_spec: weigted cross-correlation of two spectra
+    - wxcorr_rvgrid: weighted cross correlation given an RV grid
+    - wxcorr_cost_binary: negative CCF function
+    - wxcorr_spec_binary: weigted cross-correlation of two spectra
+    - wxcorr_rvgrid_binary: weighted cross correlation given an RV grid
+    - **RVM** Radial Velocity Machine
+        - measure: measure the RV of single stars
+        - measure_binary: measure the RV of binary systems
 - **convolution** \
     module for spectral Gaussian convolution
     - conv_spec: capable to tackle arbitrary R_hi and R_lo but relatively slow
@@ -47,8 +55,10 @@ Bo Zhang, [bozhang@nao.cas.cn](mailto:bozhang@nao.cas.cn)
     - measure_line_index: measure line index (EW)
 - **normalization** \
     module to normalize spectra
-    - normalize_spectrum: a Python version of Chao's method
-    - normalize_spectrum_iter: iterative normalization (recommended)
+    - normalize_spectrum_spline: a Python version of Chao's method (recommended)
+    - normalize_spectrum_poly: polynomial normalization
+    - normalize_spectrum_general： a unified wrapper of spline and poly
+    - NOTE: bad pixels (e.g., cosmic rays) should be properly removed before normallization
 - **qconv** \
     quick convolution, designed for two cases:
     - conv_spec_Gaussian(wave, flux, R_hi=3e5, R_lo=2000): scalar resolution to scalar resolution instrumental broadening
