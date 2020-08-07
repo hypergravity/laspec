@@ -22,6 +22,7 @@ def datetime2jd(datetime='2018-10-24T05:07:06.0', format="isot", tz_correction=8
 
 def eval_ltt(ra=180., dec=40., jd=2456326.4583333, site=None):
     """ evaluate the jd """
+    # conf: https://docs.astropy.org/en/stable/time/
     # defaut site is Xinglong
     if site is None:
         site = coord.EarthLocation.of_site('Beijing Xinglong Observatory')
@@ -682,7 +683,7 @@ class MrsSource(np.ndarray):
 
     def __new__(cls, data, name="", norm_type=None, **norm_kwargs):
         # prepare
-        print(data)
+        # print(data)
         data = np.array(data, dtype=MrsEpoch)
         # sort
         indsort = np.argsort([_.epoch for _ in data])
