@@ -335,12 +335,12 @@ class RVM:
         # CCF max
         ccf_max = np.max(ccf_grid)
         ind_best = np.where(ccf_max == ccf_grid)
-        ipmod_best = ind_best[0][0]
+        imod = ind_best[0][0]
         irv_best = ind_best[1][0]
         rv_best = rv_grid[irv_best]
         # CCF opt
         opt = minimize(wxcorr_spec_cost, x0=rv_best,
-                       args=(wave_obs, flux_obs, self.wave_mod, self.flux_mod[ipmod_best],
+                       args=(wave_obs, flux_obs, self.wave_mod, self.flux_mod[imod],
                              w_mod[imod], w_obs),
                        method="BFGS")  # Powell
         # opt = minimize(ccf_cost_interp, x0=rv_best, args=(wave_obs, flux_obs, wave_mod, flux_mod[imod_best]), method="Powell")
@@ -350,8 +350,8 @@ class RVM:
                     rv_best=rv_best,
                     ccfmax=-opt["fun"],
                     success=opt.success,
-                    imod=ipmod_best,
-                    pmod=self.pmod[ipmod_best],                status=opt["status"])
+                    imod=imod,
+                    pmod=self.pmod[imod],                status=opt["status"])
 
     def measure2(self, wave_obs, flux_obs, wave_mod, flux_mod, w_obs=None,
                  rv1_init=0, eta_init=0.3, eta_lim=(0.1, 1.0), drvmax=500, drvstep=5, method="Powell"):
@@ -372,7 +372,7 @@ class RVM:
         rvr1 = self.measure(wave_obs, flux_obs, w_obs=w_obs, rv_grid=rv_grid)
         # best template
         wave_mod = self.wave_mod
-        flux_mod = self.flux_mod[rvr1["ipmod_best"]]
+        flux_mod = self.flux_mod[rvr1["imod"]]
         # RV2
         rvr2 = self.measure2(wave_obs, flux_obs, wave_mod, flux_mod, w_obs=w_obs,
                              rv1_init=rvr1["rv_opt"], eta_init=eta_init, eta_lim=eta_lim,
@@ -435,12 +435,12 @@ class RVM:
         # CCF max
         ccfmax = np.max(ccf)
         ind_best = np.where(ccfmax == ccf)
-        ipmod_best = ind_best[0][0]
+        imod = ind_best[0][0]
         irv_best = ind_best[1][0]
         rv_best = rv_grid[irv_best]
         # CCF opt
         opt = minimize(respw_cost, x0=rv_best,
-                       args=(wave_obs, flux_obs, self.wave_mod, self.flux_mod[ipmod_best], pw), method=method)
+                       args=(wave_obs, flux_obs, self.wave_mod, self.flux_mod[imod], pw), method=method)
         # opt = minimize(ccf_cost_interp, x0=rv_best, args=(wave_obs, flux_obs, wave_mod, flux_mod[imod_best]), method="Powell")
         # x = np.interp(wave, wave_obs/(1+opt.x/SOL_kms), flux_obs).reshape(1, -1)
         return dict(rv_opt=np.float(opt.x),
@@ -448,8 +448,8 @@ class RVM:
                     rv_best=rv_best,
                     ccfmax=ccfmax,
                     success=opt.success,
-                    ipmod_best=ipmod_best,
-                    pmod_best=self.pmod[ipmod_best],
+                    imod=imod,
+                    pmod=self.pmod[imod],
                     opt=opt)
 
 
@@ -528,8 +528,8 @@ def test_new_rvm():
         # measure RV
         rvr = rvm.measure(wave_obs, flux_obs)
         print(rvr)
-        ipmod_best = rvr["ipmod_best"]
-        rv_grid, ccf_grid = rvm.ccf_1mod(rvm.wave_mod, rvm.flux_mod[ipmod_best], wave_obs, flux_obs, w_mod=None,
+        imod = rvr["imod"]
+        rv_grid, ccf_grid = rvm.ccf_1mod(rvm.wave_mod, rvm.flux_mod[imod], wave_obs, flux_obs, w_mod=None,
                                          rv_grid=np.arange(-2000, 2000, 5))
         axs[1].plot(rv_grid, ccf_grid + i, "b")
 
