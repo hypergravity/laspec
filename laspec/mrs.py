@@ -599,33 +599,37 @@ class MrsFits(fits.HDUList):
         me.dec = self[0].header["DEC"]
         me.fibertype = self[0].header["FIBERTYP"]
         me.fibermask = self[0].header["FIBERMAS"]
-        if kB in self.hdunames and kR not in self.hdunames:
-            me.jdbeg = datetime2jd(self[kB].header["DATE-BEG"], format="isot", tz_correction=8)
-            me.jdend = datetime2jd(self[kB].header["DATE-END"], format="isot", tz_correction=8)
-            me.jdmid = (me.jdbeg + me.jdend) / 2.
-            me.jdltt = eval_ltt(me.ra, me.dec, me.jdmid)
-            me.hjdmid = me.jdmid + me.jdltt
-        elif kB not in self.hdunames and kR in self.hdunames:
-            me.jdbeg = datetime2jd(self[kR].header["DATE-BEG"], format="isot", tz_correction=8)
-            me.jdend = datetime2jd(self[kR].header["DATE-END"], format="isot", tz_correction=8)
-            me.jdmid = (me.jdbeg + me.jdend) / 2.
-            me.jdltt = eval_ltt(me.ra, me.dec, me.jdmid)
-            me.hjdmid = me.jdmid + me.jdltt
-        elif kB in self.hdunames and kR in self.hdunames:
-            # both records
-            jdbeg_B = datetime2jd(self[kB].header["DATE-BEG"], format="isot", tz_correction=8)
-            jdend_B = datetime2jd(self[kB].header["DATE-END"], format="isot", tz_correction=8)
-            jdbeg_R = datetime2jd(self[kR].header["DATE-BEG"], format="isot", tz_correction=8)
-            jdend_R = datetime2jd(self[kR].header["DATE-END"], format="isot", tz_correction=8)
-            jdmid_B = (jdbeg_B + jdend_B) / 2.
-            jdmid_R = (jdbeg_R + jdend_R) / 2.
-            jdmid_delta = jdmid_B - jdmid_R
-            me.jdbeg = jdbeg_B
-            me.jdend = jdend_B
-            me.jdmid = jdmid_B
-            me.jdltt = eval_ltt(me.ra, me.dec, me.jdmid)
-            me.jdmid_delta = jdmid_delta
-            me.hjdmid = me.jdmid + me.jdltt
+
+        try:
+            if kB in self.hdunames and kR not in self.hdunames:
+                me.jdbeg = datetime2jd(self[kB].header["DATE-BEG"], format="isot", tz_correction=8)
+                me.jdend = datetime2jd(self[kB].header["DATE-END"], format="isot", tz_correction=8)
+                me.jdmid = (me.jdbeg + me.jdend) / 2.
+                me.jdltt = eval_ltt(me.ra, me.dec, me.jdmid)
+                me.hjdmid = me.jdmid + me.jdltt
+            elif kB not in self.hdunames and kR in self.hdunames:
+                me.jdbeg = datetime2jd(self[kR].header["DATE-BEG"], format="isot", tz_correction=8)
+                me.jdend = datetime2jd(self[kR].header["DATE-END"], format="isot", tz_correction=8)
+                me.jdmid = (me.jdbeg + me.jdend) / 2.
+                me.jdltt = eval_ltt(me.ra, me.dec, me.jdmid)
+                me.hjdmid = me.jdmid + me.jdltt
+            elif kB in self.hdunames and kR in self.hdunames:
+                # both records
+                jdbeg_B = datetime2jd(self[kB].header["DATE-BEG"], format="isot", tz_correction=8)
+                jdend_B = datetime2jd(self[kB].header["DATE-END"], format="isot", tz_correction=8)
+                jdbeg_R = datetime2jd(self[kR].header["DATE-BEG"], format="isot", tz_correction=8)
+                jdend_R = datetime2jd(self[kR].header["DATE-END"], format="isot", tz_correction=8)
+                jdmid_B = (jdbeg_B + jdend_B) / 2.
+                jdmid_R = (jdbeg_R + jdend_R) / 2.
+                jdmid_delta = jdmid_B - jdmid_R
+                me.jdbeg = jdbeg_B
+                me.jdend = jdend_B
+                me.jdmid = jdmid_B
+                me.jdltt = eval_ltt(me.ra, me.dec, me.jdmid)
+                me.jdmid_delta = jdmid_delta
+                me.hjdmid = me.jdmid + me.jdltt
+        except Exception as ex:
+            print("Keywords DATE-* not found from file {}!".format(me.filename))
 
         return me
 
@@ -702,6 +706,12 @@ class MrsSource(np.ndarray):
     #     return s
 
     @staticmethod
+    def glob(fmt, norm_type=None, **norm_kwargs):
+        fps = glob.glob(fmt)
+        fps.sort()
+        return MrsSource.read(fps, norm_type=norm_type, **norm_kwargs)
+
+    @staticmethod
     def read(fps, norm_type=None, **norm_kwargs):
         mes = []
         for fp in fps:
@@ -729,6 +739,12 @@ class MrsSource(np.ndarray):
 
     def get_kwd(self, k):
         return np.array([_.__getattribute__(k) for _ in self])
+
+    def shiftplot(self, shift=1.):
+        fig = plt.figure()
+        for i, me in enumerate(self):
+            plt.plot(me.wave, me.flux_norm+i*shift)
+        return fig
 
 
 if __name__ == "__main__":
