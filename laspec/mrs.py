@@ -104,19 +104,18 @@ class MrsSpec:
     flux_norm_err = np.array([], dtype=np.float)
 
     # other information (optional)
-    name = ""
-    snr = 0
-    exptime = 0
-    lmjm = 0
-    lmjmlist = ""
-    lamplist = None
     info = {}
     rv = 0.
 
     # time and position info
     filename = ""
+    snr = 0
+    exptime = 0
+    lmjm = 0
+    lmjmlist = 0
     obsid = 0
     seeing = 0.
+    lamplist = ""
     ra = 0.
     dec = 0.
     fibertype = ""
@@ -134,6 +133,27 @@ class MrsSpec:
     # default settings for normalize_spectrum_iter / normlize_spectrum_poly
     norm_type = None
     norm_kwargs = {}
+
+    def meta(self):
+        return dict(extname=self.extname,
+                    snr=self.snr,
+                    exptime=self.exptime,
+                    lmjm=self.lmjm,
+                    lamplist=None,
+                    # time and position info
+                    filename="",
+                    obsid=0,
+                    seeing=0,
+                    ra=0.,
+                    dec=0.,
+                    fibertype=self.fibertype,
+                    fibermask=self.fibermask,
+                    jdbeg=self.jdbeg,
+                    jdend=self.jdend,
+                    jdmid=self.jdmid,
+                    jdltt=self.jdltt,
+                    hjdmid=self.hjdmid,
+                    )
 
     def __init__(self, wave=None, flux=None, ivar=None, mask=None, info={}, norm_type=None, **norm_kwargs):
         """ a general form of spectrum
@@ -207,7 +227,7 @@ class MrsSpec:
                 ivar = spec["IVAR"].data
                 mask = spec["ORMASK"].data > 0  # use ormask for coadded spec
                 info = dict(name=hdu.header["EXTNAME"],
-                            lmjmlist=hdu.header["LMJMLIST"],
+                            lmjmlist=hdu.header["LMJMLIST"],  # not universal
                             snr=np.float(hdu.header["SNR"]),
                             lamplist=hdu.header["LAMPLIST"])
             elif hdu.name.startswith("B-") or hdu.name.startswith("R-"):
@@ -737,7 +757,7 @@ class MrsSource(np.ndarray):
     def jdltt(self):
         return np.array([_.__getattribute__("jdltt") for _ in self])
 
-    def get_kwd(self, k):
+    def getkwd(self, k):
         return np.array([_.__getattribute__(k) for _ in self])
 
     def shiftplot(self, shift=1.):
@@ -745,6 +765,13 @@ class MrsSource(np.ndarray):
         for i, me in enumerate(self):
             plt.plot(me.wave, me.flux_norm+i*shift)
         return fig
+
+
+def test_meta():
+    fp_mrs = "/Users/cham/PycharmProjects/laspec/laspec/data/sb2/med-58415-TD062610N184524B01_sp08-037.fits.gz"
+    mf = MrsFits(fp_mrs)
+    me = mf.get_one_epoch(84117836)
+    ms = me.speclist[0]
 
 
 if __name__ == "__main__":
