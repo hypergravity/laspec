@@ -4,6 +4,7 @@ import numpy as np
 from astropy import constants
 from matplotlib import pyplot as plt
 from scipy.optimize import minimize
+from collections import OrderedDict
 
 SOL_kms = constants.c.value / 1000
 
@@ -82,7 +83,7 @@ def wxcorr_spec_cost(rv, wave_obs, flux_obs, wave_mod, flux_mod, w_mod=None, w_o
     return - wxcorr_spec(rv, wave_obs, flux_obs, wave_mod, flux_mod, w_mod, w_obs)
 
 
-def wxcorr_spec_binary(rv1, drv, eta, wave_obs, flux_obs, wave_mod, flux_mod, w_obs=None):
+def wxcorr_spec_twin(rv1, drv, eta, wave_obs, flux_obs, wave_mod, flux_mod, w_obs=None):
     """ weighted cross correlation of two spectra
     Note
     ----
@@ -93,15 +94,28 @@ def wxcorr_spec_binary(rv1, drv, eta, wave_obs, flux_obs, wave_mod, flux_mod, w_
     return wxcorr(flux_obs, flux_mod_interp, w=w_obs)
 
 
-def wxcorr_spec_cost_binary(rv1_drv_eta, wave_obs, flux_obs, wave_mod, flux_mod, w_obs=None, eta_lim=(0.1, 1.2)):
+def wxcorr_spec_binary(rv1, drv, eta, wave_obs, flux_obs, wave_mod1, flux_mod1, wave_mod2, flux_mod2, w_obs=None):
+    """ weighted cross correlation of two spectra
+    Note
+    ----
+    w_mod is not supported in this case
+    """
+    # combine two templates
+    flux_mod_interp = np.interp(wave_obs, wave_mod1 * (1 + rv1 / SOL_kms), flux_mod1) + \
+                      eta * np.interp(wave_obs, wave_mod2 * (1 + (rv1 + drv) / SOL_kms), flux_mod2)
+    return wxcorr(flux_obs, flux_mod_interp, w=w_obs)
+
+
+def wxcorr_spec_cost_binary(rv1_drv_eta, wave_obs, flux_obs, wave_mod1, flux_mod1, wave_mod2, flux_mod2,
+                            w_obs=None, eta_lim=(0.1, 1.2)):
     """ the negative of wxcorr_spec, used as cost function for minimiztion """
     rv1, drv, eta = rv1_drv_eta
     if not eta_lim[0] < eta <= eta_lim[1]:
         return np.inf
-    return - wxcorr_spec_binary(rv1, drv, eta, wave_obs, flux_obs, wave_mod, flux_mod, w_obs=w_obs)
+    return - wxcorr_spec_binary(rv1, drv, eta, wave_obs, flux_obs, wave_mod1, flux_mod1, wave_mod2, flux_mod2, w_obs=w_obs)
 
 
-def wxcorr_rvgrid_binary(wave_obs, flux_obs, wave_mod, flux_mod,
+def wxcorr_rvgrid_binary(wave_obs, flux_obs, wave_mod1, flux_mod1, wave_mod2, flux_mod2,
                          rv1_init=0, eta_init=0.3, eta_lim=(0.1, 1.2),
                          drvmax=500, drvstep=5, w_obs=None, method="Powell"):
     # make grid
@@ -111,16 +125,21 @@ def wxcorr_rvgrid_binary(wave_obs, flux_obs, wave_mod, flux_mod,
     ccf2_grid = np.zeros_like(drv_grid, float)
     for idrv, drv in enumerate(drv_grid):
         ccf2_grid[idrv] = wxcorr_spec_binary(
-            rv1_init, drv, eta_init, wave_obs, flux_obs, wave_mod, flux_mod, w_obs=w_obs)
+            rv1_init, drv, eta_init, wave_obs, flux_obs, wave_mod1, flux_mod1, wave_mod2, flux_mod2, w_obs=w_obs)
 
     # find grid best
-    drv_best = drv_grid[np.argmax(ccf2_grid)]
-    x0 = np.array([rv1_init, drv_best, eta_init])
+    ind_ccfmax = np.argmax(ccf2_grid)
+    drv_best = drv_grid[ind_ccfmax]
+    ccfmax = ccf2_grid[ind_ccfmax]
 
-    # optimization
-    opt = minimize(wxcorr_spec_cost_binary, x0, method=method, args=(wave_obs, flux_obs, wave_mod, flux_mod, w_obs, eta_lim))
-    opt["x0"] = x0
-    opt["ccfmax2"] = -opt["fun"]
+    if method is None:
+        return drv_best, ccfmax
+    else:
+        # optimization
+        x0 = np.array([rv1_init, drv_best, eta_init])
+        opt = minimize(wxcorr_spec_cost_binary, x0, method=method, args=(wave_obs, flux_obs, wave_mod1, flux_mod1, wave_mod2, flux_mod2, w_obs, eta_lim))
+        opt["x0"] = x0
+        opt["ccfmax2"] = -opt["fun"]
 
     return opt
 
@@ -353,43 +372,86 @@ class RVM:
                     imod=imod,
                     pmod=self.pmod[imod],                status=opt["status"])
 
-    def measure2(self, wave_obs, flux_obs, wave_mod, flux_mod, w_obs=None,
+    def measure2(self, wave_obs, flux_obs, wave_mod1, flux_mod1, wave_mod2, flux_mod2, w_obs=None,
                  rv1_init=0, eta_init=0.3, eta_lim=(0.1, 1.0), drvmax=500, drvstep=5, method="Powell"):
-        opt = wxcorr_rvgrid_binary(wave_obs, flux_obs, wave_mod, flux_mod,
+        opt = wxcorr_rvgrid_binary(wave_obs, flux_obs, wave_mod1, flux_mod1, wave_mod2, flux_mod2,
                                    rv1_init=rv1_init, eta_init=eta_init, eta_lim=eta_lim,
                                    drvmax=drvmax, drvstep=drvstep, w_obs=w_obs,
                                    method=method)
         return opt
 
+    def mock_binary_spectrum(self, imod1, imod2, rv1, drv, eta):
+
+        flux_mod_interp = np.interp(self.wave_mod, self.wave_mod * (1 + rv1 / SOL_kms), self.flux_mod[imod1]) + \
+                          eta * np.interp(self.wave_mod, self.wave_mod * (1 + (rv1 + drv) / SOL_kms),
+                                          self.flux_mod[imod2])
+        return flux_mod_interp
+
+    def reproduce_spectrum_single(self, rvr):
+        imod1 = rvr["imod1"]
+        rv1 = rvr["rv1"]
+        flux_mod_interp = np.interp(self.wave_mod, self.wave_mod * (1 + rv1 / SOL_kms), self.flux_mod[imod1])
+        return flux_mod_interp
+
+    def reproduce_spectrum_binary(self, rvr):
+        imod1 = rvr["imod1"]
+        imod2 = rvr["imod2"]
+        rv1, drv, eta = rvr["rv1_drv_eta"]
+
+        flux_mod_interp = np.interp(self.wave_mod, self.wave_mod * (1 + rv1 / SOL_kms), self.flux_mod[imod1]) + \
+                          eta * np.interp(self.wave_mod, self.wave_mod * (1 + (rv1 + drv) / SOL_kms), self.flux_mod[imod2])
+        return flux_mod_interp / (1 + eta)
+
     def measure_binary(self, wave_obs, flux_obs, w_obs=None,
-                       rv_grid=np.linspace(-600, 600, 100), flux_bounds=(0, 3.),
-                       eta_init=0.3, eta_lim=(0.1, 1.0), drvmax=500, drvstep=5, method="Powell"):
+                       rv_grid=np.linspace(-600, 600, 100), flux_bounds=(0, 3.), twin=True,
+                       eta_init=0.3, eta_lim=(0.01, 3.0), drvmax=500, drvstep=5, method="Powell"):
 
         # clip extreme values
         ind3 = (flux_obs > flux_bounds[0]) & (flux_obs < flux_bounds[1])
         flux_obs = np.interp(wave_obs, wave_obs[ind3], flux_obs[ind3])
         # RV1
         rvr1 = self.measure(wave_obs, flux_obs, w_obs=w_obs, rv_grid=rv_grid)
-        # best template
-        wave_mod = self.wave_mod
-        flux_mod = self.flux_mod[rvr1["imod"]]
-        # RV2
-        rvr2 = self.measure2(wave_obs, flux_obs, wave_mod, flux_mod, w_obs=w_obs,
-                             rv1_init=rvr1["rv_opt"], eta_init=eta_init, eta_lim=eta_lim,
-                             drvmax=drvmax, drvstep=drvstep, method=method)
 
-        rvr = dict(rv1=rvr1["rv_opt"],
-                   ccfmax1=rvr1["ccfmax"],
-                   rv1_best=rvr1["rv_best"],
-                   imod=rvr1["imod"],
-                   pmod=rvr1["pmod"],
-                   success1=rvr1["success"],
-                   ccfmax2=rvr2["ccfmax2"],
-                   success2=rvr2["success"],
-                   rv1_drv_eta0=rvr2["x0"],
-                   rv1_drv_eta=rvr2["x"],
-                   status1=rvr1["status"],
-                   status2=rvr2["status"])
+        # determine the secondary template if necessary
+        if twin:
+            imod2 = rvr1["imod"]
+        else:
+            # fix one template and calculate RV2
+            drv_best = np.zeros((self.nmod,), float)
+            ccfmax = np.zeros((self.nmod,), float)
+            for i in range(self.nmod):
+                drv_best[i], ccfmax[i] = self.measure2(
+                    wave_obs, flux_obs,
+                    wave_mod1=self.wave_mod, flux_mod1=self.flux_mod[rvr1["imod"]],
+                    wave_mod2=self.wave_mod, flux_mod2=self.flux_mod[i],
+                    w_obs=w_obs,
+                    rv1_init=rvr1["rv_opt"], eta_init=eta_init, eta_lim=eta_lim,
+                    drvmax=drvmax, drvstep=drvstep, method=None)
+            # best secondary
+            imod2 = np.argmax(ccfmax)
+
+        rvr2 = self.measure2(
+            wave_obs, flux_obs,
+            wave_mod1=self.wave_mod, flux_mod1=self.flux_mod[rvr1["imod"]],
+            wave_mod2=self.wave_mod, flux_mod2=self.flux_mod[imod2],
+            w_obs=w_obs,
+            rv1_init=rvr1["rv_opt"], eta_init=eta_init, eta_lim=eta_lim,
+            drvmax=drvmax, drvstep=drvstep, method=method)
+
+        rvr = OrderedDict(rv1=rvr1["rv_opt"],
+                          ccfmax1=rvr1["ccfmax"],
+                          rv1_best=rvr1["rv_best"],
+                          imod1=rvr1["imod"],
+                          pmod1=rvr1["pmod"],
+                          imod2=imod2,
+                          pmod2=self.pmod[imod2],
+                          success1=rvr1["success"],
+                          ccfmax2=rvr2["ccfmax2"],
+                          success2=rvr2["success"],
+                          rv1_drv_eta0=rvr2["x0"],
+                          rv1_drv_eta=rvr2["x"],
+                          status1=rvr1["status"],
+                          status2=rvr2["status"])
         if method is "BFGS":
             rvr["hess_inv"] = rvr2["hess_inv"]
         return rvr
@@ -559,17 +621,17 @@ def test_new_rvm():
     trvr.write("./trvr.fits", overwrite=True)
     trvr.show_in_browser()
     # %%
-    figure()
-    plot(trvr["snr"], trvr["ccfmax1"], 'bo')
-    plot(trvr["snr"], trvr["ccfmax2"], 'ro')
-    ylim(0, 1)
+    plt.figure()
+    plt.plot(trvr["snr"], trvr["ccfmax1"], 'bo')
+    plt.plot(trvr["snr"], trvr["ccfmax2"], 'ro')
+    plt.ylim(0, 1)
     # %%
-    figure()
-    plot(trvr["lmjm"], trvr["rv1_drv_eta"][:, 0], 'ro', label="star 1")
-    plot(trvr["lmjm"], trvr["rv1_drv_eta"][:, 0] + trvr["rv1_drv_eta"][:, 1], 'bo', label="star 2")
-    legend(loc="right")
-    xlabel("lmjm")
-    ylabel("RV[km/s]")
+    plt.figure()
+    plt.plot(trvr["lmjm"], trvr["rv1_drv_eta"][:, 0], 'ro', label="star 1")
+    plt.plot(trvr["lmjm"], trvr["rv1_drv_eta"][:, 0] + trvr["rv1_drv_eta"][:, 1], 'bo', label="star 2")
+    plt.legend(loc="right")
+    plt.xlabel("lmjm")
+    plt.ylabel("RV[km/s]")
 
 
 if __name__ == "__main__":
