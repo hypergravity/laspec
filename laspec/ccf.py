@@ -94,7 +94,7 @@ def wxcorr_spec_twin(rv1, drv, eta, wave_obs, flux_obs, wave_mod, flux_mod, w_ob
     return wxcorr(flux_obs, flux_mod_interp, w=w_obs)
 
 
-def wxcorr_spec_binary(rv1, drv, eta, wave_obs, flux_obs, wave_mod1, flux_mod1, wave_mod2, flux_mod2, w_obs=None):
+def wxcorr_spec_binary(rv1, rv2, eta, wave_obs, flux_obs, wave_mod1, flux_mod1, wave_mod2, flux_mod2, w_obs=None):
     """ weighted cross correlation of two spectra
     Note
     ----
@@ -102,45 +102,53 @@ def wxcorr_spec_binary(rv1, drv, eta, wave_obs, flux_obs, wave_mod1, flux_mod1, 
     """
     # combine two templates
     flux_mod_interp = np.interp(wave_obs, wave_mod1 * (1 + rv1 / SOL_kms), flux_mod1) + \
-                      eta * np.interp(wave_obs, wave_mod2 * (1 + (rv1 + drv) / SOL_kms), flux_mod2)
+                      eta * np.interp(wave_obs, wave_mod2 * (1 + rv2 / SOL_kms), flux_mod2)
     return wxcorr(flux_obs, flux_mod_interp, w=w_obs)
 
 
-def wxcorr_spec_cost_binary(rv1_drv_eta, wave_obs, flux_obs, wave_mod1, flux_mod1, wave_mod2, flux_mod2,
+def wxcorr_spec_cost_binary(rv1_rv2_eta, wave_obs, flux_obs, wave_mod1, flux_mod1, wave_mod2, flux_mod2,
                             w_obs=None, eta_lim=(0.1, 1.2)):
     """ the negative of wxcorr_spec, used as cost function for minimiztion """
-    rv1, drv, eta = rv1_drv_eta
-    if not eta_lim[0] < eta <= eta_lim[1]:
+    rv1, rv2, eta = rv1_rv2_eta
+    if not eta_lim[0] < eta <= eta_lim[1] or np.abs(rv2-rv1) > 500:
         return np.inf
-    return - wxcorr_spec_binary(rv1, drv, eta, wave_obs, flux_obs, wave_mod1, flux_mod1, wave_mod2, flux_mod2, w_obs=w_obs)
+    return - wxcorr_spec_binary(rv1, rv2, eta, wave_obs, flux_obs, wave_mod1, flux_mod1, wave_mod2, flux_mod2, w_obs=w_obs)
 
 
-def wxcorr_rvgrid_binary(wave_obs, flux_obs, wave_mod1, flux_mod1, wave_mod2, flux_mod2,
+def wxcorr_rvgrid_binary(wave_obs, flux_obs, wave_mod1, flux_mod1, wave_mod2, flux_mod2, flux_err=None,
                          rv1_init=0, eta_init=0.3, eta_lim=(0.1, 1.2),
-                         drvmax=500, drvstep=5, w_obs=None, method="Powell"):
+                         drvmax=500, drvstep=5, w_obs=None, method="Powell", nmc=100):
     # make grid
-    drv_grid = np.arange(-drvmax, drvmax, drvstep)
+    rv2_grid = np.arange(-drvmax, drvmax, drvstep)
 
     # ccf2_grid
-    ccf2_grid = np.zeros_like(drv_grid, float)
-    for idrv, drv in enumerate(drv_grid):
-        ccf2_grid[idrv] = wxcorr_spec_binary(
-            rv1_init, drv, eta_init, wave_obs, flux_obs, wave_mod1, flux_mod1, wave_mod2, flux_mod2, w_obs=w_obs)
+    ccf2_grid = np.zeros_like(rv2_grid, float)
+    for irv2, rv2 in enumerate(rv2_grid):
+        ccf2_grid[irv2] = wxcorr_spec_binary(
+            rv1_init, rv2, eta_init, wave_obs, flux_obs, wave_mod1, flux_mod1, wave_mod2, flux_mod2, w_obs=w_obs)
 
     # find grid best
     ind_ccfmax = np.argmax(ccf2_grid)
-    drv_best = drv_grid[ind_ccfmax]
+    rv2_best = rv2_grid[ind_ccfmax]
     ccfmax = ccf2_grid[ind_ccfmax]
 
     if method is None:
-        return drv_best, ccfmax
+        return rv2_best, ccfmax
     else:
         # optimization
-        x0 = np.array([rv1_init, drv_best, eta_init])
+        x0 = np.array([rv1_init, rv2_best, eta_init])
         opt = minimize(wxcorr_spec_cost_binary, x0, method=method, args=(wave_obs, flux_obs, wave_mod1, flux_mod1, wave_mod2, flux_mod2, w_obs, eta_lim))
         opt["x0"] = x0
         opt["ccfmax2"] = -opt["fun"]
 
+    if flux_err is not None:
+        xs = []
+        for i in range(nmc):
+            flux_mc = flux_obs + np.random.normal(0, 1, flux_obs.shape) * flux_err
+            this_opt = minimize(wxcorr_spec_cost_binary, opt.x, method=method,
+                                args=(wave_obs, flux_mc, wave_mod1, flux_mod1, wave_mod2, flux_mod2, w_obs, eta_lim))
+            xs.append(this_opt.x)
+        opt["x_pct"] = np.percentile(np.array(xs), q=[16, 50, 84], axis=0)
     return opt
 
 
@@ -330,8 +338,8 @@ class RVM:
             print("@RVM: calculating local variance ...")
             self.weight_mod = calculate_local_variance_multi(self.flux_mod, npix_lv=npix_lv, n_jobs=-1)
 
-    def measure(self, wave_obs, flux_obs, w_mod=None, w_obs=None, sinebell_idx=0.,
-                rv_grid=np.linspace(-600, 600, 100), flux_bounds=(0, 3.)):
+    def measure(self, wave_obs, flux_obs, flux_err=None, w_mod=None, w_obs=None, sinebell_idx=0.,
+                rv_grid=np.linspace(-600, 600, 100), flux_bounds=(0, 3.), nmc=100, method="BFGS"):
         """ measure RV """
         # clip extreme values
         ind3 = (flux_obs > flux_bounds[0]) & (flux_obs < flux_bounds[1])
@@ -361,20 +369,36 @@ class RVM:
         opt = minimize(wxcorr_spec_cost, x0=rv_best,
                        args=(wave_obs, flux_obs, self.wave_mod, self.flux_mod[imod],
                              w_mod[imod], w_obs),
-                       method="BFGS")  # Powell
+                       method=method)  # Powell
+
         # opt = minimize(ccf_cost_interp, x0=rv_best, args=(wave_obs, flux_obs, wave_mod, flux_mod[imod_best]), method="Powell")
         # x = np.interp(wave, wave_obs/(1+opt.x/SOL_kms), flux_obs).reshape(1, -1)
-        return dict(rv_opt=np.float(opt.x),
-                    rv_err=np.float(opt.hess_inv),
-                    rv_best=rv_best,
-                    ccfmax=-opt["fun"],
-                    success=opt.success,
-                    imod=imod,
-                    pmod=self.pmod[imod],                status=opt["status"])
+        result = dict(rv_opt=np.float(opt.x),
+                      rv_err=np.float(opt.hess_inv),
+                      rv_best=rv_best,
+                      ccfmax=-opt["fun"],
+                      success=opt.success,
+                      imod=imod,
+                      pmod=self.pmod[imod],
+                      status=opt["status"])
+        if flux_err is not None:
+            x_mc = np.zeros(nmc, dtype=float)
+            for i in range(nmc):
+                # CCF opt
+                flux_mc = flux_obs + np.random.normal(0, 1, flux_obs.shape) * flux_err
+                opt = minimize(wxcorr_spec_cost, x0=rv_best,
+                               args=(wave_obs, flux_mc, self.wave_mod, self.flux_mod[imod],
+                                     w_mod[imod], w_obs),
+                               method=method)
+                x_mc[i] = opt.x
+            result["rv_pct"] = np.percentile(x_mc, [16, 50, 84])
+        return result
 
-    def measure2(self, wave_obs, flux_obs, wave_mod1, flux_mod1, wave_mod2, flux_mod2, w_obs=None,
-                 rv1_init=0, eta_init=0.3, eta_lim=(0.1, 1.0), drvmax=500, drvstep=5, method="Powell"):
-        opt = wxcorr_rvgrid_binary(wave_obs, flux_obs, wave_mod1, flux_mod1, wave_mod2, flux_mod2,
+    def measure2(self, wave_obs, flux_obs, flux_err, wave_mod1, flux_mod1, wave_mod2, flux_mod2,
+                 w_obs=None, rv1_init=0, eta_init=0.3, eta_lim=(0.1, 1.0), drvmax=500, drvstep=5, method="Powell",
+                 nmc=100):
+        """ given a template, optimize (rv1, drv, eta) """
+        opt = wxcorr_rvgrid_binary(wave_obs, flux_obs, wave_mod1, flux_mod1, wave_mod2, flux_mod2, flux_err,
                                    rv1_init=rv1_init, eta_init=eta_init, eta_lim=eta_lim,
                                    drvmax=drvmax, drvstep=drvstep, w_obs=w_obs,
                                    method=method)
@@ -388,12 +412,14 @@ class RVM:
         return flux_mod_interp
 
     def reproduce_spectrum_single(self, rvr):
+        """ reproduce the spectrum (single) """
         imod1 = rvr["imod1"]
         rv1 = rvr["rv1"]
         flux_mod_interp = np.interp(self.wave_mod, self.wave_mod * (1 + rv1 / SOL_kms), self.flux_mod[imod1])
         return flux_mod_interp
 
     def reproduce_spectrum_binary(self, rvr):
+        """ reproduce the spectrum (binary) """
         imod1 = rvr["imod1"]
         imod2 = rvr["imod2"]
         rv1, drv, eta = rvr["rv1_drv_eta"]
@@ -402,15 +428,15 @@ class RVM:
                           eta * np.interp(self.wave_mod, self.wave_mod * (1 + (rv1 + drv) / SOL_kms), self.flux_mod[imod2])
         return flux_mod_interp / (1 + eta)
 
-    def measure_binary(self, wave_obs, flux_obs, w_obs=None,
+    def measure_binary(self, wave_obs, flux_obs, flux_err=None, w_obs=None,
                        rv_grid=np.linspace(-600, 600, 100), flux_bounds=(0, 3.), twin=True,
-                       eta_init=0.3, eta_lim=(0.01, 3.0), drvmax=500, drvstep=5, method="Powell"):
+                       eta_init=0.3, eta_lim=(0.01, 3.0), drvmax=500, drvstep=5, method="Powell", nmc=100):
 
         # clip extreme values
         ind3 = (flux_obs > flux_bounds[0]) & (flux_obs < flux_bounds[1])
         flux_obs = np.interp(wave_obs, wave_obs[ind3], flux_obs[ind3])
         # RV1
-        rvr1 = self.measure(wave_obs, flux_obs, w_obs=w_obs, rv_grid=rv_grid)
+        rvr1 = self.measure(wave_obs, flux_obs, flux_err=flux_err, w_obs=w_obs, rv_grid=rv_grid, nmc=nmc)
 
         # determine the secondary template if necessary
         if twin:
@@ -431,29 +457,49 @@ class RVM:
             imod2 = np.argmax(ccfmax)
 
         rvr2 = self.measure2(
-            wave_obs, flux_obs,
+            wave_obs, flux_obs, flux_err,
             wave_mod1=self.wave_mod, flux_mod1=self.flux_mod[rvr1["imod"]],
             wave_mod2=self.wave_mod, flux_mod2=self.flux_mod[imod2],
             w_obs=w_obs,
             rv1_init=rvr1["rv_opt"], eta_init=eta_init, eta_lim=eta_lim,
-            drvmax=drvmax, drvstep=drvstep, method=method)
+            drvmax=drvmax, drvstep=drvstep, method=method, nmc=nmc)
 
-        rvr = OrderedDict(rv1=rvr1["rv_opt"],
-                          ccfmax1=rvr1["ccfmax"],
-                          rv1_best=rvr1["rv_best"],
-                          imod1=rvr1["imod"],
-                          pmod1=rvr1["pmod"],
-                          imod2=imod2,
-                          pmod2=self.pmod[imod2],
-                          success1=rvr1["success"],
-                          ccfmax2=rvr2["ccfmax2"],
-                          success2=rvr2["success"],
-                          rv1_drv_eta0=rvr2["x0"],
-                          rv1_drv_eta=rvr2["x"],
-                          status1=rvr1["status"],
-                          status2=rvr2["status"])
-        if method is "BFGS":
-            rvr["hess_inv"] = rvr2["hess_inv"]
+        if flux_err is None:
+            rvr = OrderedDict(rv1=rvr1["rv_opt"],
+                              ccfmax1=rvr1["ccfmax"],
+                              rv1_best=rvr1["rv_best"],
+                              imod1=rvr1["imod"],
+                              pmod1=rvr1["pmod"],
+                              imod2=imod2,
+                              pmod2=self.pmod[imod2],
+                              success1=rvr1["success"],
+                              ccfmax2=rvr2["ccfmax2"],
+                              success2=rvr2["success"],
+                              rv1_rv2_eta0=rvr2["x0"],
+                              rv1_rv2_eta=rvr2["x"],
+                              status1=rvr1["status"],
+                              status2=rvr2["status"])
+        else:
+            rvr = OrderedDict(rv1=rvr1["rv_opt"],
+                              rv1_pct=rvr1["rv_pct"],
+                              rv1_err=(rvr1["rv_pct"][2] - rvr1["rv_pct"][0]) / 2,
+                              ccfmax1=rvr1["ccfmax"],
+                              rv1_best=rvr1["rv_best"],
+                              imod1=rvr1["imod"],
+                              pmod1=rvr1["pmod"],
+                              imod2=imod2,
+                              pmod2=self.pmod[imod2],
+                              success1=rvr1["success"],
+                              ccfmax2=rvr2["ccfmax2"],
+                              success2=rvr2["success"],
+                              rv1_rv2_eta0=rvr2["x0"],
+                              rv1_rv2_eta=rvr2["x"],
+                              rv1_rv2_eta_pct=rvr2["x_pct"],
+                              rv1_rv2_eta_err=(rvr2["x_pct"][2] - rvr2["x_pct"][0]) / 2,
+                              status1=rvr1["status"],
+                              status2=rvr2["status"])
+        # if method is "BFGS":
+        #     rvr["hess_inv"] = rvr2["hess_inv"]
         return rvr
 
     def ccf_1mod(self, wave_mod, flux_mod, wave_obs, flux_obs, w_mod=None, w_obs=None, sinebell_idx=0.,
