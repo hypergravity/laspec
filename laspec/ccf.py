@@ -430,7 +430,7 @@ class RVM:
 
     def measure_binary(self, wave_obs, flux_obs, flux_err=None, w_obs=None,
                        rv_grid=np.linspace(-600, 600, 100), flux_bounds=(0, 3.), twin=True,
-                       eta_init=0.3, eta_lim=(0.01, 3.0), drvmax=500, drvstep=5, method="Powell", nmc=100):
+                       eta_init=0.3, eta_lim=(0.01, 3.0), drvmax=500, drvstep=5, method="Powell", nmc=100, suffix=""):
 
         # clip extreme values
         ind3 = (flux_obs > flux_bounds[0]) & (flux_obs < flux_bounds[1])
@@ -465,39 +465,41 @@ class RVM:
             drvmax=drvmax, drvstep=drvstep, method=method, nmc=nmc)
 
         if flux_err is None:
-            rvr = OrderedDict(rv1=rvr1["rv_opt"],
-                              ccfmax1=rvr1["ccfmax"],
-                              rv1_best=rvr1["rv_best"],
-                              imod1=rvr1["imod"],
-                              pmod1=rvr1["pmod"],
-                              imod2=imod2,
-                              pmod2=self.pmod[imod2],
-                              success1=rvr1["success"],
-                              ccfmax2=rvr2["ccfmax2"],
-                              success2=rvr2["success"],
-                              rv1_rv2_eta0=rvr2["x0"],
-                              rv1_rv2_eta=rvr2["x"],
-                              status1=rvr1["status"],
-                              status2=rvr2["status"])
+            rvr = OrderedDict()
+            rvr["rv1_{}".format(suffix)]=rvr1["rv_opt"]
+            rvr["ccfmax1".format(suffix)]=rvr1["ccfmax"]
+            rvr["rv1_best".format(suffix)]=rvr1["rv_best"]
+            rvr["imod1".format(suffix)]=rvr1["imod"]
+            rvr["pmod1".format(suffix)] = rvr1["pmod"]
+            rvr["imod2".format(suffix)] = imod2
+            rvr["pmod2".format(suffix)] = self.pmod[imod2]
+            rvr["success1".format(suffix)] = rvr1["success"]
+            rvr["ccfmax2".format(suffix)] = rvr2["ccfmax2"]
+            rvr["success2".format(suffix)] = rvr2["success"]
+            rvr["rv1_rv2_eta0".format(suffix)] = rvr2["x0"]
+            rvr["rv1_rv2_eta".format(suffix)] = rvr2["x"]
+            rvr["status1".format(suffix)] = rvr1["status"]
+            rvr["status2".format(suffix)] = rvr2["status"]
         else:
-            rvr = OrderedDict(rv1=rvr1["rv_opt"],
-                              rv1_pct=rvr1["rv_pct"],
-                              rv1_err=(rvr1["rv_pct"][2] - rvr1["rv_pct"][0]) / 2,
-                              ccfmax1=rvr1["ccfmax"],
-                              rv1_best=rvr1["rv_best"],
-                              imod1=rvr1["imod"],
-                              pmod1=rvr1["pmod"],
-                              imod2=imod2,
-                              pmod2=self.pmod[imod2],
-                              success1=rvr1["success"],
-                              ccfmax2=rvr2["ccfmax2"],
-                              success2=rvr2["success"],
-                              rv1_rv2_eta0=rvr2["x0"],
-                              rv1_rv2_eta=rvr2["x"],
-                              rv1_rv2_eta_pct=rvr2["x_pct"],
-                              rv1_rv2_eta_err=(rvr2["x_pct"][2] - rvr2["x_pct"][0]) / 2,
-                              status1=rvr1["status"],
-                              status2=rvr2["status"])
+            rvr = OrderedDict()
+            rvr["rv1_{}".format(suffix)] = rvr1["rv_opt"]
+            rvr["rv1_pct_{}".format(suffix)] = rvr1["rv_pct"]
+            rvr["rv1_err_{}".format(suffix)] = (rvr1["rv_pct"][2] - rvr1["rv_pct"][0]) / 2
+            rvr["ccfmax1_{}".format(suffix)] = rvr1["ccfmax"]
+            rvr["rv1_best_{}".format(suffix)] = rvr1["rv_best"]
+            rvr["imod1_{}".format(suffix)] = rvr1["imod"]
+            rvr["pmod1_{}".format(suffix)] = rvr1["pmod"]
+            rvr["imod2_{}".format(suffix)] = imod2
+            rvr["pmod2_{}".format(suffix)] = self.pmod[imod2]
+            rvr["success1_{}".format(suffix)] = rvr1["success"]
+            rvr["ccfmax2_{}".format(suffix)] = rvr2["ccfmax2"]
+            rvr["success2_{}".format(suffix)] = rvr2["success"]
+            rvr["rv1_rv2_eta0_{}".format(suffix)] = rvr2["x0"]
+            rvr["rv1_rv2_eta_{}".format(suffix)] = rvr2["x"]
+            rvr["rv1_rv2_eta_pct_{}".format(suffix)] = rvr2["x_pct"]
+            rvr["rv1_rv2_eta_err_{}".format(suffix)] = (rvr2["x_pct"][2] - rvr2["x_pct"][0]) / 2
+            rvr["status1_{}".format(suffix)] = rvr1["status"]
+            rvr["status2_{}".format(suffix)] = rvr2["status"]
         # if method is "BFGS":
         #     rvr["hess_inv"] = rvr2["hess_inv"]
         return rvr
