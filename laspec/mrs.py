@@ -3,7 +3,7 @@ import os
 
 import matplotlib.pyplot as plt
 import numpy as np
-from astropy import constants as const
+from astropy import constants
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy import coordinates as coord
@@ -13,6 +13,8 @@ from astropy.table import Table
 from scipy.signal import medfilt, gaussian
 
 from .normalization import normalize_spectrum_general
+
+SOL_kms = constants.c.value / 1000
 
 
 def datetime2jd(datetime='2018-10-24T05:07:06.0', format="isot", tz_correction=8):
@@ -35,7 +37,7 @@ def eval_ltt(ra=180., dec=40., jd=2456326.4583333, site=None):
     return ltt_helio.jd
 
 
-def debad(wave, fluxnorm, nsigma=(3, 6), mfarg=21, gfarg=(51, 9), maskconv=7, maxiter=10):
+def debad(wave, fluxnorm, nsigma=(4, 8), mfarg=21, gfarg=(51, 9), maskconv=7, maxiter=3):
     """
     Parameters
     ----------
@@ -47,17 +49,16 @@ def debad(wave, fluxnorm, nsigma=(3, 6), mfarg=21, gfarg=(51, 9), maskconv=7, ma
         lower & upper sigma levels
     mfarg:
         median filter width / pixel
-    gkarg:
+    gfarg:
         Gaussian filter length & width / pixel
     maskconv:
         mask convolution --> cushion
     maxiter:
         max iteration
 
-    Return:
-    -------
+    Return
+    ------
     fluxnorm
-
     """
     npix = len(fluxnorm)
     indclip = np.zeros_like(fluxnorm, dtype=bool)
@@ -90,12 +91,14 @@ def debad(wave, fluxnorm, nsigma=(3, 6), mfarg=21, gfarg=(51, 9), maskconv=7, ma
 
 class MrsSpec:
     """ MRS spectrum """
+    name = ""
     # original quantities
     wave = np.array([], dtype=np.float)
     flux = np.array([], dtype=np.float)
     ivar = np.array([], dtype=np.float)
     mask = np.array([], dtype=np.bool)  # True for problematic
     flux_err = np.array([], dtype=np.float)
+    indcr = np.array([], dtype=np.float)  # cosmic ray index
 
     # normalized quantities
     flux_norm = np.array([], dtype=np.float)
@@ -225,7 +228,7 @@ class MrsSpec:
                 wave = 10 ** spec["LOGLAM"].data
                 flux = spec["FLUX"].data
                 ivar = spec["IVAR"].data
-                mask = spec["ORMASK"].data > 0  # use ormask for coadded spec
+                mask = spec["ORMASK"].data  # use ormask for coadded spec
                 info = dict(name=hdu.header["EXTNAME"],
                             lmjmlist=hdu.header["LMJMLIST"],  # not universal
                             snr=np.float(hdu.header["SNR"]),
@@ -235,7 +238,7 @@ class MrsSpec:
                 wave = 10 ** spec["LOGLAM"].data
                 flux = spec["FLUX"].data
                 ivar = spec["IVAR"].data
-                mask = spec["PIXMASK"].data > 0  # use pixmask for epoch spec
+                mask = spec["PIXMASK"].data  # use pixmask for epoch spec
                 info = dict(name=hdu.header["EXTNAME"],
                             lmjm=np.int(hdu.header["LMJM"]),
                             exptime=np.float(hdu.header["EXPTIME"]),
@@ -263,8 +266,8 @@ class MrsSpec:
                     obsid=hdr["OBSID"],
                     ra=hdr["RA"],
                     dec=hdr["DEC"],
-                    rv=hdr["Z"] * const.c.value / 1000.,
-                    rv_err=hdr["Z_ERR"] * const.c.value / 1000.,
+                    rv=hdr["Z"] * SOL_kms,
+                    rv_err=hdr["Z_ERR"] * SOL_kms,
                     subclass=hdr["SUBCLASS"],
                     tsource=hdr["TSOURCE"],
                     snr=hdr["SNRG"],
@@ -316,7 +319,7 @@ class MrsSpec:
         """
         if rv is None:
             rv = self.rv
-        return self.wave / (1 + rv * 1000 / const.c.value)
+        return self.wave / (1 + rv / SOL_kms)
 
     def plot(self):
         plt.plot(self.wave, self.flux)
@@ -332,6 +335,100 @@ class MrsSpec:
 
     def plot_norm_err(self):
         plt.plot(self.wave, self.flux_norm_err)
+
+    def reduce(self, wave_new=None, rv=0, npix_cushion=50, cr=True, nsigma=(4, 8), maxiter=5,
+               norm_type="spline", niter=3):
+        """
+
+        Parameters
+        ----------
+        wave_new:
+            if specified, spectrum is interpolated to wave_new
+        rv:
+            if specified, radial velocity is corrected
+        npix_cushion: int
+            if speficied, cut the two ends
+        cr:
+            if True, remove cosmic rays using the *debad* function
+        nsigma:
+            sigma levels used in removing cosmic rays
+        maxiter:
+            max number of iterations used in removing cosmic rays
+        norm_type:
+            "spline" | None
+        niter:
+            number iterations in normalization
+
+        Returns
+        -------
+        wave_new, flux_norm, flux_norm_err
+        """
+        # determine the chunk range
+        if npix_cushion > 0:
+            npix0 = npix_cushion
+            npix1 = -npix_cushion
+        else:
+            npix0 = 0
+            npix1 = len(self.wave)
+
+        # cut spectrum
+        wave_obs = self.wave[npix0:npix1]
+        flux_err = self.flux_err[npix0:npix1]
+        mask = self.mask[npix0:npix1] > 0
+        # remove cosmic rays if cr is True
+        if cr:
+            flux_obs = debad(self.wave, self.flux, nsigma=nsigma, maxiter=maxiter)[npix0:npix1]
+            indcr = (np.abs(flux_obs - self.flux[npix0:npix1]) > 1e-5) * 1
+        else:
+            flux_obs = self.flux[npix0:npix1]
+            indcr = np.zeros(flux_obs.shape, dtype=int)
+
+        # use new wavelength grid if wave_new is specified
+        wave_obsz0 = wave_obs / (1 + rv / SOL_kms)
+        if wave_new is None:
+            wave_new = wave_obs
+        flux_obs = np.interp(wave_new, wave_obsz0, flux_obs)
+        flux_err = np.interp(wave_new, wave_obsz0, flux_err)
+        mask = 1 * (np.interp(wave_new, wave_obsz0, mask) > 0)
+
+        msr = MrsSpec()
+        msr.wave = wave_new
+        msr.flux = flux_obs
+        msr.ivar = flux_err**-2
+        msr.flux_err = flux_err
+        msr.mask = mask
+        msr.indcr = indcr
+        msr.name = self.name
+        msr.isempty = self.isempty
+
+        # other information (optional)
+        msr.info = self.info
+        msr.rv = self.rv
+
+        # time and position info
+        msr.filename = self.filename
+        msr.snr = self.snr
+        msr.exptime = self.exptime
+        msr.lmjm = self.lmjm
+        msr.lmjmlist = self.lmjmlist
+        msr.obsid = self.obsid
+        msr.seeing = self.seeing
+        msr.lamplist = self.lamplist
+        msr.ra = self.ra
+        msr.dec = self.dec
+        msr.fibertype = self.fibertype
+        msr.fibermask = self.fibermask
+        msr.jdbeg = self.jdbeg
+        msr.jdend = self.jdend
+        msr.jdmid = self.jdmid
+        msr.jdltt = self.jdltt
+        msr.hjdmid = self.hjdmid
+
+        # normalize spectrum if norm_type is specified
+        if norm_type is not None:
+            msr.normalize(norm_type=norm_type, niter=niter)
+
+        return msr
 
 
 class MrsEpoch:
@@ -480,7 +577,7 @@ class MrsEpoch:
         """
         if rv is None:
             rv = self.rv
-        return self.wave / (1 + rv * 1000 / const.c.value)
+        return self.wave / (1 + rv / SOL_kms)
 
     def flux_norm_dbd(self, **kwargs):
         """ return fixed flux_norm """
@@ -500,6 +597,54 @@ class MrsEpoch:
 
     def plot_norm_err(self):
         plt.plot(self.wave, self.flux_norm_err)
+
+    def plot_reduce(self):
+        for i in range(self.nspec):
+            msr = self.speclist[i].reduce(norm_type=None)
+            msr.plot()
+
+    def plot_norm_reduce(self):
+        for i in range(self.nspec):
+            msr = self.speclist[i].reduce(norm_type="spline")
+            msr.plot_norm()
+
+    def reduce(self, norm_type="spline", niter=3):
+        """
+
+        Parameters
+        ----------
+        norm_type:
+            type of normalization
+        niter:
+            number of iteration in normalization
+
+        Returns
+        -------
+        mer: MrsEpoch
+            reduced epoch spectrum
+
+        """
+        mer = MrsEpoch([_.reduce() for _ in self.speclist], specnames=self.specnames, norm_type=norm_type, niter=niter)
+        # header info
+        mer.epoch = self.epoch
+        mer.lmjm = self.lmjm
+        mer.snr = self.snr
+        mer.rv = self.rv
+        # time and position info
+        mer.filename = self.filename
+        mer.obsid = self.obsid
+        mer.seeing = self.seeing
+        mer.ra = self.ra
+        mer.dec = self.dec
+        mer.fibertype = self.fibertype
+        mer.fibermask = self.fibermask
+        mer.jdbeg = self.jdbeg
+        mer.jdend = self.jdend
+        mer.jdmid = self.jdmid
+        mer.jdltt = self.jdltt
+        mer.jdmid_delta = self.jdmid_delta
+        mer.hjdmid = self.hjdmid
+        return mer
 
     @property
     def exptime(self):
@@ -775,11 +920,14 @@ def test_meta():
 
 
 if __name__ == "__main__":
+    import os
     os.chdir("/Users/cham/PycharmProjects/laspec/laspec/")
     fp_lrs = "./data/KIC8098300/DR6_low/spec-57287-KP193637N444141V03_sp10-161.fits.gz"
     fp_mrs = "./data/KIC8098300/DR7_medium/med-58625-TD192102N424113K01_sp12-076.fits.gz"
+    import glob
     fps = glob.glob("./data/KIC8098300/DR7_medium/*.fits.gz")
     # read fits
+    from laspec.mrs import MrsFits, MrsSpec, MrsEpoch, MrsSource
     mf = MrsFits(fp_mrs)
 
     # print info
@@ -803,7 +951,7 @@ if __name__ == "__main__":
     # a short way of doing this:
     me = mf.get_one_epoch(84420148)
     print(me)
-    me = mf.get_one_epoch("COADD")
+    me = mf.get_one_epoch("COADD", norm_type="spline")
     print(me, me.snr)
     mes = mf.get_all_epochs(including_coadd=False)
     print(mes)
@@ -811,9 +959,17 @@ if __name__ == "__main__":
     msrc = MrsSource(mes)
     msrc1 = MrsSource.read(fps)
 
+    import matplotlib.pyplot as plt
     fig = plt.figure()
-    plt.plot(me.wave, me.flux_norm)
+    me.plot_norm()
+    me.plot_norm_reduce()
 
+    print(me, me.reduce())
     # test lrs
     ls = MrsSpec.from_lrs(fp_lrs)
     ls.snr
+
+    # test reduce
+    fig = plt.figure()
+    msr = msB.reduce()
+    msr.plot_norm()
