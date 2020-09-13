@@ -608,11 +608,13 @@ class MrsEpoch:
             msr = self.speclist[i].reduce(norm_type="spline")
             msr.plot_norm()
 
-    def reduce(self, norm_type="spline", niter=3):
+    def reduce(self, wave_new_list=None, norm_type="spline", niter=3):
         """
 
         Parameters
         ----------
+        wave_new_list:
+            new wavelength grid list that will be interpolated to
         norm_type:
             type of normalization
         niter:
@@ -624,7 +626,13 @@ class MrsEpoch:
             reduced epoch spectrum
 
         """
-        mer = MrsEpoch([_.reduce() for _ in self.speclist], specnames=self.specnames, norm_type=norm_type, niter=niter)
+        if wave_new_list is None:
+            mer = MrsEpoch([self.speclist[i].reduce() for i in range(self.nspec)],
+                           specnames=self.specnames, norm_type=norm_type, niter=niter)
+        else:
+            assert len(wave_new_list) == self.nspec
+            mer = MrsEpoch([self.speclist[i].reduce(wave_new=wave_new_list[i]) for i in range(self.nspec)],
+                           specnames=self.specnames, norm_type=norm_type, niter=niter)
         # header info
         mer.epoch = self.epoch
         mer.lmjm = self.lmjm
