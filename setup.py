@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='laspec',
-    version='2020.0913.0',
+    version='2020.0914.0',
     author='Bo Zhang',
     author_email='bozhang@nao.cas.cn',
     description='Modules for LAMOST spectra.',  # short description
@@ -28,8 +28,9 @@ setuptools.setup(
                              "data/KIC8098300/*/*",
                              "data/lamost/*",
                              "data/phoenix/*",
-                             "data/songmgb/*"],
+                             "data/songmgb/*",
+                             "stilts/*"],
                   "": ["LICENSE"]
                   },
-    requires=['numpy', 'scipy', 'astropy', 'lmfit']
+    requires=['numpy', 'scipy', 'astropy', 'lmfit', 'joblib']
 )
