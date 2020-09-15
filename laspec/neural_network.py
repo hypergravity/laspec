@@ -104,6 +104,7 @@ class CNN:
                       monitor_reducelronplateau="val_loss", patience_reducelronplateau=2, factor_reducelronplateau=0.33,
                       ):
         """ set callbacks """
+        self.filepath = filepath
         self.callbacks_list = [
             # This callback will interrupt training when we have stopped improving
             keras.callbacks.EarlyStopping(
@@ -138,7 +139,6 @@ class CNN:
               optimizer=Adam, lr=1e-5, loss="binary_crossentropy", metrics=['accuracy'], filepath=None):
         # a quick way to set filepath
         if filepath is not None:
-            self.filepath = filepath
             self.set_callbacks(filepath=filepath)
 
         # split sample
