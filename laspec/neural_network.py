@@ -138,6 +138,7 @@ class CNN:
               optimizer=Adam, lr=1e-5, loss="binary_crossentropy", metrics=['accuracy'], filepath=None):
         # a quick way to set filepath
         if filepath is not None:
+            self.filepath = filepath
             self.set_callbacks(filepath=filepath)
 
         # split sample
