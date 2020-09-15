@@ -16,6 +16,9 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 
+__all__ = ["CNN",]
+
+
 def create_c3nn2_classifier(ninput=100, nfilters=32, kernel_size=4, ndense=(128, 16), pool_size=2, dropout_rate=0.5,
                             noutput=1, activation_hidden="relu", activation_out="sigmoid"):
     """ An easy way of creating a CNN with 3 convolutional layers and 2 dense layers
@@ -132,10 +135,14 @@ class CNN:
         return
 
     def train(self, x, y, sw, test_size=0.2, random_state=0, epochs=200, batch_size=256,
-              optimizer=Adam, lr=1e-5, loss="binary_crossentropy", metrics=['accuracy']):
+              optimizer=Adam, lr=1e-5, loss="binary_crossentropy", metrics=['accuracy'], filepath=None):
+        # a quick way to set filepath
+        if filepath is not None:
+            self.set_callbacks(filepath=filepath)
+
         # split sample
         xtrain, xtest, ytrain, ytest, swtrain, swtest = train_test_split(
-            x, y, sw, test_size=test_size,random_state=random_state)
+            x, y, sw, test_size=test_size, random_state=random_state)
 
         # compile optimizer
         self.model.compile(optimizer=optimizer(lr), loss=loss, metrics=metrics, )
@@ -154,17 +161,21 @@ class CNN:
     @staticmethod
     def set_gpu(device="0"):
         """ set gpu device """
-        old_device = os.environ["CUDA_VISIBLE_DEVICES"]
+        old_device = CNN.get_gpu(verbose=False)
         os.environ["CUDA_VISIBLE_DEVICES"] = device
-        new_device = os.environ["CUDA_VISIBLE_DEVICES"]
+        new_device = CNN.get_gpu(verbose=False)
         print("Changing device {} to {}".format(old_device, new_device))
         return
 
     @staticmethod
-    def get_gpu():
+    def get_gpu(verbose=True):
         """ get gpu device """
-        old_device = os.environ["CUDA_VISIBLE_DEVICES"]
-        print("Current device is {} ".format(old_device))
+        if "CUDA_VISIBLE_DEVICES" in os.environ.keys():
+            old_device = os.environ["CUDA_VISIBLE_DEVICES"]
+        else:
+            old_device = None
+        if verbose:
+            print("Current device is {} ".format(old_device))
         return old_device
 
     def dump(self, filepath):
@@ -190,3 +201,7 @@ class CNN:
     def evaluate(self, *args, **kwargs):
         """ an alias for model.evaluate """
         return self.model.evaluate(*args, **kwargs)
+
+    def summary(self, *args, **kwargs):
+        """ an alias for model.summary """
+        return self.model.summary(*args, **kwargs)
