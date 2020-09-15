@@ -741,7 +741,7 @@ class MrsFits(fits.HDUList):
         """ get one epoch spec from fits """
         try:
             if isinstance(lmjm, str):
-                assert lmjm is "COADD"
+                assert lmjm == "COADD"
             if isinstance(lmjm, np.int):
                 assert lmjm in self.lmjm
         except AssertionError:

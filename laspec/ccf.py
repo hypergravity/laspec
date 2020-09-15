@@ -352,7 +352,7 @@ class RVM:
         # w_mod
         if w_mod is None:
             w_mod = np.ones_like(self.flux_mod, dtype=float)
-        elif w_mod is "lv":
+        elif w_mod == "lv":
             w_mod = self.weight_mod
         # CCF grid
         ccf_grid = np.zeros((self.flux_mod.shape[0], rv_grid.shape[0]))
@@ -401,7 +401,7 @@ class RVM:
         opt = wxcorr_rvgrid_binary(wave_obs, flux_obs, wave_mod1, flux_mod1, wave_mod2, flux_mod2, flux_err,
                                    rv1_init=rv1_init, eta_init=eta_init, eta_lim=eta_lim,
                                    drvmax=drvmax, drvstep=drvstep, w_obs=w_obs,
-                                   method=method)
+                                   method=method, nmc=nmc)
         return opt
 
     def mock_binary_spectrum(self, imod1, imod2, rv1, drv, eta):
@@ -554,7 +554,7 @@ class RVM:
         # opt = minimize(ccf_cost_interp, x0=rv_best, args=(wave_obs, flux_obs, wave_mod, flux_mod[imod_best]), method="Powell")
         # x = np.interp(wave, wave_obs/(1+opt.x/SOL_kms), flux_obs).reshape(1, -1)
         return dict(rv_opt=np.float(opt.x),
-                    rv_err=np.float(opt.hess_inv) if method is "BFGS" else np.nan,
+                    rv_err=np.float(opt.hess_inv) if method == "BFGS" else np.nan,
                     rv_best=rv_best,
                     ccfmax=ccfmax,
                     success=opt.success,

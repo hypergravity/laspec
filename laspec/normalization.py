@@ -212,8 +212,7 @@ def normalize_spectrum_spline(wave, flux, p=1E-6, q=0.5, lu=(-1, 3), binwidth=30
     ind_good = np.isfinite(flux)
     for _ in range(niter):
 
-        flux_smoothed1 = SmoothSpline(wave[ind_good], flux[ind_good],
-                                      p=p, var=var[ind_good])(wave)
+        flux_smoothed1 = SmoothSpline(wave[ind_good], flux[ind_good], p=p, var=var[ind_good])(wave)
         # residual
         res = flux - flux_smoothed1
 
@@ -375,10 +374,10 @@ def normalize_spectrum_general(wave, flux, norm_type="poly",
         spline smoothness, defaults to 1e-6
     """
 
-    if norm_type is "poly":
+    if norm_type == "poly":
         flux_norm, flux_cont = normalize_spectrum_poly(
             wave, flux, deg=deg, lu=lu, q=q, binwidth=binwidth, niter=niter, pw=pw)
-    elif norm_type is "spline":
+    elif norm_type == "spline":
         flux_norm, flux_cont = normalize_spectrum_spline(
             wave, flux, p=p, lu=lu, q=q, binwidth=binwidth, niter=niter)
     else:
