@@ -183,3 +183,10 @@ class CNN:
         cnn.model = load_model(filepath)
         return cnn
 
+    def predict(self, *args, **kwargs):
+        """ an alias for model.predict """
+        return self.model.predict(*args, **kwargs)
+
+    def evaluate(self, *args, **kwargs):
+        """ an alias for model.evaluate """
+        return self.model.evaluate(*args, **kwargs)
