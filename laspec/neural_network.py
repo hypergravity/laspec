@@ -214,10 +214,11 @@ class CNN:
             raise ValueError("@CNN: Bad value for filepath!")
         if verbose:
             print("@CNN: save CNN model to {}, save meta to {}...".format(filepath, filepath + ".cnn"))
-        self.clear_dataset()
         self.model.save(filepath)
         self.model = None
+        self.clear_dataset()
         self.callbacks_list = []
+        self.history = None
         joblib.dump(self, filepath + ".cnn")
         return
 
