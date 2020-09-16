@@ -16,7 +16,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 
-__all__ = ["CNN",]
+__all__ = ["CNN", "Adam", "SGD"]
 
 
 def create_c3nn2_classifier(ninput=100, nfilters=32, kernel_size=4, ndense=(128, 16), pool_size=2, dropout_rate=0.5,
