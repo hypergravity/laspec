@@ -82,6 +82,7 @@ def create_c3nn2_classifier(ninput=100, nfilters=32, kernel_size=4, ndense=(128,
 class CNN:
     model = None
     filepath = ""
+    callbacks_kwargs = {}
     callbacks_list = []
     history = None
 
@@ -100,11 +101,18 @@ class CNN:
         return
 
     def set_callbacks(self, monitor_earlystopping="val_loss", patience_earlystopping=5,
-                      monitor_modelcheckpoint="val_loss", filepath='./data/v12/v12_class_B_cw1e2_sw.hdf5',
+                      monitor_modelcheckpoint="val_loss", filepath="",
                       monitor_reducelronplateau="val_loss", patience_reducelronplateau=2, factor_reducelronplateau=0.33,
                       ):
         """ set callbacks """
         self.filepath = filepath
+        self.callbacks_kwargs = dict(monitor_earlystopping=monitor_earlystopping,
+                                     patience_earlystopping=patience_earlystopping,
+                                     monitor_modelcheckpoint=monitor_modelcheckpoint,
+                                     filepath=filepath,
+                                     monitor_reducelronplateau=monitor_reducelronplateau,
+                                     patience_reducelronplateau=patience_reducelronplateau,
+                                     factor_reducelronplateau=factor_reducelronplateau)
         self.callbacks_list = [
             # This callback will interrupt training when we have stopped improving
             keras.callbacks.EarlyStopping(
@@ -179,10 +187,17 @@ class CNN:
             print("Current device is {} ".format(old_device))
         return old_device
 
-    def dump(self, filepath):
+    def save(self, filepath="", verbose=True):
         """ dump CNN object """
+        if filepath == "" and not self.filepath == "":
+            filepath = self.filepath
+        else:
+            raise ValueError("@CNN: Bad value for filepath!")
+        if verbose:
+            print("@CNN: save CNN model to {} ...".format(filepath))
         self.model.save(filepath)
         self.model = None
+        self.callbacks_list = []
         joblib.dump(self, filepath + ".cnn")
         return
 
@@ -193,6 +208,7 @@ class CNN:
         assert os.path.exists(filepath + ".cnn")
         cnn = joblib.load(filepath + ".cnn")
         cnn.model = load_model(filepath)
+        cnn.set_callbacks(**cnn.callbacks_kwargs)
         return cnn
 
     def predict(self, *args, **kwargs):
