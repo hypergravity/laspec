@@ -1,0 +1,1 @@
+ rsync -e 'ssh -p 2000' -avzr ~/PycharmProjects/laspec cham@159.226.170.52:~/PycharmProjects/
