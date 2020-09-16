@@ -81,6 +81,13 @@ class CNN:
     callbacks_list = []
     history = None
 
+    xtrain = None
+    xtest = None
+    ytrain = None
+    ytest = None
+    swtrain = None
+    swtest = None
+
     def __init__(self, kind="c3nn2", ninput=100, *args):
         if kind == "c3nn2":
             # a fast way of creating c3nn2 classifier
@@ -164,6 +171,14 @@ class CNN:
         # reload the best model
         self.model = keras.models.load_model(self.filepath)
 
+        # store training and test data
+        self.xtrain = xtrain
+        self.xtest = xtest
+        self.ytrain = ytrain
+        self.ytest = ytest
+        self.swtrain = swtrain
+        self.swtest = swtest
+
         return self.history
 
     @staticmethod
@@ -199,6 +214,7 @@ class CNN:
             raise ValueError("@CNN: Bad value for filepath!")
         if verbose:
             print("@CNN: save CNN model to {}, save meta to {}...".format(filepath, filepath + ".cnn"))
+        self.clear_dataset()
         self.model.save(filepath)
         self.model = None
         self.callbacks_list = []
@@ -226,3 +242,16 @@ class CNN:
     def summary(self, *args, **kwargs):
         """ an alias for model.summary """
         return self.model.summary(*args, **kwargs)
+
+    @staticmethod
+    def train_test_split(*arrays, train_size=None, test_size=None, random_state=None):
+        return train_test_split(*arrays, train_size=train_size, test_size=test_size, random_state=random_state)
+
+    def clear_dataset(self):
+        self.xtrain = None
+        self.xtest = None
+        self.ytrain = None
+        self.ytest = None
+        self.swtrain = None
+        self.swtest = None
+        return
