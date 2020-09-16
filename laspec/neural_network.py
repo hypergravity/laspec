@@ -189,7 +189,9 @@ class CNN:
 
     def save(self, filepath="", verbose=True):
         """ dump CNN object """
-        if filepath == "" and not self.filepath == "":
+        if not filepath == "":
+            pass
+        elif filepath == "" and not self.filepath == "":
             filepath = self.filepath
         else:
             raise ValueError("@CNN: Bad value for filepath!")
