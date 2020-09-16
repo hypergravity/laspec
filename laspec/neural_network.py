@@ -158,6 +158,13 @@ class CNN:
         xtrain, xtest, ytrain, ytest, swtrain, swtest = train_test_split(
             x, y, sw, test_size=test_size, random_state=random_state)
         print("@CNN: Split data to training set [{}] and test set [{}]!".format(xtrain.shape[0], xtest.shape[0]))
+        # store training and test data
+        self.xtrain = xtrain
+        self.xtest = xtest
+        self.ytrain = ytrain
+        self.ytest = ytest
+        self.swtrain = swtrain
+        self.swtest = swtest
 
         # compile optimizer
         self.model.compile(optimizer=optimizer, loss=loss, metrics=metrics, )
@@ -170,14 +177,6 @@ class CNN:
 
         # reload the best model
         self.model = keras.models.load_model(self.filepath)
-
-        # store training and test data
-        self.xtrain = xtrain
-        self.xtest = xtest
-        self.ytrain = ytrain
-        self.ytest = ytest
-        self.swtrain = swtrain
-        self.swtest = swtest
 
         return self.history
 
