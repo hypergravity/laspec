@@ -144,17 +144,19 @@ class CNN:
         return
 
     def train(self, x, y, sw, test_size=0.2, random_state=0, epochs=200, batch_size=256,
-              optimizer=Adam, lr=1e-5, loss="binary_crossentropy", metrics=['accuracy'], filepath=None):
+              optimizer=Adam(lr=1e-5), loss="binary_crossentropy", metrics=['accuracy'], filepath=None):
         # a quick way to set filepath
         if filepath is not None:
-            self.set_callbacks(filepath=filepath)
+            self.callbacks_kwargs.update({"filepath": filepath})
+            self.set_callbacks(**self.callbacks_kwargs)
 
         # split sample
         xtrain, xtest, ytrain, ytest, swtrain, swtest = train_test_split(
             x, y, sw, test_size=test_size, random_state=random_state)
+        print("@CNN: Split data to training set [{}] and test set [{}]!".format(xtrain.shape[0], xtest.shape[0]))
 
         # compile optimizer
-        self.model.compile(optimizer=optimizer(lr), loss=loss, metrics=metrics, )
+        self.model.compile(optimizer=optimizer, loss=loss, metrics=metrics, )
 
         # train model
         self.history = self.model.fit(
@@ -171,7 +173,10 @@ class CNN:
     def set_gpu(device=0):
         """ set gpu device """
         old_device = CNN.get_gpu(verbose=False)
-        os.environ["CUDA_VISIBLE_DEVICES"] = "{:d}".format(device)
+        if isinstance(device, int):
+            os.environ["CUDA_VISIBLE_DEVICES"] = "{:d}".format(device)
+        elif isinstance(device, str):
+            os.environ["CUDA_VISIBLE_DEVICES"] = device
         new_device = CNN.get_gpu(verbose=False)
         print("Changing device {} to {}".format(old_device, new_device))
         return
