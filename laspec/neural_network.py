@@ -196,7 +196,7 @@ class CNN:
         else:
             raise ValueError("@CNN: Bad value for filepath!")
         if verbose:
-            print("@CNN: save CNN model to {} ...".format(filepath))
+            print("@CNN: save CNN model to {}, save meta to {}...".format(filepath, filepath + ".cnn"))
         self.model.save(filepath)
         self.model = None
         self.callbacks_list = []
