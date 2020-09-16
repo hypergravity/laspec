@@ -168,10 +168,10 @@ class CNN:
         return self.history
 
     @staticmethod
-    def set_gpu(device="0"):
+    def set_gpu(device=0):
         """ set gpu device """
         old_device = CNN.get_gpu(verbose=False)
-        os.environ["CUDA_VISIBLE_DEVICES"] = device
+        os.environ["CUDA_VISIBLE_DEVICES"] = "{:d}".format(device)
         new_device = CNN.get_gpu(verbose=False)
         print("Changing device {} to {}".format(old_device, new_device))
         return
