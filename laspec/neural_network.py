@@ -1,14 +1,9 @@
 from tensorflow import keras
-from tensorflow.keras.preprocessing import sequence
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout, Activation, BatchNormalization, Input
-from tensorflow.keras.layers import Embedding
-from tensorflow.keras.layers import Conv1D, GlobalMaxPooling1D, MaxPooling1D, Flatten, Conv2D, MaxPooling2D
-from tensorflow.keras.datasets import imdb
-from tensorflow.keras.optimizers import RMSprop, SGD, Adam
-from tensorflow.keras import backend as K
+from tensorflow.keras.layers import Dense, Dropout, BatchNormalization
+from tensorflow.keras.layers import Conv1D, MaxPooling1D, Flatten
+from tensorflow.keras import optimizers
 from tensorflow.keras import losses
-from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.models import load_model
 import os
 import joblib
@@ -16,7 +11,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 
-__all__ = ["CNN", "Adam", "SGD"]
+__all__ = ["CNN", "optimizers"]
 
 
 def create_c3nn2_classifier(ninput=100, nfilters=32, kernel_size=4, ndense=(128, 16), pool_size=2, dropout_rate=0.5,
@@ -145,7 +140,8 @@ class CNN:
         return
 
     def train(self, x, y, sw, test_size=0.2, random_state=0, epochs=200, batch_size=256,
-              optimizer=Adam(lr=1e-5), loss="binary_crossentropy", metrics=['accuracy'], filepath=None):
+              optimizer=optimizers.Adam(lr=1e-5), loss="binary_crossentropy", metrics=['accuracy'],
+              filepath=None):
         # a quick way to set filepath
         if filepath is not None:
             self.callbacks_kwargs.update({"filepath": filepath})
