@@ -90,6 +90,7 @@ class CNN:
         if kind == "c3nn2":
             # a fast way of creating c3nn2 classifier
             self.model = create_c3nn2_classifier(ninput=ninput, *args)
+            print("@CNN: generating fast c3nn2 with ninput={}".format(ninput))
         else:
             raise ValueError("Bad value for *kind*!")
 
