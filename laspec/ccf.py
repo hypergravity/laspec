@@ -505,6 +505,13 @@ class RVM:
             rvr["rv1_rv2_eta_err{}".format(suffix)] = (rvr2["x_pct"][2] - rvr2["x_pct"][0]) / 2
             rvr["status1{}".format(suffix)] = rvr1["status"]
             rvr["status2{}".format(suffix)] = rvr2["status"]
+            # rvr["b_rv1{}".format(suffix)] = rvr2["x_pct"][0]
+            # rvr["b_rv2{}".format(suffix)] = rvr2["x_pct"][1]
+            # rvr["b_eta{}".format(suffix)] = rvr2["x_pct"][2]
+            # rvr["b_rv1_err{}".format(suffix)] = rvr2["x_pct"][0]
+            # rvr["b_rv2_err{}".format(suffix)] = rvr2["x_pct"][1]
+            # rvr["b_eta_err{}".format(suffix)] = rvr2["x_pct"][2]
+
         # if method is "BFGS":
         #     rvr["hess_inv"] = rvr2["hess_inv"]
         return rvr
