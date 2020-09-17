@@ -1,15 +1,14 @@
-from tensorflow import keras
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout, BatchNormalization
-from tensorflow.keras.layers import Conv1D, MaxPooling1D, Flatten
-from tensorflow.keras import optimizers
-from tensorflow.keras import losses
-from tensorflow.keras.models import load_model
 import os
-import joblib
-import numpy as np
-from sklearn.model_selection import train_test_split
 
+import joblib
+import tensorflow as tf
+from sklearn.model_selection import train_test_split
+from tensorflow import keras
+from tensorflow.keras import optimizers
+from tensorflow.keras.layers import Conv1D, MaxPooling1D, Flatten
+from tensorflow.keras.layers import Dense, Dropout, BatchNormalization
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.models import load_model
 
 __all__ = ["CNN", "optimizers"]
 
@@ -38,7 +37,6 @@ def create_c3nn2_classifier(ninput=100, nfilters=32, kernel_size=4, ndense=(128,
         the activation function used in hidden layers
     activation_out:
         the activation function used in output layers
-
 
     Returns
     -------
@@ -254,4 +252,15 @@ class CNN:
         self.ytest = None
         self.swtrain = None
         self.swtest = None
+        return
+
+    @staticmethod
+    def set_memory(frac=0.1):
+        config = tf.compat.v1.ConfigProto(intra_op_parallelism_threads=1,
+                                          inter_op_parallelism_threads=1,
+                                          allow_soft_placement=True)
+        config.gpu_options.per_process_gpu_memory_fraction = frac
+        sess = tf.compat.v1.Session(config=config)
+        # tf.config.threading.set_inter_op_parallelism_threads(1)
+        # tf.config.threading.set_intra_op_parallelism_threads(1)
         return
