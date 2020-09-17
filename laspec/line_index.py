@@ -19,7 +19,7 @@ Modifications
 - Fri Nov 20 10:16:59 2015    reformatting code
 - Sat Jan 16 19:55:57 2016    migrate from spec.py
 - Thu Jul 14 23:57:57 2016    plot every line indice
-- Sat Jul 23 17:35:00 2016    update line_indices.py
+- Sat Jul 23 17:35:00 2016    update line_index.py
 
 Aims
 ----
@@ -27,16 +27,53 @@ Aims
 
 """
 
-from __future__ import division
 import os
 import collections
 import numpy as np
 import matplotlib.pyplot as plt
 from lmfit.models import LinearModel, GaussianModel
 from .read_spectrum import read_spectrum
-# from bopy.spec.read_spectrum import read_spectrum
 
 
+def integrate_spectrum(wave, flux_norm, flux_norm_err=None, mask=None, nmc=50, wave_range=(6554, 6574), suffix="Ha"):
+    if not suffix == "":
+        suffix = "_{}".format(suffix)
+
+    rew = dict()
+    ind_range = np.where(np.logical_and(wave > wave_range[0], wave < wave_range[1]))[0]
+    npix_range = len(ind_range)
+    if wave[0] < wave_range[0] < wave_range[1] < wave[-1] and npix_range >= 3:
+        # good data
+        wave_diff = np.diff(wave[ind_range])
+        wave_diff = np.hstack((wave_diff[0], (wave_diff[1:] + wave_diff[:-1]) / 2, wave_diff[-1]))
+        rew["EW{}".format(suffix)] = np.sum(flux_norm[ind_range] * wave_diff) / np.sum(wave_diff)
+
+        if flux_norm_err is not None:
+            # evaluate pct
+            noise = np.random.normal(flux_norm[ind_range], flux_norm_err[ind_range], (nmc, npix_range))
+            rew["EW16{}".format(suffix)], rew["EW50{}".format(suffix)], rew["EW84{}".format(suffix)] = \
+                np.percentile(np.sum(noise * wave_diff, axis=1) / np.sum(wave_diff), [16, 50, 84])
+        else:
+            rew["EW16{}".format(suffix)] = np.nan
+            rew["EW50{}".format(suffix)] = np.nan
+            rew["EW84{}".format(suffix)] = np.nan
+
+        if mask is not None:
+            rew["EWnbad{}".format(suffix)] = np.sum(mask[ind_range] > 0)
+        else:
+            rew["EWnbad{}".format(suffix)] = 0
+        return rew
+    else:
+        # bad data
+        rew["EW{}".format(suffix)] = np.nan
+        rew["EW16{}".format(suffix)] = np.nan
+        rew["EW50{}".format(suffix)] = np.nan
+        rew["EW84{}".format(suffix)] = np.nan
+        rew["EWnbad{}".format(suffix)] = 0
+        return rew
+
+
+# old code below ----
 # should consider whether to maintain filepath arg
 # since the plot function could be replaced using recover
 def measure_line_index(wave,
