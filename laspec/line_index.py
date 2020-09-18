@@ -46,13 +46,13 @@ def integrate_spectrum(wave, flux_norm, flux_norm_err=None, mask=None, nmc=50, w
         # good data
         wave_diff = np.diff(wave[ind_range])
         wave_diff = np.hstack((wave_diff[0], (wave_diff[1:] + wave_diff[:-1]) / 2, wave_diff[-1]))
-        rew["EW{}".format(suffix)] = np.sum(flux_norm[ind_range] * wave_diff)
+        rew["EW{}".format(suffix)] = np.sum((1 - flux_norm[ind_range]) * wave_diff)
 
         if flux_norm_err is not None:
             # evaluate pct
             noise = np.random.normal(flux_norm[ind_range], flux_norm_err[ind_range], (nmc, npix_range))
             rew["EW16{}".format(suffix)], rew["EW50{}".format(suffix)], rew["EW84{}".format(suffix)] = \
-                np.percentile(np.sum(noise * wave_diff, axis=1), [16, 50, 84])
+                np.percentile(np.sum((1 - noise) * wave_diff, axis=1), [16, 50, 84])
         else:
             rew["EW16{}".format(suffix)] = np.nan
             rew["EW50{}".format(suffix)] = np.nan
