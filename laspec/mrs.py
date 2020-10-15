@@ -501,37 +501,9 @@ class MrsEpoch:
         self.specnames = specnames
 
         # store spectrum data
-        self.snr = []
-        for i_spec in range(self.nspec):
-            # get info
-            self.snr.append(self.speclist[i_spec].snr)
-            # normalize if necessary
-            if norm_type in ("poly", "spline") and not self.speclist[i_spec].isnormalized:
-                self.speclist[i_spec].normalize(**self.norm_kwargs)
-            # store each spec
-            self.__setattr__("wave_{}".format(specnames[i_spec]), self.speclist[i_spec].wave)
-            self.__setattr__("flux_{}".format(specnames[i_spec]), self.speclist[i_spec].flux)
-            self.__setattr__("ivar_{}".format(specnames[i_spec]), self.speclist[i_spec].ivar)
-            self.__setattr__("mask_{}".format(specnames[i_spec]), self.speclist[i_spec].mask)
-            self.__setattr__("flux_err_{}".format(specnames[i_spec]), self.speclist[i_spec].flux_err)
-
-            self.__setattr__("flux_norm_{}".format(specnames[i_spec]), self.speclist[i_spec].flux_norm)
-            self.__setattr__("ivar_norm_{}".format(specnames[i_spec]), self.speclist[i_spec].ivar_norm)
-            self.__setattr__("flux_cont_{}".format(specnames[i_spec]), self.speclist[i_spec].flux_cont)
-            self.__setattr__("flux_norm_err_{}".format(specnames[i_spec]), self.speclist[i_spec].flux_norm_err)
-
-        # concatenate into one epoch spec *
-        for i_spec in range(self.nspec):
-            self.wave = np.append(self.wave, self.speclist[i_spec].wave)
-            self.flux = np.append(self.flux, self.speclist[i_spec].flux)
-            self.ivar = np.append(self.ivar, self.speclist[i_spec].ivar)
-            self.mask = np.append(self.mask, self.speclist[i_spec].mask)
-            self.flux_err = np.append(self.flux_err, self.speclist[i_spec].flux_err)
-
-            self.flux_norm = np.append(self.flux_norm, self.speclist[i_spec].flux_norm)
-            self.ivar_norm = np.append(self.ivar_norm, self.speclist[i_spec].ivar_norm)
-            self.flux_cont = np.append(self.flux_cont, self.speclist[i_spec].flux_cont)
-            self.flux_norm_err = np.append(self.flux_norm_err, self.speclist[i_spec].flux_norm_err)
+        self.snr = [spec.snr for spec in self.speclist]
+        # normalize spectra
+        self.normalize(llim=0., norm_type=norm_type, **norm_kwargs)
 
         return
 
@@ -550,6 +522,18 @@ class MrsEpoch:
         for i_spec in range(self.nspec):
             self.speclist[i_spec].normalize(llim=llim, norm_type=norm_type, **self.norm_kwargs)
 
+            # store each spec
+            self.__setattr__("wave_{}".format(self.specnames[i_spec]), self.speclist[i_spec].wave)
+            self.__setattr__("flux_{}".format(self.specnames[i_spec]), self.speclist[i_spec].flux)
+            self.__setattr__("ivar_{}".format(self.specnames[i_spec]), self.speclist[i_spec].ivar)
+            self.__setattr__("mask_{}".format(self.specnames[i_spec]), self.speclist[i_spec].mask)
+            self.__setattr__("flux_err_{}".format(self.specnames[i_spec]), self.speclist[i_spec].flux_err)
+
+            self.__setattr__("flux_norm_{}".format(self.specnames[i_spec]), self.speclist[i_spec].flux_norm)
+            self.__setattr__("ivar_norm_{}".format(self.specnames[i_spec]), self.speclist[i_spec].ivar_norm)
+            self.__setattr__("flux_cont_{}".format(self.specnames[i_spec]), self.speclist[i_spec].flux_cont)
+            self.__setattr__("flux_norm_err_{}".format(self.specnames[i_spec]), self.speclist[i_spec].flux_norm_err)
+
         self.flux_norm = np.array([], dtype=np.float)
         self.ivar_norm = np.array([], dtype=np.float)
         self.flux_cont = np.array([], dtype=np.float)
@@ -558,10 +542,12 @@ class MrsEpoch:
         # concatenate into one epoch spec
         for i_spec in range(self.nspec):
             if not self.speclist[i_spec].isempty:
-                # self.wave = np.append(self.wave, self.speclist[i_spec].wave)
-                # self.flux = np.append(self.flux, self.speclist[i_spec].flux)
-                # self.ivar = np.append(self.ivar, self.speclist[i_spec].ivar)
-                # self.mask = np.append(self.mask, self.speclist[i_spec].mask)
+                self.wave = np.append(self.wave, self.speclist[i_spec].wave)
+                self.flux = np.append(self.flux, self.speclist[i_spec].flux)
+                self.ivar = np.append(self.ivar, self.speclist[i_spec].ivar)
+                self.mask = np.append(self.mask, self.speclist[i_spec].mask)
+                self.flux_err = np.append(self.flux_err, self.speclist[i_spec].flux_err)
+
                 self.flux_norm = np.append(self.flux_norm, self.speclist[i_spec].flux_norm)
                 self.ivar_norm = np.append(self.ivar_norm, self.speclist[i_spec].ivar_norm)
                 self.flux_cont = np.append(self.flux_cont, self.speclist[i_spec].flux_cont)
