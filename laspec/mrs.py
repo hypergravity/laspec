@@ -534,6 +534,8 @@ class MrsEpoch:
             self.__setattr__("flux_cont_{}".format(self.specnames[i_spec]), self.speclist[i_spec].flux_cont)
             self.__setattr__("flux_norm_err_{}".format(self.specnames[i_spec]), self.speclist[i_spec].flux_norm_err)
 
+        # combined attributes
+        self.wave = np.array([], dtype=np.float)
         self.flux_norm = np.array([], dtype=np.float)
         self.ivar_norm = np.array([], dtype=np.float)
         self.flux_cont = np.array([], dtype=np.float)
@@ -543,7 +545,7 @@ class MrsEpoch:
         for i_spec in range(self.nspec):
             if not self.speclist[i_spec].isempty:
                 # wavelength duplicated
-                # self.wave = np.append(self.wave, self.speclist[i_spec].wave)
+                self.wave = np.append(self.wave, self.speclist[i_spec].wave)
                 self.flux = np.append(self.flux, self.speclist[i_spec].flux)
                 self.ivar = np.append(self.ivar, self.speclist[i_spec].ivar)
                 self.mask = np.append(self.mask, self.speclist[i_spec].mask)
