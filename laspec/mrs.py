@@ -542,7 +542,8 @@ class MrsEpoch:
         # concatenate into one epoch spec
         for i_spec in range(self.nspec):
             if not self.speclist[i_spec].isempty:
-                self.wave = np.append(self.wave, self.speclist[i_spec].wave)
+                # wavelength duplicated
+                # self.wave = np.append(self.wave, self.speclist[i_spec].wave)
                 self.flux = np.append(self.flux, self.speclist[i_spec].flux)
                 self.ivar = np.append(self.ivar, self.speclist[i_spec].ivar)
                 self.mask = np.append(self.mask, self.speclist[i_spec].mask)
