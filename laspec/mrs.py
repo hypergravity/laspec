@@ -536,6 +536,11 @@ class MrsEpoch:
 
         # combined attributes
         self.wave = np.array([], dtype=np.float)
+        self.flux = np.array([], dtype=np.float)
+        self.ivar = np.array([], dtype=np.float)
+        self.mask = np.array([], dtype=np.int)
+        self.flux_err = np.array([], dtype=np.float)
+
         self.flux_norm = np.array([], dtype=np.float)
         self.ivar_norm = np.array([], dtype=np.float)
         self.flux_cont = np.array([], dtype=np.float)
@@ -544,7 +549,6 @@ class MrsEpoch:
         # concatenate into one epoch spec
         for i_spec in range(self.nspec):
             if not self.speclist[i_spec].isempty:
-                # wavelength duplicated
                 self.wave = np.append(self.wave, self.speclist[i_spec].wave)
                 self.flux = np.append(self.flux, self.speclist[i_spec].flux)
                 self.ivar = np.append(self.ivar, self.speclist[i_spec].ivar)
@@ -744,15 +748,15 @@ class MrsFits(fits.HDUList):
             kR = "R-{}".format(lmjm)
         # read B & R band spec
         if kB in self.hdunames:
-            msB = MrsSpec.from_hdu(self[kB], norm_type=norm_type, **norm_kwargs)
+            msB = MrsSpec.from_hdu(self[kB], norm_type=None, **norm_kwargs)
         else:
-            msB = MrsSpec(norm_type=norm_type, **norm_kwargs)
+            msB = MrsSpec(norm_type=None, **norm_kwargs)
         if kR in self.hdunames:
-            msR = MrsSpec.from_hdu(self[kR], norm_type=norm_type, **norm_kwargs)
+            msR = MrsSpec.from_hdu(self[kR], norm_type=None, **norm_kwargs)
         else:
-            msR = MrsSpec(norm_type=norm_type, **norm_kwargs)
+            msR = MrsSpec(norm_type=None, **norm_kwargs)
         # set epoch info
-        me = MrsEpoch((msB, msR), epoch=lmjm)
+        me = MrsEpoch((msB, msR), epoch=lmjm, norm_type=norm_type, **norm_kwargs)
         # set additional infomation
         me.filename = self[0].header["FILENAME"]
         me.obsid = self[0].header["OBSID"]
