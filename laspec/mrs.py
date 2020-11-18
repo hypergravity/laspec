@@ -324,8 +324,8 @@ class MrsSpec:
     def plot(self):
         plt.plot(self.wave, self.flux)
 
-    def plot_norm(self):
-        plt.plot(self.wave, self.flux_norm)
+    def plot_norm(self, shift=0):
+        plt.plot(self.wave, self.flux_norm + shift)
 
     def plot_cont(self):
         plt.plot(self.wave, self.flux_cont)
@@ -333,8 +333,8 @@ class MrsSpec:
     def plot_err(self):
         plt.plot(self.wave, self.flux_err)
 
-    def plot_norm_err(self):
-        plt.plot(self.wave, self.flux_norm_err)
+    def plot_norm_err(self, shift=0):
+        plt.plot(self.wave, self.flux_norm_err + shift)
 
     def reduce(self, wave_new=None, rv=0, npix_cushion=50, cr=True, nsigma=(4, 8), maxiter=5,
                norm_type="spline", niter=3):
@@ -579,8 +579,8 @@ class MrsEpoch:
     def plot(self):
         plt.plot(self.wave, self.flux)
 
-    def plot_norm(self):
-        plt.plot(self.wave, self.flux_norm)
+    def plot_norm(self, shift=0):
+        plt.plot(self.wave, self.flux_norm + shift)
 
     def plot_cont(self):
         plt.plot(self.wave, self.flux_cont)
@@ -588,18 +588,18 @@ class MrsEpoch:
     def plot_err(self):
         plt.plot(self.wave, self.flux_err)
 
-    def plot_norm_err(self):
-        plt.plot(self.wave, self.flux_norm_err)
+    def plot_norm_err(self, shift=0):
+        plt.plot(self.wave, self.flux_norm_err + shift)
 
     def plot_reduce(self):
         for i in range(self.nspec):
             msr = self.speclist[i].reduce(norm_type=None)
             msr.plot()
 
-    def plot_norm_reduce(self):
+    def plot_norm_reduce(self, shift=0):
         for i in range(self.nspec):
             msr = self.speclist[i].reduce(norm_type="spline")
-            msr.plot_norm()
+            msr.plot_norm(shift=shift)
 
     def reduce(self, wave_new_list=None, norm_type="spline", niter=3):
         """
