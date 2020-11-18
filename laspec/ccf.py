@@ -338,6 +338,29 @@ class RVM:
             print("@RVM: calculating local variance ...")
             self.weight_mod = calculate_local_variance_multi(self.flux_mod, npix_lv=npix_lv, n_jobs=-1)
 
+    def __repr__(self):
+        return "<RVM [nmod={}] [{:.1f}<lambda<{:.1f}]>".format(self.nmod, self.wave_mod[0], self.wave_mod[-1])
+
+    def shrink(self, nmod=0.5, method="top"):
+        # determine number of models
+        if 0 < nmod < 1:
+            assert self.nmod * nmod >= 1
+            nmod = np.int(self.nmod*nmod)
+        elif nmod > 1:
+            nmod = np.int(nmod)
+        else:
+            raise ValueError("Invalid nmod value: {}".format(nmod))
+        # determine ind of new models
+        assert method in ["top", "bottom", "random"]
+        if method == "top":
+            ind = np.arange(self.nmod)[:nmod]
+        elif method == "bottom":
+            ind = np.arange(self.nmod)[-nmod:]
+        elif method == "random":
+            ind = np.random.choice(np.arange(self.nmod), size=nmod, replace=False)
+        # construct new RVM
+        return RVM(self.pmod[ind, :], self.wave_mod, self.flux_mod[ind, :], npix_lv=self.npix_lv)
+
     def measure(self, wave_obs, flux_obs, flux_err=None, w_mod=None, w_obs=None, sinebell_idx=0.,
                 rv_grid=np.linspace(-600, 600, 100), flux_bounds=(0, 3.), nmc=100, method="BFGS"):
         """ measure RV """
