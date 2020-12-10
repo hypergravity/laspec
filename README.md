@@ -3,8 +3,32 @@
 
 Modules for basic operations on **LA**MOST **spec**tra, etc.
 
+## citation
 If you make use of this package in your research, please cite the paper below:
 - [Deriving the Stellar Labels of LAMOST Spectra with the Stellar LAbel Machine (SLAM)](https://ui.adsabs.harvard.edu/abs/2020ApJS..246....9Z/abstract)
+
+bibtex:
+```
+@ARTICLE{2020ApJS..246....9Z,
+       author = {{Zhang}, Bo and {Liu}, Chao and {Deng}, Li-Cai},
+        title = "{Deriving the Stellar Labels of LAMOST Spectra with the Stellar LAbel Machine (SLAM)}",
+      journal = {\apjs},
+     keywords = {Astronomical methods, Astronomy data analysis, Bayesian statistics, Stellar abundances, Chemical abundances, Fundamental parameters of stars, Catalogs, Surveys, 1043, 1858, 1900, 1577, 224, 555, 205, 1671, Astrophysics - Solar and Stellar Astrophysics, Astrophysics - Astrophysics of Galaxies, Astrophysics - Instrumentation and Methods for Astrophysics},
+         year = 2020,
+        month = jan,
+       volume = {246},
+       number = {1},
+          eid = {9},
+        pages = {9},
+          doi = {10.3847/1538-4365/ab55ef},
+archivePrefix = {arXiv},
+       eprint = {1908.08677},
+ primaryClass = {astro-ph.SR},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2020ApJS..246....9Z},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+```
+
 ## author
 Bo Zhang, [bozhang@nao.cas.cn](mailto:bozhang@nao.cas.cn)
 
