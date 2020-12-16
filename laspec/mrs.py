@@ -33,7 +33,7 @@ def eval_ltt(ra=180., dec=40., jd=2456326.4583333, site=None):
     # time
     times = Time(jd, format='jd', scale='utc', location=site)
     # evaluate ltt
-    ltt_helio = times.light_travel_time(ip_peg, 'heliocentric')
+    ltt_helio = times.light_travel_time(ip_peg,)
     return ltt_helio.jd
 
 
@@ -127,7 +127,7 @@ class MrsSpec:
     jdend = 0
     jdmid = 0
     jdltt = 0.
-    hjdmid = 0.
+    bjdmid = 0.
 
     # status
     isempty = True
@@ -155,7 +155,7 @@ class MrsSpec:
                     jdend=self.jdend,
                     jdmid=self.jdmid,
                     jdltt=self.jdltt,
-                    hjdmid=self.hjdmid,
+                    bjdmid=self.bjdmid,
                     )
 
     def __init__(self, wave=None, flux=None, ivar=None, mask=None, info={}, norm_type=None, **norm_kwargs):
@@ -422,7 +422,7 @@ class MrsSpec:
         msr.jdend = self.jdend
         msr.jdmid = self.jdmid
         msr.jdltt = self.jdltt
-        msr.hjdmid = self.hjdmid
+        msr.bjdmid = self.bjdmid
 
         # normalize spectrum if norm_type is specified
         if norm_type is not None:
@@ -455,7 +455,7 @@ class MrsEpoch:
     jdmid = 0.
     jdltt = 0.
     jdmid_delta = 0.
-    hjdmid = 0.
+    bjdmid = 0.
 
     wave = np.array([], dtype=np.float)
     flux = np.array([], dtype=np.float)
@@ -644,7 +644,7 @@ class MrsEpoch:
         mer.jdmid = self.jdmid
         mer.jdltt = self.jdltt
         mer.jdmid_delta = self.jdmid_delta
-        mer.hjdmid = self.hjdmid
+        mer.bjdmid = self.bjdmid
         return mer
 
     @property
@@ -772,13 +772,13 @@ class MrsFits(fits.HDUList):
                 me.jdend = datetime2jd(self[kB].header["DATE-END"], format="isot", tz_correction=8)
                 me.jdmid = (me.jdbeg + me.jdend) / 2.
                 me.jdltt = eval_ltt(me.ra, me.dec, me.jdmid)
-                me.hjdmid = me.jdmid + me.jdltt
+                me.bjdmid = me.jdmid + me.jdltt
             elif kB not in self.hdunames and kR in self.hdunames:
                 me.jdbeg = datetime2jd(self[kR].header["DATE-BEG"], format="isot", tz_correction=8)
                 me.jdend = datetime2jd(self[kR].header["DATE-END"], format="isot", tz_correction=8)
                 me.jdmid = (me.jdbeg + me.jdend) / 2.
                 me.jdltt = eval_ltt(me.ra, me.dec, me.jdmid)
-                me.hjdmid = me.jdmid + me.jdltt
+                me.bjdmid = me.jdmid + me.jdltt
             elif kB in self.hdunames and kR in self.hdunames:
                 # both records
                 jdbeg_B = datetime2jd(self[kB].header["DATE-BEG"], format="isot", tz_correction=8)
@@ -793,7 +793,7 @@ class MrsFits(fits.HDUList):
                 me.jdmid = jdmid_B
                 me.jdltt = eval_ltt(me.ra, me.dec, me.jdmid)
                 me.jdmid_delta = jdmid_delta
-                me.hjdmid = me.jdmid + me.jdltt
+                me.bjdmid = me.jdmid + me.jdltt
         except Exception as ex:
             print("Keywords DATE-* not found from file {}!".format(me.filename))
 
@@ -896,8 +896,8 @@ class MrsSource(np.ndarray):
         return np.array([_.__getattribute__("jdmid") for _ in self])
 
     @property
-    def hjdmid(self):
-        return np.array([_.__getattribute__("hjdmid") for _ in self])
+    def bjdmid(self):
+        return np.array([_.__getattribute__("bjdmid") for _ in self])
 
     @property
     def jdltt(self):
