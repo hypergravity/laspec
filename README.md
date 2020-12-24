@@ -40,6 +40,12 @@ Bo Zhang, [bozhang@nao.cas.cn](mailto:bozhang@nao.cas.cn)
 - for the latest **stable** version: `pip install -U laspec`
 - for the latest **github** version: `pip install -U git+git://github.com/hypergravity/laspec`
 
+## doumentation
+
+A documentation on ReadTheDoc will be updated soon ...
+
+Link to the doc: [https://laspec.readthedocs.io/en/latest/](https://laspec.readthedocs.io/en/latest/)
+
 ## module structure
 - **binning** \
     module for rebinning spectra
