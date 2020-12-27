@@ -601,7 +601,7 @@ class MrsEpoch:
             msr = self.speclist[i].reduce(norm_type="spline")
             msr.plot_norm(shift=shift)
 
-    def reduce(self, wave_new_list=None, norm_type="spline", niter=3):
+    def reduce(self, wave_new_list=None, norm_type="spline", niter=3, **rdc_kwargs):
         """
 
         Parameters
@@ -620,11 +620,11 @@ class MrsEpoch:
 
         """
         if wave_new_list is None:
-            mer = MrsEpoch([self.speclist[i].reduce() for i in range(self.nspec)],
+            mer = MrsEpoch([self.speclist[i].reduce(**rdc_kwargs) for i in range(self.nspec)],
                            specnames=self.specnames, norm_type=norm_type, niter=niter)
         else:
             assert len(wave_new_list) == self.nspec
-            mer = MrsEpoch([self.speclist[i].reduce(wave_new=wave_new_list[i]) for i in range(self.nspec)],
+            mer = MrsEpoch([self.speclist[i].reduce(wave_new=wave_new_list[i], **rdc_kwargs) for i in range(self.nspec)],
                            specnames=self.specnames, norm_type=norm_type, niter=niter)
         # header info
         mer.epoch = self.epoch
