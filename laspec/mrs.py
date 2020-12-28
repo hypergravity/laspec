@@ -222,6 +222,8 @@ class MrsSpec:
             return MrsSpec()
         else:
             spec = Table(hdu.data)
+            if hdu.data is None:
+                return MrsSpec()
             spec.sort("LOGLAM")
             if "COADD" in hdu.name:
                 # it's coadded spec
@@ -756,7 +758,7 @@ class MrsFits(fits.HDUList):
         else:
             msR = MrsSpec(norm_type=None, **norm_kwargs)
         # set epoch info
-        me = MrsEpoch((msB, msR), epoch=lmjm, norm_type=norm_type, **norm_kwargs)
+        me = MrsEpoch((msB, msR), specnames=("B", "R"), epoch=lmjm, norm_type=norm_type, **norm_kwargs)
         # set additional infomation
         me.filename = self[0].header["FILENAME"]
         me.obsid = self[0].header["OBSID"]
