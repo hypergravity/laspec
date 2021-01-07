@@ -259,7 +259,7 @@ class MrsSpec:
         return ms
 
     @staticmethod
-    def from_lrs(fp_lrs, norm_type="poly", **norm_kwargs):
+    def from_lrs(fp_lrs, norm_type="spline", **norm_kwargs):
         """ read from LRS fits file """
         hl = fits.open(fp_lrs)
         hdr = hl[0].header
