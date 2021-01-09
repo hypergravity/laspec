@@ -15,12 +15,17 @@ def set_yminor(b=True):
     return
 
 
-def set_cham(fontsize=15, xminor=True, yminor=True):
-    rc('text', usetex=True)
-    rcParams["mathtext.fontset"] = "cm"
-    rcParams['text.latex.preamble'] = r"\usepackage{amsmath}"
+def set_cham(fontsize=15, xminor=True, yminor=True, latex=True):
+
+    if latex:
+        rc('text', usetex=True)
+        rcParams["mathtext.fontset"] = "cm"
+        rcParams['text.latex.preamble'] = r"\usepackage{amsmath}"
+
+    # font size
     rcParams["font.size"] = fontsize
 
+    # xticks
     rcParams["xtick.top"] = True  ## draw ticks on the top side
     rcParams["xtick.bottom"] = True  ## draw ticks on the bottom side
     rcParams["xtick.major.size"] = 4  ## major tick size in points
@@ -28,6 +33,7 @@ def set_cham(fontsize=15, xminor=True, yminor=True):
     rcParams["xtick.major.width"] = 1.2  ## major tick width in points
     rcParams["xtick.direction"] = "in"  ## direction: {in, out, inout}
 
+    # yticks
     rcParams["ytick.left"] = True  ## draw ticks on the left side
     rcParams["ytick.right"] = True  ## draw ticks on the right side
     rcParams["ytick.major.size"] = 4  ## major tick size in points
