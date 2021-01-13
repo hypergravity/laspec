@@ -344,7 +344,7 @@ def normalize_spectra_block(wave, flux_block, norm_range, dwave,
 #     return ind_stable
 
 
-def normalize_spectrum_general(wave, flux, norm_type="poly",
+def normalize_spectrum_general(wave, flux, norm_type="spline",
                                deg=4, lu=(-1, 4), q=0.5, binwidth=100., niter=3, pw=1., p=1e-6):
     """ poly / spline normalization
     spline --> normalize_spectrum_iter: dict(p=1e-6, q=0.5, lu=(-2, 3), binwidth=100., niter=3)
@@ -352,24 +352,24 @@ def normalize_spectrum_general(wave, flux, norm_type="poly",
 
     Parameters
     ----------
-    wave: numpy.array
+    wave: array
         wavelength
-    flux: numpy.array
+    flux: array
         flux
     norm_type: str
-        a tuple consisting (wave_start, wave_stop)
-    deg:
+        "spline" / "poly"
+    deg: int
         poly deg
-    lu:
-        defaults to (-1, 4)
+    lu: tuple
+        defaults to (-1, 4), the data below 1 sigma and above 4 sigma will be excluded
     q: float
-        percentile default is 0.5
+        percentile, default is 0.5,
     binwidth:
-        bin width / A, detault to 100.
+        bin width, detault to 100.
     niter:
         number of iterations, detaults to 3
     pw:
-        power of residuals, defaults to 1.
+        power of residuals, defaults to 1, only used when norm_type=="poly"
     p:
         spline smoothness, defaults to 1e-6
     """
