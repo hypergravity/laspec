@@ -1,28 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-
-Author
-------
-Bo Zhang
-
-Email
------
-bozhang@nao.cas.cn
-
-Created on
-----------
-- Sat Sep 03 12:00:00 2016
-
-Modifications
--------------
-- Sat Sep 03 12:00:00 2016
-
-Aims
-----
-- normalization
-
-"""
-
 import numpy as np
 from scipy.interpolate import interp1d
 from joblib import Parallel, delayed
@@ -80,6 +56,7 @@ def normalize_spectrum(wave, flux, norm_range, dwave,
     >>>     rsv_frac=2.0)
 
     """
+    print("This function is DEPRECATED, use *normalize_spectrum_general* instead!")
     if np.sum(np.logical_and(np.isfinite(flux), flux > 0)) <= 100:
         return normalize_spectrum_null(wave)
 
@@ -150,8 +127,7 @@ def normalize_spectrum(wave, flux, norm_range, dwave,
     return flux_norm, flux_smoothed2
 
 
-def normalize_spectrum_spline(wave, flux, p=1E-6, q=0.5, lu=(-1, 3), binwidth=30,
-                              niter=5):
+def normalize_spectrum_spline(wave, flux, p=1E-6, q=0.5, lu=(-1, 3), binwidth=30, niter=3):
     """ A double smooth normalization of a spectrum
 
     Converted from Chao Liu's normSpectrum.m
@@ -185,7 +161,7 @@ def normalize_spectrum_spline(wave, flux, p=1E-6, q=0.5, lu=(-1, 3), binwidth=30
     Example
     -------
     >>> fnorm, fcont=normalize_spectrum_spline(
-    >>>     wave, flux, p=1e-6, q=0.6, binwidth=200, lu=(-1,5),niter=niter)
+    >>>     wave, flux, p=1e-6, q=0.6, binwidth=200, lu=(-1,5), niter=niter)
 
     """
     if np.sum(np.logical_and(np.isfinite(flux), flux > 0)) <= 10:
@@ -292,6 +268,7 @@ def normalize_spectra_block(wave, flux_block, norm_range, dwave,
         continuum flux
 
     """
+    print("This function is DEPRECATED, use *normalize_spectrum_general* instead!")
     if ivar_block is None:
         ivar_block = np.ones_like(flux_block)
 
@@ -315,39 +292,10 @@ def normalize_spectra_block(wave, flux_block, norm_range, dwave,
     return np.array(flux_norm_block), np.array(flux_cont_block)
 
 
-# def get_stable_pixels(pixel_disp, wave_arm=100, frac=0.20):
-#     """
-#
-#     Parameters
-#     ----------
-#     pixel_disp: np.ndarray
-#         dispersion array
-#     wave_arm: int
-#         the arm length in terms of pixels
-#     frac: float
-#         the reserved fraction, between 0.00 and 1.00
-#
-#     Returns
-#     -------
-#     ind_stable
-#
-#     """
-#     ind_stable = np.zeros_like(pixel_disp, dtype=np.bool)
-#
-#     for i in range(len(ind_stable)):
-#         edge_l = np.max([i - wave_arm, 0])
-#         edge_r = np.min([i + wave_arm, len(pixel_disp)])
-#         if pixel_disp[i] <= \
-#                 np.percentile(pixel_disp[edge_l:edge_r], frac * 100.):
-#             ind_stable[i] = True
-#
-#     return ind_stable
-
-
 def normalize_spectrum_general(wave, flux, norm_type="spline",
                                deg=4, lu=(-1, 4), q=0.5, binwidth=100., niter=3, pw=1., p=1e-6):
     """ poly / spline normalization
-    spline --> normalize_spectrum_iter: dict(p=1e-6, q=0.5, lu=(-2, 3), binwidth=100., niter=3)
+    spline --> normalize_spectrum_spline: dict(p=1e-6, q=0.5, lu=(-2, 3), binwidth=100., niter=3)
     poly   --> normalize_spectrum_poly: (deg=4, lu=(-2, 3), q=0.5, binwidth=100., niter=3, pw=1.)
 
     Parameters
@@ -461,42 +409,6 @@ class PolySmooth:
 def cost_poly(p, x, y, pw=2.):
     res = np.square(np.polyval(p, x) - y)
     return np.sum(res[np.isfinite(res)] ** (pw / 2))
-
-
-# def test_normaliza_spectra_block():
-#     import os
-#
-#     os.chdir('/pool/projects/TheKeenan/data/TheCannonData')
-#
-#     from TheCannon import apogee
-#     import matplotlib.pyplot as plt
-#
-#     tr_ID, wl, tr_flux, tr_ivar = apogee.load_spectra("example_DR10/Data")
-#     tr_label = apogee.load_labels("example_DR10/reference_labels.csv")
-#
-#     test_ID = tr_ID
-#     test_flux = tr_flux
-#     test_ivar = tr_ivar
-#
-#     r = normalize_spectra_block(wl, tr_flux, (15200., 16900.), 30., q=0.9,
-#                                 rsv_frac=0.5,
-#                                 p=(1E-10, 1E-10), ivar_block=tr_ivar,
-#                                 n_jobs=10, verbose=10)
-#
-#     flux_norm, flux_cont = r
-#     flux_norm = np.array(flux_norm)
-#     flux_cont = np.array(flux_cont)
-#     flux_ivar = tr_ivar * flux_cont ** 2
-#
-#     fig = plt.figure()
-#     ax = fig.add_subplot(111)
-#     for i in range(10, 20):
-#         ofst = i * 0.5
-#         ax.plot(wl, tr_flux[i] + ofst, 'b')
-#         ax.plot(wl, flux_cont[i] + ofst, 'r')
-#     fig.tight_layout()
-#     fig.savefig(
-#         '/pool/projects/TheKeenan/data/TheCannonData/test_norm_spec_1.pdf')
 
 
 if __name__ == '__main__':
