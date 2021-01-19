@@ -1,7 +1,7 @@
 ## laspec
 [![DOI](https://zenodo.org/badge/202476664.svg)](https://zenodo.org/badge/latestdoi/202476664) ![Upload Python Package](https://github.com/hypergravity/laspec/workflows/Upload%20Python%20Package/badge.svg)
 
-Modules for basic operations on **LA**MOST **spec**tra, etc.
+A toolkit for LAMOST spectra.
 
 ## citation
 If you make use of this package in your research, please cite the paper below:
