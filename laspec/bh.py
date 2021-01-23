@@ -3,6 +3,12 @@ import sympy
 import astropy.constants as const
 import astropy.units as u
 
+"""
+This module is dedicated to Black-Hole searching
+
+I don't know why the docstring is not shown in readthedoc.io....
+"""
+
 
 def calculate_m2(Pday=14.5, ideg=90, m1=2.16, Kkms=50):
     """ Calculate the mass of the secondary
