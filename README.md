@@ -1,5 +1,7 @@
 ## laspec
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4381155.svg)](https://doi.org/10.5281/zenodo.4381155)![Upload Python Package](https://github.com/hypergravity/laspec/workflows/Upload%20Python%20Package/badge.svg)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4381155.svg)](https://doi.org/10.5281/zenodo.4381155)
+![Upload Python Package](https://github.com/hypergravity/laspec/workflows/Upload%20Python%20Package/badge.svg)
+[![Documentation Status](https://readthedocs.org/projects/laspec/badge/?version=latest)](https://laspec.readthedocs.io/en/latest/?badge=latest)
 
 A toolkit for LAMOST spectra.
 
