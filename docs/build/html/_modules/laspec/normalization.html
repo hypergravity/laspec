@@ -1,0 +1,628 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>laspec.normalization &mdash; laspec 2021.123.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> laspec
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2021.123.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">User guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html">laspec</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html#authors">Authors</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Tutorials</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial.html">Tutorials</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../laspec.html">laspec package</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">laspec</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>laspec.normalization</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for laspec.normalization</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="kn">import</span> <span class="n">interp1d</span>
+<span class="kn">from</span> <span class="nn">joblib</span> <span class="kn">import</span> <span class="n">Parallel</span><span class="p">,</span> <span class="n">delayed</span>
+<span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="kn">import</span> <span class="n">minimize</span>
+
+<span class="kn">from</span> <span class="nn">.extern.interpolate</span> <span class="kn">import</span> <span class="n">SmoothSpline</span>
+
+
+<div class="viewcode-block" id="normalize_spectrum_null"><a class="viewcode-back" href="../../laspec.html#laspec.normalization.normalize_spectrum_null">[docs]</a><span class="k">def</span> <span class="nf">normalize_spectrum_null</span><span class="p">(</span><span class="n">wave</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">wave</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">wave</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span></div>
+
+
+<div class="viewcode-block" id="normalize_spectrum"><a class="viewcode-back" href="../../laspec.html#laspec.normalization.normalize_spectrum">[docs]</a><span class="k">def</span> <span class="nf">normalize_spectrum</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">norm_range</span><span class="p">,</span> <span class="n">dwave</span><span class="p">,</span>
+                       <span class="n">p</span><span class="o">=</span><span class="p">(</span><span class="mf">1E-6</span><span class="p">,</span> <span class="mf">1E-6</span><span class="p">),</span> <span class="n">q</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">ivar</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">,</span>
+                       <span class="n">rsv_frac</span><span class="o">=</span><span class="mf">1.</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; A double smooth normalization of a spectrum</span>
+
+<span class="sd">    Converted from Chao Liu&#39;s normSpectrum.m</span>
+<span class="sd">    Updated by Bo Zhang</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    wave: ndarray (n_pix, )</span>
+<span class="sd">        wavelegnth array</span>
+<span class="sd">    flux: ndarray (n_pix, )</span>
+<span class="sd">        flux array</span>
+<span class="sd">    norm_range: tuple</span>
+<span class="sd">        a tuple consisting (wave_start, wave_stop)</span>
+<span class="sd">    dwave: float</span>
+<span class="sd">        binning width</span>
+<span class="sd">    p: tuple of 2 ps</span>
+<span class="sd">        smoothing parameter between 0 and 1:</span>
+<span class="sd">        0 -&gt; LS-straight line</span>
+<span class="sd">        1 -&gt; cubic spline interpolant</span>
+<span class="sd">    q: float in range of [0, 100]</span>
+<span class="sd">        percentile, between 0 and 1</span>
+<span class="sd">    ivar: ndarray (n_pix, ) | None</span>
+<span class="sd">        ivar array, default is None</span>
+<span class="sd">    eps: float</span>
+<span class="sd">        the ivar threshold</span>
+<span class="sd">    rsv_frac: float</span>
+<span class="sd">        the fraction of pixels reserved in terms of std. default is 3.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    flux_norm: ndarray</span>
+<span class="sd">        normalized flux</span>
+<span class="sd">    flux_cont: ndarray</span>
+<span class="sd">        continuum flux</span>
+
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+<span class="sd">    &gt;&gt;&gt; flux_norm, flux_cont = normalize_spectrum(</span>
+<span class="sd">    &gt;&gt;&gt;     wave, flux, (4000., 8000.), 100., p=(1E-8, 1E-7), q=0.5,</span>
+<span class="sd">    &gt;&gt;&gt;     rsv_frac=2.0)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;This function is DEPRECATED, use *normalize_spectrum_general* instead!&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">flux</span><span class="p">),</span> <span class="n">flux</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">))</span> <span class="o">&lt;=</span> <span class="mi">100</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">normalize_spectrum_null</span><span class="p">(</span><span class="n">wave</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">ivar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># ivar is set</span>
+        <span class="n">ivar</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span><span class="n">wave</span> <span class="o">&lt;</span> <span class="n">norm_range</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                      <span class="n">wave</span> <span class="o">&gt;</span> <span class="n">norm_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">ivar</span><span class="p">)</span>
+        <span class="n">ivar</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">ivar</span> <span class="o">&lt;=</span> <span class="n">eps</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">ivar</span><span class="p">)</span>
+        <span class="c1"># mask = ivar &lt;= eps</span>
+        <span class="n">var</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">/</span> <span class="n">ivar</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># default config is even weight</span>
+        <span class="n">var</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">flux</span><span class="p">)</span>
+
+    <span class="c1"># wave = wave[~mask]</span>
+    <span class="c1"># flux = flux[~mask]</span>
+
+    <span class="c1"># check q region</span>
+    <span class="k">assert</span> <span class="mf">0.</span> <span class="o">&lt;</span> <span class="n">q</span> <span class="o">&lt;</span> <span class="mf">1.</span>
+
+    <span class="c1"># n_iter = len(p)</span>
+    <span class="n">n_bin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fix</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">norm_range</span><span class="p">)</span> <span class="o">/</span> <span class="n">dwave</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">wave1</span> <span class="o">=</span> <span class="n">norm_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="c1"># SMOOTH 1</span>
+    <span class="c1"># print(wave.shape, flux.shape, var.shape)</span>
+    <span class="k">if</span> <span class="n">ivar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ind_good_init</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">*</span> <span class="p">(</span><span class="n">ivar</span> <span class="o">&gt;</span> <span class="mf">0.</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">flux</span> <span class="o">&gt;</span> <span class="mf">0.</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ind_good_init</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">*</span> <span class="p">(</span><span class="n">flux</span> <span class="o">&gt;</span> <span class="mf">0.</span><span class="p">)</span>
+    <span class="n">ind_good_init</span> <span class="o">=</span> <span class="n">ind_good_init</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span>
+    <span class="c1"># print(&quot;@Cham: sum(ind_good_init)&quot;, np.sum(ind_good_init))</span>
+
+    <span class="n">flux_smoothed1</span> <span class="o">=</span> <span class="n">SmoothSpline</span><span class="p">(</span><span class="n">wave</span><span class="p">[</span><span class="n">ind_good_init</span><span class="p">],</span> <span class="n">flux</span><span class="p">[</span><span class="n">ind_good_init</span><span class="p">],</span>
+                                  <span class="n">p</span><span class="o">=</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">var</span><span class="o">=</span><span class="n">var</span><span class="p">[</span><span class="n">ind_good_init</span><span class="p">])(</span><span class="n">wave</span><span class="p">)</span>
+    <span class="n">dflux</span> <span class="o">=</span> <span class="n">flux</span> <span class="o">-</span> <span class="n">flux_smoothed1</span>
+
+    <span class="c1"># collecting continuum pixels --&gt; ITERATION 1</span>
+    <span class="n">ind_good</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">wave</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i_bin</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_bin</span><span class="p">):</span>
+        <span class="n">ind_bin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">wave</span> <span class="o">&gt;</span> <span class="n">wave1</span> <span class="o">+</span> <span class="p">(</span><span class="n">i_bin</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="n">dwave</span><span class="p">,</span>
+                                 <span class="n">wave</span> <span class="o">&lt;=</span> <span class="n">wave1</span> <span class="o">+</span> <span class="p">(</span><span class="n">i_bin</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="n">dwave</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ind_bin</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="c1"># median &amp; sigma</span>
+            <span class="n">bin_median</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">dflux</span><span class="p">[</span><span class="n">ind_bin</span><span class="p">])</span>
+            <span class="n">bin_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">dflux</span> <span class="o">-</span> <span class="n">bin_median</span><span class="p">))</span>
+            <span class="c1"># within 1 sigma with q-percentile</span>
+            <span class="n">ind_good_</span> <span class="o">=</span> <span class="n">ind_bin</span> <span class="o">*</span> <span class="p">(</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">dflux</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">nanpercentile</span><span class="p">(</span><span class="n">dflux</span><span class="p">[</span><span class="n">ind_bin</span><span class="p">],</span> <span class="n">q</span> <span class="o">*</span> <span class="mf">100.</span><span class="p">))</span> <span class="o">&lt;</span> <span class="p">(</span>
+                    <span class="n">rsv_frac</span> <span class="o">*</span> <span class="n">bin_std</span><span class="p">))</span>
+            <span class="n">ind_good</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span><span class="n">ind_good</span><span class="p">,</span> <span class="n">ind_good_</span><span class="p">)</span>
+
+    <span class="n">ind_good</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">ind_good</span><span class="p">,</span> <span class="n">ind_good_init</span><span class="p">)</span>
+    <span class="c1"># assert there is continuum pixels</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ind_good</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+    <span class="k">except</span> <span class="ne">AssertionError</span><span class="p">:</span>
+        <span class="ne">Warning</span><span class="p">(</span><span class="s2">&quot;@Keenan.normalize_spectrum(): unable to find continuum!&quot;</span><span class="p">)</span>
+        <span class="n">ind_good</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">wave</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span>
+
+    <span class="c1"># SMOOTH 2</span>
+    <span class="c1"># continuum flux</span>
+    <span class="n">flux_smoothed2</span> <span class="o">=</span> <span class="n">SmoothSpline</span><span class="p">(</span>
+        <span class="n">wave</span><span class="p">[</span><span class="n">ind_good</span><span class="p">],</span> <span class="n">flux</span><span class="p">[</span><span class="n">ind_good</span><span class="p">],</span> <span class="n">p</span><span class="o">=</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">var</span><span class="o">=</span><span class="n">var</span><span class="p">[</span><span class="n">ind_good</span><span class="p">])(</span><span class="n">wave</span><span class="p">)</span>
+    <span class="c1"># normalized flux</span>
+    <span class="n">flux_norm</span> <span class="o">=</span> <span class="n">flux</span> <span class="o">/</span> <span class="n">flux_smoothed2</span>
+
+    <span class="k">return</span> <span class="n">flux_norm</span><span class="p">,</span> <span class="n">flux_smoothed2</span></div>
+
+
+<div class="viewcode-block" id="normalize_spectrum_spline"><a class="viewcode-back" href="../../laspec.html#laspec.normalization.normalize_spectrum_spline">[docs]</a><span class="k">def</span> <span class="nf">normalize_spectrum_spline</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mf">1E-6</span><span class="p">,</span> <span class="n">q</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">lu</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">binwidth</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">niter</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; A double smooth normalization of a spectrum</span>
+
+<span class="sd">    Converted from Chao Liu&#39;s normSpectrum.m</span>
+<span class="sd">    Updated by Bo Zhang</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    wave: ndarray (n_pix, )</span>
+<span class="sd">        wavelegnth array</span>
+<span class="sd">    flux: ndarray (n_pix, )</span>
+<span class="sd">        flux array</span>
+<span class="sd">    p: float</span>
+<span class="sd">        smoothing parameter between 0 and 1:</span>
+<span class="sd">        0 -&gt; LS-straight line</span>
+<span class="sd">        1 -&gt; cubic spline interpolant</span>
+<span class="sd">    q: float in range of [0, 1]</span>
+<span class="sd">        percentile, between 0 and 1</span>
+<span class="sd">    lu: float tuple</span>
+<span class="sd">        the lower &amp; upper exclusion limits</span>
+<span class="sd">    binwidth: float</span>
+<span class="sd">        width of each bin</span>
+<span class="sd">    niter: int</span>
+<span class="sd">        number of iterations</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    flux_norm: ndarray</span>
+<span class="sd">        normalized flux</span>
+<span class="sd">    flux_cont: ndarray</span>
+<span class="sd">        continuum flux</span>
+
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+<span class="sd">    &gt;&gt;&gt; fnorm, fcont=normalize_spectrum_spline(</span>
+<span class="sd">    &gt;&gt;&gt;     wave, flux, p=1e-6, q=0.6, binwidth=200, lu=(-1,5), niter=niter)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">flux</span><span class="p">),</span> <span class="n">flux</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">))</span> <span class="o">&lt;=</span> <span class="mi">10</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">normalize_spectrum_null</span><span class="p">(</span><span class="n">wave</span><span class="p">)</span>
+
+    <span class="n">_wave</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">wave</span><span class="p">)</span>
+    <span class="n">_flux</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">flux</span><span class="p">)</span>
+    <span class="n">ind_finite</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">flux</span><span class="p">)</span>
+    <span class="n">wave</span> <span class="o">=</span> <span class="n">_wave</span><span class="p">[</span><span class="n">ind_finite</span><span class="p">]</span>
+    <span class="n">flux</span> <span class="o">=</span> <span class="n">_flux</span><span class="p">[</span><span class="n">ind_finite</span><span class="p">]</span>
+    <span class="n">_flux_norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">_flux</span><span class="p">)</span>
+    <span class="n">_flux_cont</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">_flux</span><span class="p">)</span>
+
+    <span class="c1"># default config is even weight</span>
+    <span class="n">var</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">flux</span><span class="p">)</span>
+
+    <span class="c1"># check q region</span>
+    <span class="c1"># assert 0. &lt;= q &lt;= 1.</span>
+
+    <span class="n">nbins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">((</span><span class="n">wave</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">wave</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="n">binwidth</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">bincenters</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">wave</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">wave</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">nbins</span><span class="p">)</span>
+
+    <span class="c1"># iteratively smoothing</span>
+    <span class="n">ind_good</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">flux</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">niter</span><span class="p">):</span>
+
+        <span class="n">flux_smoothed1</span> <span class="o">=</span> <span class="n">SmoothSpline</span><span class="p">(</span><span class="n">wave</span><span class="p">[</span><span class="n">ind_good</span><span class="p">],</span> <span class="n">flux</span><span class="p">[</span><span class="n">ind_good</span><span class="p">],</span> <span class="n">p</span><span class="o">=</span><span class="n">p</span><span class="p">,</span> <span class="n">var</span><span class="o">=</span><span class="n">var</span><span class="p">[</span><span class="n">ind_good</span><span class="p">])(</span><span class="n">wave</span><span class="p">)</span>
+        <span class="c1"># residual</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">flux</span> <span class="o">-</span> <span class="n">flux_smoothed1</span>
+
+        <span class="c1"># determine sigma</span>
+        <span class="n">stdres</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbins</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">ibin</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nbins</span><span class="p">):</span>
+            <span class="n">ind_this_bin</span> <span class="o">=</span> <span class="n">ind_good</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">wave</span> <span class="o">-</span> <span class="n">bincenters</span><span class="p">[</span><span class="n">ibin</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="n">binwidth</span><span class="p">)</span>
+            <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">q</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">stdres</span><span class="p">[</span><span class="n">ibin</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span>
+                    <span class="n">res</span><span class="p">[</span><span class="n">ind_this_bin</span><span class="p">]</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="n">ind_this_bin</span><span class="p">],</span> <span class="mi">100</span> <span class="o">*</span> <span class="n">q</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">stdres</span><span class="p">[</span><span class="n">ibin</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="n">ind_this_bin</span><span class="p">])</span>
+        <span class="n">stdres_interp</span> <span class="o">=</span> <span class="n">interp1d</span><span class="p">(</span><span class="n">bincenters</span><span class="p">,</span> <span class="n">stdres</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">&quot;linear&quot;</span><span class="p">)(</span><span class="n">wave</span><span class="p">)</span>
+        <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">q</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">res1</span> <span class="o">=</span> <span class="p">(</span><span class="n">res</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="mi">100</span> <span class="o">*</span> <span class="n">q</span><span class="p">))</span> <span class="o">/</span> <span class="n">stdres_interp</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">res1</span> <span class="o">=</span> <span class="n">res</span> <span class="o">/</span> <span class="n">stdres_interp</span>
+        <span class="n">ind_good</span> <span class="o">=</span> <span class="n">ind_good</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">res1</span> <span class="o">&gt;</span> <span class="n">lu</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">res1</span> <span class="o">&lt;</span> <span class="n">lu</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="c1"># assert there is continuum pixels</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ind_good</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="k">except</span> <span class="ne">AssertionError</span><span class="p">:</span>
+            <span class="ne">Warning</span><span class="p">(</span><span class="s2">&quot;@normalize_spectrum_iter: unable to find continuum!&quot;</span><span class="p">)</span>
+            <span class="n">ind_good</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">wave</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span>
+
+    <span class="c1"># final smoothing</span>
+    <span class="n">flux_smoothed2</span> <span class="o">=</span> <span class="n">SmoothSpline</span><span class="p">(</span>
+        <span class="n">wave</span><span class="p">[</span><span class="n">ind_good</span><span class="p">],</span> <span class="n">flux</span><span class="p">[</span><span class="n">ind_good</span><span class="p">],</span> <span class="n">p</span><span class="o">=</span><span class="n">p</span><span class="p">,</span> <span class="n">var</span><span class="o">=</span><span class="n">var</span><span class="p">[</span><span class="n">ind_good</span><span class="p">])(</span><span class="n">wave</span><span class="p">)</span>
+    <span class="c1"># normalized flux</span>
+    <span class="n">flux_norm</span> <span class="o">=</span> <span class="n">flux</span> <span class="o">/</span> <span class="n">flux_smoothed2</span>
+
+    <span class="n">_flux_norm</span><span class="p">[</span><span class="n">ind_finite</span><span class="p">]</span> <span class="o">=</span> <span class="n">flux_norm</span>
+    <span class="n">_flux_cont</span><span class="p">[</span><span class="n">ind_finite</span><span class="p">]</span> <span class="o">=</span> <span class="n">flux_smoothed2</span>
+    <span class="k">return</span> <span class="n">_flux_norm</span><span class="p">,</span> <span class="n">_flux_cont</span></div>
+
+
+<div class="viewcode-block" id="normalize_spectra_block"><a class="viewcode-back" href="../../laspec.html#laspec.normalization.normalize_spectra_block">[docs]</a><span class="k">def</span> <span class="nf">normalize_spectra_block</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">flux_block</span><span class="p">,</span> <span class="n">norm_range</span><span class="p">,</span> <span class="n">dwave</span><span class="p">,</span>
+                            <span class="n">p</span><span class="o">=</span><span class="p">(</span><span class="mf">1E-6</span><span class="p">,</span> <span class="mf">1E-6</span><span class="p">),</span> <span class="n">q</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">ivar_block</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">,</span>
+                            <span class="n">rsv_frac</span><span class="o">=</span><span class="mf">3.</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; normalize multiple spectra using the same configuration</span>
+<span class="sd">    This is specially designed for TheKeenan</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    wave: ndarray (n_pix, )</span>
+<span class="sd">        wavelegnth array</span>
+<span class="sd">    flux_block: ndarray (n_obs, n_pix)</span>
+<span class="sd">        flux array</span>
+<span class="sd">    norm_range: tuple</span>
+<span class="sd">        a tuple consisting (wave_start, wave_stop)</span>
+<span class="sd">    dwave: float</span>
+<span class="sd">        binning width</span>
+<span class="sd">    p: tuple of 2 ps</span>
+<span class="sd">        smoothing parameter between 0 and 1:</span>
+<span class="sd">        0 -&gt; LS-straight line</span>
+<span class="sd">        1 -&gt; cubic spline interpolant</span>
+<span class="sd">    q: float in range of [0, 100]</span>
+<span class="sd">        percentile, between 0 and 1</span>
+<span class="sd">    ivar_block: ndarray (n_pix, ) | None</span>
+<span class="sd">        ivar array, default is None</span>
+<span class="sd">    eps: float</span>
+<span class="sd">        the ivar threshold</span>
+<span class="sd">    rsv_frac: float</span>
+<span class="sd">        the fraction of pixels reserved in terms of std. default is 3.</span>
+<span class="sd">    n_jobs: int</span>
+<span class="sd">        number of processes launched by joblib</span>
+<span class="sd">    verbose: int / bool</span>
+<span class="sd">        verbose level</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    flux_norm_block: ndarray</span>
+<span class="sd">        normalized flux</span>
+
+<span class="sd">    flux_cont_block: ndarray</span>
+<span class="sd">        continuum flux</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;This function is DEPRECATED, use *normalize_spectrum_general* instead!&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">ivar_block</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ivar_block</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">flux_block</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">flux_block</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">flux_block</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">n_spec</span> <span class="o">=</span> <span class="n">flux_block</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">results</span> <span class="o">=</span> <span class="n">Parallel</span><span class="p">(</span><span class="n">n_jobs</span><span class="o">=</span><span class="n">n_jobs</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)(</span>
+        <span class="n">delayed</span><span class="p">(</span><span class="n">normalize_spectrum</span><span class="p">)(</span>
+            <span class="n">wave</span><span class="p">,</span> <span class="n">flux_block</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">norm_range</span><span class="p">,</span> <span class="n">dwave</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="o">=</span><span class="n">q</span><span class="p">,</span>
+            <span class="n">ivar</span><span class="o">=</span><span class="n">ivar_block</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">eps</span><span class="o">=</span><span class="n">eps</span><span class="p">,</span> <span class="n">rsv_frac</span><span class="o">=</span><span class="n">rsv_frac</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_spec</span><span class="p">))</span>
+
+    <span class="c1"># unpack results</span>
+    <span class="n">flux_norm_block</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">flux_cont_block</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+        <span class="n">flux_norm_block</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">flux_cont_block</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">flux_norm_block</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">flux_cont_block</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="normalize_spectrum_general"><a class="viewcode-back" href="../../laspec.html#laspec.normalization.normalize_spectrum_general">[docs]</a><span class="k">def</span> <span class="nf">normalize_spectrum_general</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">norm_type</span><span class="o">=</span><span class="s2">&quot;spline&quot;</span><span class="p">,</span>
+                               <span class="n">deg</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">lu</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">q</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">binwidth</span><span class="o">=</span><span class="mf">100.</span><span class="p">,</span> <span class="n">niter</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">pw</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; poly / spline normalization</span>
+<span class="sd">    spline --&gt; normalize_spectrum_spline: dict(p=1e-6, q=0.5, lu=(-2, 3), binwidth=100., niter=3)</span>
+<span class="sd">    poly   --&gt; normalize_spectrum_poly: (deg=4, lu=(-2, 3), q=0.5, binwidth=100., niter=3, pw=1.)</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    wave: array</span>
+<span class="sd">        wavelength</span>
+<span class="sd">    flux: array</span>
+<span class="sd">        flux</span>
+<span class="sd">    norm_type: str</span>
+<span class="sd">        &quot;spline&quot; / &quot;poly&quot;</span>
+<span class="sd">    deg: int</span>
+<span class="sd">        poly deg</span>
+<span class="sd">    lu: tuple</span>
+<span class="sd">        defaults to (-1, 4), the data below 1 sigma and above 4 sigma will be excluded</span>
+<span class="sd">    q: float</span>
+<span class="sd">        percentile, default is 0.5,</span>
+<span class="sd">    binwidth:</span>
+<span class="sd">        bin width, detault to 100.</span>
+<span class="sd">    niter:</span>
+<span class="sd">        number of iterations, detaults to 3</span>
+<span class="sd">    pw:</span>
+<span class="sd">        power of residuals, defaults to 1, only used when norm_type==&quot;poly&quot;</span>
+<span class="sd">    p:</span>
+<span class="sd">        spline smoothness, defaults to 1e-6</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">norm_type</span> <span class="o">==</span> <span class="s2">&quot;poly&quot;</span><span class="p">:</span>
+        <span class="n">flux_norm</span><span class="p">,</span> <span class="n">flux_cont</span> <span class="o">=</span> <span class="n">normalize_spectrum_poly</span><span class="p">(</span>
+            <span class="n">wave</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">deg</span><span class="o">=</span><span class="n">deg</span><span class="p">,</span> <span class="n">lu</span><span class="o">=</span><span class="n">lu</span><span class="p">,</span> <span class="n">q</span><span class="o">=</span><span class="n">q</span><span class="p">,</span> <span class="n">binwidth</span><span class="o">=</span><span class="n">binwidth</span><span class="p">,</span> <span class="n">niter</span><span class="o">=</span><span class="n">niter</span><span class="p">,</span> <span class="n">pw</span><span class="o">=</span><span class="n">pw</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">norm_type</span> <span class="o">==</span> <span class="s2">&quot;spline&quot;</span><span class="p">:</span>
+        <span class="n">flux_norm</span><span class="p">,</span> <span class="n">flux_cont</span> <span class="o">=</span> <span class="n">normalize_spectrum_spline</span><span class="p">(</span>
+            <span class="n">wave</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="n">p</span><span class="p">,</span> <span class="n">lu</span><span class="o">=</span><span class="n">lu</span><span class="p">,</span> <span class="n">q</span><span class="o">=</span><span class="n">q</span><span class="p">,</span> <span class="n">binwidth</span><span class="o">=</span><span class="n">binwidth</span><span class="p">,</span> <span class="n">niter</span><span class="o">=</span><span class="n">niter</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">norm_type</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;poly&quot;</span><span class="p">,</span> <span class="s2">&quot;spline&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">flux_norm</span><span class="p">,</span> <span class="n">flux_cont</span></div>
+
+
+<div class="viewcode-block" id="normalize_spectrum_poly"><a class="viewcode-back" href="../../laspec.html#laspec.normalization.normalize_spectrum_poly">[docs]</a><span class="k">def</span> <span class="nf">normalize_spectrum_poly</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">deg</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">pw</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">lu</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">q</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">binwidth</span><span class="o">=</span><span class="mf">100.</span><span class="p">,</span> <span class="n">niter</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; normalize spectrum using polynomial &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">flux</span><span class="p">),</span> <span class="n">flux</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">))</span> <span class="o">&lt;=</span> <span class="mi">10</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">normalize_spectrum_null</span><span class="p">(</span><span class="n">wave</span><span class="p">)</span>
+
+    <span class="c1"># check q region</span>
+    <span class="k">assert</span> <span class="mf">0.</span> <span class="o">&lt;=</span> <span class="n">q</span> <span class="o">&lt;=</span> <span class="mf">1.</span>
+
+    <span class="n">nbins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">((</span><span class="n">wave</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">wave</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="n">binwidth</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">bincenters</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">wave</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">wave</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">nbins</span><span class="p">)</span>
+
+    <span class="c1"># iteratively smoothing</span>
+    <span class="n">ind_good</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">flux</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">niter</span><span class="p">):</span>
+        <span class="c1"># poly smooth</span>
+        <span class="n">flux_smoothed1</span> <span class="o">=</span> <span class="n">PolySmooth</span><span class="p">(</span><span class="n">wave</span><span class="p">[</span><span class="n">ind_good</span><span class="p">],</span> <span class="n">flux</span><span class="p">[</span><span class="n">ind_good</span><span class="p">],</span> <span class="n">deg</span><span class="o">=</span><span class="n">deg</span><span class="p">,</span> <span class="n">pw</span><span class="o">=</span><span class="n">pw</span><span class="p">)(</span><span class="n">wave</span><span class="p">)</span>
+        <span class="c1"># residual</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">flux</span> <span class="o">-</span> <span class="n">flux_smoothed1</span>
+        <span class="c1"># determine sigma</span>
+        <span class="n">stdres</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbins</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">ibin</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nbins</span><span class="p">):</span>
+            <span class="n">ind_this_bin</span> <span class="o">=</span> <span class="n">ind_good</span> <span class="o">&amp;</span> <span class="p">(</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">wave</span> <span class="o">-</span> <span class="n">bincenters</span><span class="p">[</span><span class="n">ibin</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="n">binwidth</span><span class="p">)</span>
+            <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">q</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">stdres</span><span class="p">[</span><span class="n">ibin</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span>
+                    <span class="n">res</span><span class="p">[</span><span class="n">ind_this_bin</span><span class="p">]</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="n">ind_this_bin</span><span class="p">],</span> <span class="mi">100</span> <span class="o">*</span> <span class="n">q</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">stdres</span><span class="p">[</span><span class="n">ibin</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="n">ind_this_bin</span><span class="p">])</span>
+        <span class="n">stdres_interp</span> <span class="o">=</span> <span class="n">interp1d</span><span class="p">(</span><span class="n">bincenters</span><span class="p">,</span> <span class="n">stdres</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">&quot;linear&quot;</span><span class="p">)(</span><span class="n">wave</span><span class="p">)</span>
+        <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">q</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">res1</span> <span class="o">=</span> <span class="p">(</span><span class="n">res</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="mi">100</span> <span class="o">*</span> <span class="n">q</span><span class="p">))</span> <span class="o">/</span> <span class="n">stdres_interp</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">res1</span> <span class="o">=</span> <span class="n">res</span> <span class="o">/</span> <span class="n">stdres_interp</span>
+        <span class="n">ind_good</span> <span class="o">=</span> <span class="n">ind_good</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">res1</span> <span class="o">&gt;</span> <span class="n">lu</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">res1</span> <span class="o">&lt;</span> <span class="n">lu</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="c1"># assert there is continuum pixels</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ind_good</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="k">except</span> <span class="ne">AssertionError</span><span class="p">:</span>
+            <span class="ne">Warning</span><span class="p">(</span><span class="s2">&quot;@normalize_spectrum_iter: unable to find continuum!&quot;</span><span class="p">)</span>
+            <span class="n">ind_good</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">wave</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span>
+
+    <span class="c1"># final smoothing</span>
+    <span class="n">flux_smoothed2</span> <span class="o">=</span> <span class="n">PolySmooth</span><span class="p">(</span><span class="n">wave</span><span class="p">[</span><span class="n">ind_good</span><span class="p">],</span> <span class="n">flux</span><span class="p">[</span><span class="n">ind_good</span><span class="p">],</span> <span class="n">deg</span><span class="o">=</span><span class="n">deg</span><span class="p">,</span> <span class="n">pw</span><span class="o">=</span><span class="n">pw</span><span class="p">)(</span><span class="n">wave</span><span class="p">)</span>
+
+    <span class="c1"># normalized flux</span>
+    <span class="n">flux_norm</span> <span class="o">=</span> <span class="n">flux</span> <span class="o">/</span> <span class="n">flux_smoothed2</span>
+
+    <span class="k">return</span> <span class="n">flux_norm</span><span class="p">,</span> <span class="n">flux_smoothed2</span></div>
+
+
+<div class="viewcode-block" id="PolySmooth"><a class="viewcode-back" href="../../laspec.html#laspec.normalization.PolySmooth">[docs]</a><span class="k">class</span> <span class="nc">PolySmooth</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">deg</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">pw</span><span class="o">=</span><span class="mf">2.</span><span class="p">):</span>
+        <span class="c1"># determine scales</span>
+        <span class="n">x_pct</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">q</span><span class="o">=</span><span class="p">[</span><span class="mi">16</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">84</span><span class="p">])</span>
+        <span class="n">y_pct</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">q</span><span class="o">=</span><span class="p">[</span><span class="mi">16</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">84</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_mean</span> <span class="o">=</span> <span class="n">x_pct</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_mean</span> <span class="o">=</span> <span class="n">y_pct</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_scale</span> <span class="o">=</span> <span class="p">(</span><span class="n">x_pct</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">x_pct</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_scale</span> <span class="o">=</span> <span class="p">(</span><span class="n">y_pct</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">y_pct</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span>
+        <span class="c1"># scale data</span>
+        <span class="n">x_scaled</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_mean</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_scale</span>
+        <span class="n">y_scaled</span> <span class="o">=</span> <span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_mean</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_scale</span>
+        <span class="c1"># optimization</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">minimize</span><span class="p">(</span><span class="n">cost_poly</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">deg</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">x_scaled</span><span class="p">,</span> <span class="n">y_scaled</span><span class="p">,</span> <span class="n">pw</span><span class="p">),</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;powell&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; prediction &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">polyval</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_mean</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_scale</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_scale</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_mean</span></div>
+
+
+<div class="viewcode-block" id="cost_poly"><a class="viewcode-back" href="../../laspec.html#laspec.normalization.cost_poly">[docs]</a><span class="k">def</span> <span class="nf">cost_poly</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">pw</span><span class="o">=</span><span class="mf">2.</span><span class="p">):</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">polyval</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="n">y</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">res</span><span class="p">)]</span> <span class="o">**</span> <span class="p">(</span><span class="n">pw</span> <span class="o">/</span> <span class="mi">2</span><span class="p">))</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="k">pass</span>
+    <span class="c1"># test_normaliza_spectra_block()</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Bo Zhang.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

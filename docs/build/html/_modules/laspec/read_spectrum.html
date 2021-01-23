@@ -1,0 +1,458 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>laspec.read_spectrum &mdash; laspec 2021.123.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> laspec
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2021.123.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">User guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html">laspec</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html#authors">Authors</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Tutorials</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial.html">Tutorials</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../laspec.html">laspec package</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">laspec</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>laspec.read_spectrum</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for laspec.read_spectrum</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">astropy.io</span> <span class="kn">import</span> <span class="n">fits</span>
+<span class="kn">from</span> <span class="nn">astropy.table</span> <span class="kn">import</span> <span class="n">Table</span><span class="p">,</span> <span class="n">Column</span>
+
+<span class="kn">from</span> <span class="nn">.lamost</span> <span class="kn">import</span> <span class="n">lamost_filepath</span>
+<span class="kn">from</span> <span class="nn">.spec</span> <span class="kn">import</span> <span class="n">Spec</span>
+
+
+<div class="viewcode-block" id="reconstruct_wcs_coord_from_fits_header"><a class="viewcode-back" href="../../laspec.html#laspec.read_spectrum.reconstruct_wcs_coord_from_fits_header">[docs]</a><span class="k">def</span> <span class="nf">reconstruct_wcs_coord_from_fits_header</span><span class="p">(</span><span class="n">hdr</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; reconstruct wcs coordinates (e.g., wavelength array) &quot;&quot;&quot;</span>
+    <span class="c1"># assert dim is not larger than limit</span>
+    <span class="k">assert</span> <span class="n">dim</span> <span class="o">&lt;=</span> <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;NAXIS&#39;</span><span class="p">]</span>
+
+    <span class="c1"># get keywords</span>
+    <span class="n">crval</span> <span class="o">=</span> <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;CRVAL</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">dim</span><span class="p">]</span>
+    <span class="n">cdelt</span> <span class="o">=</span> <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;CDELT</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">dim</span><span class="p">]</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">crpix</span> <span class="o">=</span> <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;CRPIX</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">dim</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="n">crpix</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="c1"># length of the current dimension</span>
+    <span class="n">naxis_</span> <span class="o">=</span> <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;NAXIS</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">dim</span><span class="p">]</span>
+
+    <span class="c1"># reconstruct wcs coordinates</span>
+    <span class="n">coord</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">crpix</span><span class="p">,</span> <span class="n">naxis_</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">crpix</span><span class="p">)</span> <span class="o">*</span> <span class="n">cdelt</span> <span class="o">+</span> <span class="n">crval</span>
+    <span class="k">return</span> <span class="n">coord</span></div>
+
+
+<div class="viewcode-block" id="read_spectrum_phoenix_r10000"><a class="viewcode-back" href="../../laspec.html#laspec.read_spectrum.read_spectrum_phoenix_r10000">[docs]</a><span class="k">def</span> <span class="nf">read_spectrum_phoenix_r10000</span><span class="p">(</span><span class="n">fp</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; read spectrum from PHOENIX R10000 &quot;&quot;&quot;</span>
+    <span class="n">hl</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">fp</span><span class="p">)</span>
+    <span class="n">wave</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">e</span> <span class="o">**</span> <span class="n">reconstruct_wcs_coord_from_fits_header</span><span class="p">(</span><span class="n">hl</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">)</span>
+    <span class="n">flux</span> <span class="o">=</span> <span class="n">hl</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+    <span class="k">return</span> <span class="n">Table</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="n">wave</span><span class="p">,</span> <span class="n">flux</span><span class="p">],</span> <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;wave&#39;</span><span class="p">,</span> <span class="s1">&#39;flux&#39;</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="read_spectrum_elodie_r42000"><a class="viewcode-back" href="../../laspec.html#laspec.read_spectrum.read_spectrum_elodie_r42000">[docs]</a><span class="k">def</span> <span class="nf">read_spectrum_elodie_r42000</span><span class="p">(</span><span class="n">fp</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; read spectrum from ELODIE library (R42000) &quot;&quot;&quot;</span>
+    <span class="c1"># assert the file exists</span>
+    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">fp</span><span class="p">)</span>
+
+    <span class="c1"># read fits</span>
+    <span class="n">hl</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">fp</span><span class="p">)</span>
+
+    <span class="c1"># reconstruct wave array</span>
+    <span class="n">wave</span> <span class="o">=</span> <span class="n">reconstruct_wcs_coord_from_fits_header</span><span class="p">(</span><span class="n">hl</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="c1"># flux</span>
+    <span class="n">flux</span> <span class="o">=</span> <span class="n">hl</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+    <span class="c1"># flux err</span>
+    <span class="n">flux_err</span> <span class="o">=</span> <span class="n">hl</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+    <span class="c1"># flux ivar</span>
+    <span class="n">flux_ivar</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">flux_err</span> <span class="o">**</span> <span class="mf">2.</span>
+
+    <span class="c1"># reconstruct spec</span>
+    <span class="n">sp</span> <span class="o">=</span> <span class="n">Spec</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="n">wave</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">flux_ivar</span><span class="p">,</span> <span class="n">flux_err</span><span class="p">],</span>
+              <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;wave&#39;</span><span class="p">,</span> <span class="s1">&#39;flux&#39;</span><span class="p">,</span> <span class="s1">&#39;flux_ivar&#39;</span><span class="p">,</span> <span class="s1">&#39;flux_err&#39;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">sp</span></div>
+
+
+<div class="viewcode-block" id="read_spectrum"><a class="viewcode-back" href="../../laspec.html#laspec.read_spectrum.read_spectrum">[docs]</a><span class="k">def</span> <span class="nf">read_spectrum</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">filesource</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;read SDSS/LAMOST spectrum</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    filepath: string</span>
+<span class="sd">        input file path</span>
+
+<span class="sd">    filesource: string</span>
+<span class="sd">        {&#39;sdss_dr12&#39; / &#39;lamost_dr2&#39; / &#39;lamost_dr3&#39;}</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    specdata: astropy.table.Table</span>
+<span class="sd">        spectra as a table</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># auto-identify the spectrum origination</span>
+    <span class="k">if</span> <span class="n">filesource</span> <span class="o">==</span> <span class="s1">&#39;auto&#39;</span><span class="p">:</span>
+        <span class="n">telescope</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;TELESCOP&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">telescope</span> <span class="o">==</span> <span class="s1">&#39;SDSS 2.5-M&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">read_spectrum</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">filesource</span><span class="o">=</span><span class="s1">&#39;sdss_dr12&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">telescope</span> <span class="o">==</span> <span class="s1">&#39;LAMOST&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">read_spectrum</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">filesource</span><span class="o">=</span><span class="s1">&#39;lamost_dr3&#39;</span><span class="p">)</span>
+
+    <span class="c1"># SDSS DR7 spectrum</span>
+    <span class="k">if</span> <span class="n">filesource</span> <span class="o">==</span> <span class="s1">&#39;sdss_dr7&#39;</span><span class="p">:</span>
+        <span class="n">hdulist</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+
+        <span class="c1"># 1. flux, flux_err, mask</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">hdulist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>  <span class="c1"># 5 rows</span>
+        <span class="n">flux</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">][:]</span>
+        <span class="n">flux_err</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">][:]</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">3</span><span class="p">][:]</span>
+
+        <span class="c1"># 2. wave</span>
+        <span class="c1"># http://iraf.net/irafdocs/specwcs.php</span>
+        <span class="c1"># wi = CRVALi + CDi_i * (li - CRPIXi)</span>
+        <span class="n">CRVAL1</span> <span class="o">=</span> <span class="n">hdulist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;CRVAL1&#39;</span><span class="p">]</span>
+        <span class="n">CD1_1</span> <span class="o">=</span> <span class="n">hdulist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;CD1_1&#39;</span><span class="p">]</span>
+        <span class="n">CRPIX1</span> <span class="o">=</span> <span class="n">hdulist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;CRPIX1&#39;</span><span class="p">]</span>
+        <span class="n">Npix</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">flux</span><span class="p">)</span>
+        <span class="n">wavelog</span> <span class="o">=</span> <span class="n">CRVAL1</span> <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">Npix</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">CRPIX1</span><span class="p">)</span> <span class="o">*</span> <span class="n">CD1_1</span>
+        <span class="n">wave</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">wavelog</span><span class="p">)</span>
+
+        <span class="n">spec</span> <span class="o">=</span> <span class="n">Table</span><span class="p">([</span><span class="n">wave</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">flux_err</span><span class="p">,</span> <span class="n">mask</span><span class="p">],</span>
+                     <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;wave&#39;</span><span class="p">,</span> <span class="s1">&#39;flux&#39;</span><span class="p">,</span> <span class="s1">&#39;flux_err&#39;</span><span class="p">,</span> <span class="s1">&#39;mask&#39;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">spec</span>
+
+    <span class="c1"># SDSS DR10/DR12 spectrum</span>
+    <span class="k">if</span> <span class="n">filesource</span> <span class="o">==</span> <span class="s1">&#39;sdss_dr10&#39;</span> <span class="ow">or</span> <span class="n">filesource</span> <span class="o">==</span> <span class="s1">&#39;sdss_dr12&#39;</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+        <span class="n">specdata</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">wave</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;wave&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="mf">10.</span><span class="p">,</span> <span class="n">specdata</span><span class="p">[</span><span class="s1">&#39;loglam&#39;</span><span class="p">]))</span>
+        <span class="n">flux_err</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;flux_err&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">(</span><span class="n">specdata</span><span class="p">[</span><span class="s1">&#39;ivar&#39;</span><span class="p">])</span> <span class="o">**</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">)</span>
+        <span class="n">specdata</span><span class="o">.</span><span class="n">add_columns</span><span class="p">([</span><span class="n">wave</span><span class="p">,</span> <span class="n">flux_err</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">specdata</span>
+
+    <span class="c1"># LAMOST DR2/DR3 spectrum</span>
+    <span class="k">if</span> <span class="n">filesource</span> <span class="o">==</span> <span class="s1">&#39;lamost_dr3&#39;</span> <span class="ow">or</span> <span class="n">filesource</span> <span class="o">==</span> <span class="s1">&#39;lamost_dr2&#39;</span> <span class="ow">or</span> <span class="n">filesource</span> <span class="o">==</span> <span class="s1">&#39;lamost_dr1&#39;</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+        <span class="n">specdata</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+        <span class="n">flux</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;flux&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">specdata</span><span class="p">[</span><span class="s1">&#39;col0&#39;</span><span class="p">])</span>
+        <span class="n">ivar</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;ivar&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">specdata</span><span class="p">[</span><span class="s1">&#39;col1&#39;</span><span class="p">])</span>
+        <span class="n">flux_err</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;flux_err&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">(</span><span class="n">specdata</span><span class="p">[</span><span class="s1">&#39;col1&#39;</span><span class="p">])</span> <span class="o">**</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">)</span>
+        <span class="n">wave</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;wave&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">specdata</span><span class="p">[</span><span class="s1">&#39;col2&#39;</span><span class="p">])</span>
+        <span class="n">and_mask</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;and_mask&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">specdata</span><span class="p">[</span><span class="s1">&#39;col3&#39;</span><span class="p">])</span>
+        <span class="n">or_mask</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;or_mask&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">specdata</span><span class="p">[</span><span class="s1">&#39;col4&#39;</span><span class="p">])</span>
+        <span class="c1"># for flux_err, convert inf to nan</span>
+        <span class="n">flux_err</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isinf</span><span class="p">(</span><span class="n">flux_err</span><span class="o">.</span><span class="n">data</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="k">return</span> <span class="n">Table</span><span class="p">([</span><span class="n">wave</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">flux_err</span><span class="p">,</span> <span class="n">ivar</span><span class="p">,</span> <span class="n">and_mask</span><span class="p">,</span> <span class="n">or_mask</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<span class="k">def</span> <span class="nf">_test_read_spectrum</span><span class="p">():</span>
+    <span class="n">fp</span> <span class="o">=</span> <span class="s1">&#39;/home/cham/PycharmProjects/bopy/bopy/data/test_spectra/lamost_dr3/&#39;</span>\
+         <span class="o">+</span> <span class="n">lamost_filepath</span><span class="p">(</span><span class="s1">&#39;GAC_061N46_V3&#39;</span><span class="p">,</span> <span class="mi">55939</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">78</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">fp</span><span class="p">)</span>
+    <span class="n">sp</span> <span class="o">=</span> <span class="n">read_spectrum</span><span class="p">(</span><span class="n">fp</span><span class="p">)</span>
+    <span class="n">sp</span><span class="o">.</span><span class="n">pprint</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="MedSpec"><a class="viewcode-back" href="../../laspec.html#laspec.read_spectrum.MedSpec">[docs]</a><span class="k">class</span> <span class="nc">MedSpec</span><span class="p">(</span><span class="n">OrderedDict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; for Median Resolution Spectrum &quot;&quot;&quot;</span>
+    <span class="n">meta</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;No.    Name     Dimensions</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">   </span><span class="si">{}</span><span class="s2">   </span><span class="si">{}</span><span class="s2">Rx</span><span class="si">{}</span><span class="s2">C</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">colnames</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">s</span>
+
+<div class="viewcode-block" id="MedSpec.read"><a class="viewcode-back" href="../../laspec.html#laspec.read_spectrum.MedSpec.read">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="n">fp</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">read_lamostms</span><span class="p">(</span><span class="n">fp</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="read_lamostms"><a class="viewcode-back" href="../../laspec.html#laspec.read_spectrum.read_lamostms">[docs]</a><span class="k">def</span> <span class="nf">read_lamostms</span><span class="p">(</span><span class="n">fp</span><span class="p">):</span>
+    <span class="c1"># read fits</span>
+    <span class="n">hl</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">fp</span><span class="p">)</span>
+
+    <span class="c1"># initialize MS</span>
+    <span class="n">ms</span> <span class="o">=</span> <span class="n">MedSpec</span><span class="p">()</span>
+
+    <span class="c1"># set meta</span>
+    <span class="n">ms</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span><span class="n">hl</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">)</span>
+
+    <span class="c1"># set spec</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">hl</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
+        <span class="n">ms</span><span class="p">[</span><span class="n">data</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="n">OrderedDict</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">header</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">ms</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;@Cham: testing &#39;&#39;read_spectrum&#39;&#39; ...&#39;</span><span class="p">)</span>
+    <span class="n">_test_read_spectrum</span><span class="p">()</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">=======================================</span>
+<span class="sd">filesource:   &#39;lamost_dr2&#39;</span>
+<span class="sd">=======================================</span>
+<span class="sd">documents of data structures (LAMOST and SDSS spectra)</span>
+<span class="sd">http://dr2.lamost.org/doc/data-production-description#toc_3</span>
+
+<span class="sd"> RowNumber 	Data                Type</span>
+<span class="sd"> 1           Flux                float</span>
+<span class="sd"> 2           Inverse Variance 	 float</span>
+<span class="sd"> 3           WaveLength          float</span>
+<span class="sd"> 4           Andmask             float</span>
+<span class="sd"> 5           Ormask              float</span>
+
+
+<span class="sd">=======================================</span>
+<span class="sd">filesource:   &#39;sdss_dr7&#39;</span>
+<span class="sd">=======================================</span>
+<span class="sd">http://classic.sdss.org/dr7/dm/flatFiles/spSpec.html</span>
+
+
+<span class="sd">=======================================</span>
+<span class="sd">filesource:   &#39;sdss_dr10&#39; / &#39;sdss_dr12&#39;</span>
+<span class="sd">=======================================</span>
+<span class="sd">http://data.sdss3.org/datamodel/files/BOSS_SPECTRO_REDUX/RUN2D/spectra/PLATE4/spec.html</span>
+
+<span class="sd"> HDU 0  : Header info from spPlate</span>
+<span class="sd"> HDU 1  : Coadded spectrum from spPlate --&gt; use this</span>
+<span class="sd"> HDU 2  : Summary metadata copied from spAll</span>
+<span class="sd"> HDU 3  : Line fitting metadata from spZline</span>
+<span class="sd"> HDU 4+ : [Optional] Individual spCFrame spectra [B, R for each exposure]</span>
+
+
+<span class="sd">HDU 0: Header keywords only</span>
+
+<span class="sd">Copied from spPlate with the following additions/modifications:</span>
+
+<span class="sd">   PLUG_RA, PLUG_DEC, THING_ID, FIBERID: added from spAll</span>
+<span class="sd">   NEXP and EXPID*: modified to just include the frames which contributed to this fiber</span>
+<span class="sd">   Removed keywords which apply only to single exposures</span>
+
+<span class="sd">HDU 1 (extname COADD): Coadded Spectrum from spPlate</span>
+
+<span class="sd">Binary table with columns:</span>
+<span class="sd"> Required    Columns</span>
+<span class="sd"> Col     Name        Type        Comment</span>
+<span class="sd"> 1       flux        float32 	coadded calibrated flux [10-17 ergs/s/cm2/Å]</span>
+<span class="sd"> 2       loglam      float32 	log10(wavelength [Å])</span>
+<span class="sd"> 3       ivar        float32 	inverse variance of flux</span>
+<span class="sd"> 4       and_mask 	int32       AND mask</span>
+<span class="sd"> 5       or_mask 	int32       OR mask</span>
+<span class="sd"> 6       wdisp       float32 	wavelength dispersion in pixel=dloglam units</span>
+<span class="sd"> 7       sky         float32 	subtracted sky flux [10-17 ergs/s/cm2/Å]</span>
+<span class="sd"> 8       model       float32 	pipeline best model fit used for classification and redshift</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Bo Zhang.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

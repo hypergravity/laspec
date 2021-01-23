@@ -1,0 +1,264 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>laspec.mpl &mdash; laspec 2021.123.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> laspec
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2021.123.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">User guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html">laspec</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html#authors">Authors</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Tutorials</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial.html">Tutorials</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../laspec.html">laspec package</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">laspec</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>laspec.mpl</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for laspec.mpl</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">rc</span><span class="p">,</span> <span class="n">rcParams</span>
+
+
+<div class="viewcode-block" id="set_xminor"><a class="viewcode-back" href="../../laspec.html#laspec.mpl.set_xminor">[docs]</a><span class="k">def</span> <span class="nf">set_xminor</span><span class="p">(</span><span class="n">b</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="n">rcParams</span><span class="p">[</span><span class="s2">&quot;xtick.minor.bottom&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">b</span>  <span class="c1">## draw x axis bottom minor ticks</span>
+    <span class="n">rcParams</span><span class="p">[</span><span class="s2">&quot;xtick.minor.top&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">b</span>
+    <span class="n">rcParams</span><span class="p">[</span><span class="s2">&quot;xtick.minor.visible&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">b</span>
+    <span class="k">return</span></div>
+
+
+<div class="viewcode-block" id="set_yminor"><a class="viewcode-back" href="../../laspec.html#laspec.mpl.set_yminor">[docs]</a><span class="k">def</span> <span class="nf">set_yminor</span><span class="p">(</span><span class="n">b</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="n">rcParams</span><span class="p">[</span><span class="s2">&quot;ytick.minor.left&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">b</span>  <span class="c1">## draw y axis left minor ticks</span>
+    <span class="n">rcParams</span><span class="p">[</span><span class="s2">&quot;ytick.minor.right&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">b</span>  <span class="c1">## draw y axis right minor ticks</span>
+    <span class="n">rcParams</span><span class="p">[</span><span class="s2">&quot;ytick.minor.visible&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">b</span>  <span class="c1">## visibility of minor ticks on y-axis</span>
+    <span class="k">return</span></div>
+
+
+<div class="viewcode-block" id="set_cham"><a class="viewcode-back" href="../../laspec.html#laspec.mpl.set_cham">[docs]</a><span class="k">def</span> <span class="nf">set_cham</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">xminor</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">yminor</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">latex</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+
+    <span class="k">if</span> <span class="n">latex</span><span class="p">:</span>
+        <span class="n">rc</span><span class="p">(</span><span class="s1">&#39;text&#39;</span><span class="p">,</span> <span class="n">usetex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">rcParams</span><span class="p">[</span><span class="s2">&quot;mathtext.fontset&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;cm&quot;</span>
+        <span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;text.latex.preamble&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;\usepackage</span><span class="si">{amsmath}</span><span class="s2">&quot;</span>
+
+    <span class="c1"># font size</span>
+    <span class="n">rcParams</span><span class="p">[</span><span class="s2">&quot;font.size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fontsize</span>
+
+    <span class="c1"># xticks</span>
+    <span class="n">rcParams</span><span class="p">[</span><span class="s2">&quot;xtick.top&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1">## draw ticks on the top side</span>
+    <span class="n">rcParams</span><span class="p">[</span><span class="s2">&quot;xtick.bottom&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1">## draw ticks on the bottom side</span>
+    <span class="n">rcParams</span><span class="p">[</span><span class="s2">&quot;xtick.major.size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">4</span>  <span class="c1">## major tick size in points</span>
+    <span class="n">rcParams</span><span class="p">[</span><span class="s2">&quot;xtick.minor.size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>  <span class="c1">## minor tick size in points</span>
+    <span class="n">rcParams</span><span class="p">[</span><span class="s2">&quot;xtick.major.width&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.2</span>  <span class="c1">## major tick width in points</span>
+    <span class="n">rcParams</span><span class="p">[</span><span class="s2">&quot;xtick.direction&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;in&quot;</span>  <span class="c1">## direction: {in, out, inout}</span>
+
+    <span class="c1"># yticks</span>
+    <span class="n">rcParams</span><span class="p">[</span><span class="s2">&quot;ytick.left&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1">## draw ticks on the left side</span>
+    <span class="n">rcParams</span><span class="p">[</span><span class="s2">&quot;ytick.right&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1">## draw ticks on the right side</span>
+    <span class="n">rcParams</span><span class="p">[</span><span class="s2">&quot;ytick.major.size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">4</span>  <span class="c1">## major tick size in points</span>
+    <span class="n">rcParams</span><span class="p">[</span><span class="s2">&quot;ytick.minor.size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>  <span class="c1">## minor tick size in points</span>
+    <span class="n">rcParams</span><span class="p">[</span><span class="s2">&quot;ytick.major.width&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.2</span>  <span class="c1">## major tick width in points</span>
+    <span class="n">rcParams</span><span class="p">[</span><span class="s2">&quot;ytick.direction&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;in&quot;</span>  <span class="c1">## direction: {in, out, inout}</span>
+
+    <span class="n">set_xminor</span><span class="p">(</span><span class="n">xminor</span><span class="p">)</span>
+    <span class="n">set_yminor</span><span class="p">(</span><span class="n">yminor</span><span class="p">)</span>
+    <span class="k">return</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">set_cham</span><span class="p">()</span>
+    <span class="n">set_xminor</span><span class="p">()</span>
+    <span class="n">set_yminor</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Bo Zhang.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
