@@ -30,8 +30,9 @@ def calculate_m2(Pday=14.5, ideg=90, m1=2.16, Kkms=50):
 
     m1kg = m1 * u.solMass.to(u.kg)
     m2kg = sympy.symbols("m2")
-    a = sympy.solve(np.power(m2kg * np.sin(irad), 3) / np.power((m1kg + m2kg), 2) - Psec * np.power(Kms, 3) / (
-                2 * np.pi * const.G.value), m2kg)
+    a = sympy.solve(
+        np.power(m2kg * np.sin(irad), 3) / np.power((m1kg + m2kg), 2) - Psec * np.power(Kms, 3) \
+        / (2 * np.pi * const.G.value), m2kg)
     mass = a[0]
     return mass / u.solMass.to(u.kg)
 
