@@ -72,22 +72,27 @@ def measure_line_index(wave,
 
     flux_err: array-like
         flux error vector (optional)
+
         If un-specified, auto-generate an np.ones array
 
     mask: array-like
         andmask or ormask (optional)
+
         If un-specified, auto-generate an np.ones array (evenly weighted)
 
     line_info: dict
         information about spectral line, eg:
-        line_info_dib5780 = {'line_center':         5780,
-                             'line_range':          (5775, 5785),
-                             'line_shoulder_left':  (5755, 5775),
-                             'line_shoulder_right': (5805, 5825)}
+
+        >>> line_info_dib5780 = {'line_center':         5780,
+        >>>                     'line_range':          (5775, 5785),
+        >>>                     'line_shoulder_left':  (5755, 5775),
+        >>>                     'line_shoulder_right': (5805, 5825)}
 
     num_refit: non-negative integer
         number of refitting.
+
         If 0, no refit will be performed
+
         If positive, refits will be performed after adding normal random noise
 
     z: float
@@ -95,10 +100,12 @@ def measure_line_index(wave,
 
     filepath: string
         path of the diagnostic figure
+
         if None, do nothing, else print diagnostic figure
 
     return_type: string
         'dict' or 'array'
+
         if 'array', np.array(return dict.values())
 
     verbose: bool
@@ -436,10 +443,11 @@ def save_image_line_indice(filepath, wave, flux, ind_range, cont_range,
 
     line_info: dict
         information about spectral line, eg:
-        line_info_dib5780 = {'line_center':         5780,
-                             'line_range':          (5775, 5785),
-                             'line_shoulder_left':  (5755, 5775),
-                             'line_shoulder_right': (5805, 5825)}
+
+        >>> line_info_dib5780 = {'line_center':         5780,
+        >>>                      'line_range':          (5775, 5785),
+        >>>                      'line_shoulder_left':  (5755, 5775),
+        >>>                      'line_shoulder_right': (5805, 5825)}
 
     """
     filename = os.path.basename(filepath)

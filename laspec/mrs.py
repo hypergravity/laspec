@@ -324,10 +324,6 @@ class MrsSpec:
         rv: float
             radial velocity in km/s
 
-        Returns
-        -------
-        RV-corrected wavelength
-
         """
         if rv is None:
             rv = self.rv
@@ -574,10 +570,11 @@ class MrsEpoch:
         return
 
     def wave_rv(self, rv=None):
-        """ return RV-corrected wavelength array
+        """
+        calculate RV-corrected wavelength array
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         rv: float
             radial velocity in km/s
 
