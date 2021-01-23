@@ -8,3 +8,5 @@ astropy
 tqdm
 matplotlib
 scikit-learn
+lmfit
+tensorflow
