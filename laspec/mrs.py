@@ -317,11 +317,17 @@ class MrsSpec:
             return
 
     def wave_rv(self, rv=None):
-        """ return RV-corrected wavelength array
-        Parameter
-        ---------
+        """ calculate RV-corrected wavelength array
+
+        Parameters
+        ----------
         rv: float
-            radial velocity [km/s]
+            radial velocity in km/s
+
+        Returns
+        -------
+        RV-corrected wavelength
+
         """
         if rv is None:
             rv = self.rv
@@ -569,10 +575,12 @@ class MrsEpoch:
 
     def wave_rv(self, rv=None):
         """ return RV-corrected wavelength array
+
         Parameter
         ---------
-        rv:
-            float, radial velocity [km/s]
+        rv: float
+            radial velocity in km/s
+
         """
         if rv is None:
             rv = self.rv
