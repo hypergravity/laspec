@@ -1,6 +1,15 @@
 laspec package
 ==============
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   laspec.extern
+   laspec.old
+
 Submodules
 ----------
 
