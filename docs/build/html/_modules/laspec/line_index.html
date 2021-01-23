@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>laspec.line_index &mdash; laspec 2021.119.0 documentation</title>
+  <title>laspec.line_index &mdash; laspec 2021.123.0 documentation</title>
   
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                2021.119.0
+                2021.123.0
               </div>
             
           
@@ -86,14 +86,14 @@
               
             
             
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+              <p class="caption"><span class="caption-text">Introduction</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../intro.html">laspec</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../intro.html#authors">Authors</a></li>
 </ul>
-<p class="caption"><span class="caption-text">API:</span></p>
+<p class="caption"><span class="caption-text">API</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../modules.html">laspec</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../laspec.html">laspec package</a></li>
 </ul>
 
             
@@ -161,39 +161,13 @@
             
   <h1>Source code for laspec.line_index</h1><div class="highlight"><pre>
 <span></span><span class="c1"># -*- coding: utf-8 -*-</span>
-<span class="sd">&quot;&quot;&quot;</span>
-
-<span class="sd">Author</span>
-<span class="sd">------</span>
-<span class="sd">Bo Zhang</span>
-
-<span class="sd">Email</span>
-<span class="sd">-----</span>
-<span class="sd">bozhang@nao.cas.cn</span>
-
-<span class="sd">Created on</span>
-<span class="sd">----------</span>
-<span class="sd">- Fri Jul  3 13:13:06 2015    read_spectrum</span>
-
-<span class="sd">Modifications</span>
-<span class="sd">-------------</span>
-<span class="sd">- Wed Jul 29 21:46:00 2015    measure_line_index</span>
-<span class="sd">- Fri Nov 20 10:16:59 2015    reformatting code</span>
-<span class="sd">- Sat Jan 16 19:55:57 2016    migrate from spec.py</span>
-<span class="sd">- Thu Jul 14 23:57:57 2016    plot every line indice</span>
-<span class="sd">- Sat Jul 23 17:35:00 2016    update line_index.py</span>
-
-<span class="sd">Aims</span>
-<span class="sd">----</span>
-<span class="sd">- measure line index from spectra</span>
-
-<span class="sd">&quot;&quot;&quot;</span>
-
-<span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">collections</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">lmfit.models</span> <span class="kn">import</span> <span class="n">LinearModel</span><span class="p">,</span> <span class="n">GaussianModel</span>
+
 <span class="kn">from</span> <span class="nn">.read_spectrum</span> <span class="kn">import</span> <span class="n">read_spectrum</span>
 
 

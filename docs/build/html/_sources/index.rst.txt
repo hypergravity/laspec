@@ -6,20 +6,18 @@
 Welcome to laspec's documentation!
 ==================================
 
+
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :maxdepth: 3
+   :caption: Introduction
 
    intro
 
-API
-===
-
 .. toctree::
-   :maxdepth: 1
-   :caption: API:
+   :maxdepth: 2
+   :caption: API
 
-   modules
+   laspec
 
 Indices and tables
 ==================
