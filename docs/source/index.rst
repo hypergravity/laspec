@@ -11,6 +11,14 @@ Welcome to laspec's documentation!
    :caption: Contents:
 
    intro
+
+API
+===
+
+.. toctree::
+   :maxdepth: 1
+   :caption: API:
+
    modules
 
 Indices and tables

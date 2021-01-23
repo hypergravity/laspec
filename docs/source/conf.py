@@ -39,7 +39,10 @@ release = __version__
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ["sphinx.ext.autodoc",
+extensions = ["recommonmark",
+              "sphinx.ext.autodoc",
+              "sphinx.ext.coverage",
+              "sphinx.ext.githubpages",
               "sphinx.ext.napoleon",
               "sphinx.ext.viewcode",
               "sphinx.ext.mathjax"
