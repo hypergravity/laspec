@@ -1,28 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-
-Author
-------
-Bo Zhang
-
-Email
------
-bozhang@nao.cas.cn
-
-Created on
-----------
-- Tue Mar  8 15:26:00 2016    read_spectrum
-
-Modifications
--------------
-- Fri Jul 15 16:08:00 2016    migrate read_spectrum from lamost.py
-
-Aims
-----
-- read various kinds of spectra
-
-"""
-
 import os
 from collections import OrderedDict
 

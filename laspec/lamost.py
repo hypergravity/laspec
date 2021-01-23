@@ -1,33 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-
-Author
-------
-Bo Zhang
-
-Email
------
-bozhang@nao.cas.cn
-
-Created on
-----------
-- Fri Jul  3 13:13:06 2015    read_spectrum
-
-Modifications
--------------
-- Fri Nov 20 10:16:59 2015    reformatting code
-- Sun Feb 28 14:39:16 2016    migrated to bopy.spec.lamost
-- Fri Jul 15 16:08:00 2016    migrated read_spectrum to read_spectrum.py
-- Mon Aug 19 14:52:00 2019    migrated to laspec
-
-
-Aims
-----
-- generate LAMOST spectra file name/path
-
-"""
-
-
 import os
 
 import numpy as np

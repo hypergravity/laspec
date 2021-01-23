@@ -1,37 +1,11 @@
 # -*- coding: utf-8 -*-
-"""
-
-Author
-------
-Bo Zhang
-
-Email
------
-bozhang@nao.cas.cn
-
-Created on
-----------
-- Fri Jul  3 13:13:06 2015    read_spectrum
-
-Modifications
--------------
-- Wed Jul 29 21:46:00 2015    measure_line_index
-- Fri Nov 20 10:16:59 2015    reformatting code
-- Sat Jan 16 19:55:57 2016    migrate from spec.py
-- Thu Jul 14 23:57:57 2016    plot every line indice
-- Sat Jul 23 17:35:00 2016    update line_index.py
-
-Aims
-----
-- measure line index from spectra
-
-"""
-
-import os
 import collections
-import numpy as np
+import os
+
 import matplotlib.pyplot as plt
+import numpy as np
 from lmfit.models import LinearModel, GaussianModel
+
 from .read_spectrum import read_spectrum
 
 

@@ -1,28 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-
-Author
-------
-Bo Zhang
-
-Email
------
-bozhang@nao.cas.cn
-
-Created on
-----------
-- Fri Feb  26 21:44:00 2016     convolution
-
-Modifications
--------------
-- Sun Mar   6 21:00:00 2016     convolve from arbitrary R_hi to arbitrary R_lo
-
-Aims
-----
-- degrade high resolution spectra to low resolution spectra
-
-"""
-
 # ###########################################################################
 # Enlightening example:
 #

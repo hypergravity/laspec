@@ -1,28 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-
-Author
-------
-Bo Zhang
-
-Email
------
-bozhang@nao.cas.cn
-
-Created on
-----------
-- Sun Feb  28 15:02:06 2016    Spec
-
-Modifications
--------------
-- Fri Nov 20 10:16:00 2015    reformatting code
-- Tue Mar  1 12:33:00 2016
-
-Aims
-----
-- spec class
-
-"""
 
 import numpy as np
 from astropy.table import Table, Column
