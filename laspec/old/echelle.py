@@ -1,29 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-
-Author
-------
-Bo Zhang
-
-Email
------
-bozhang@nao.cas.cn
-
-Created on
-----------
-- Tue Feb  23 12:37:26 2016    class echelle
-
-Modifications
--------------
--
-
-Aims
-----
-- class echelle: echelle spectra tools
-
-"""
-
-
 import numpy as np
 import glob
 import os

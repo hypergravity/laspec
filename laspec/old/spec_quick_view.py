@@ -1,33 +1,9 @@
 # -*- coding: utf-8 -*-
-"""
-
-Author
-------
-Bo Zhang
-
-Email
------
-bozhang@nao.cas.cn
-
-Created on
-----------
-- Wed Feb  24 15:05:00 2016     spec_quick_view
-
-Modifications
--------------
--
-
-Aims
-----
-- method spec_quick_view: tool for quick view of spectra
-
-"""
-
 import numpy as np
 import matplotlib.pyplot as plt
 import astropy.constants as const
 from astropy.table import Table
-from bopy.spec.spec import spec_quick_init, Spec, norm_spec_pixel, wave2ranges
+from ..spec import spec_quick_init, Spec, norm_spec_pixel, wave2ranges
 
 # input: a list of spectra
 # todo : norm spectra --> plot spectra --> print file
