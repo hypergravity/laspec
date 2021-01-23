@@ -108,22 +108,6 @@ laspec.mrs module
    :undoc-members:
    :show-inheritance:
 
-laspec.neural\_network module
------------------------------
-
-.. automodule:: laspec.neural_network
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-laspec.nn module
-----------------
-
-.. automodule:: laspec.nn
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 laspec.normalization module
 ---------------------------
 
@@ -160,14 +144,6 @@ laspec.rvc module
 -----------------
 
 .. automodule:: laspec.rvc
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-laspec.slam\_model module
--------------------------
-
-.. automodule:: laspec.slam_model
    :members:
    :undoc-members:
    :show-inheritance:
