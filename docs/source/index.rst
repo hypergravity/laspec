@@ -6,7 +6,9 @@
 Welcome to laspec's documentation!
 ==================================
 
-2021.0124.1
+last modified : 2021.01.24
+
+I finally know how the `sphinx` and `readthedoc` work...
 
 .. toctree::
    :maxdepth: 2
