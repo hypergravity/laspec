@@ -1,3 +1,3 @@
-sphinx-apidoc -o source ../laspec ../laspec/old ../laspec/extern -f
+sphinx-apidoc -o source ../laspec -f
 make clean html
 open ./build/html/index.html
