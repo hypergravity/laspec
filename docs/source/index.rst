@@ -6,6 +6,7 @@
 Welcome to laspec's documentation!
 ==================================
 
+2021.0124.1
 
 .. toctree::
    :maxdepth: 2
