@@ -19,7 +19,7 @@ Welcome to laspec's documentation!
    :maxdepth: 3
    :caption: API
 
-   laspec
+   modules
 
 Indices and tables
 ==================
