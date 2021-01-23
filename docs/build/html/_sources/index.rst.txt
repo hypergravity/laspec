@@ -8,10 +8,16 @@ Welcome to laspec's documentation!
 
 
 .. toctree::
-   :maxdepth: 3
-   :caption: Introduction
+   :maxdepth: 2
+   :caption: User guide
 
    intro
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Tutorials
+
+   tutorial
 
 .. toctree::
    :maxdepth: 2
