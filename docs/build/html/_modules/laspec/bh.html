@@ -1,0 +1,246 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>laspec.bh &mdash; laspec 2021.119.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> laspec
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2021.119.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html">laspec</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html#authors">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">laspec</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">laspec</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>laspec.bh</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for laspec.bh</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">sympy</span>
+<span class="kn">import</span> <span class="nn">astropy.constants</span> <span class="k">as</span> <span class="nn">const</span>
+<span class="kn">import</span> <span class="nn">astropy.units</span> <span class="k">as</span> <span class="nn">u</span>
+
+
+<div class="viewcode-block" id="calculate_m2"><a class="viewcode-back" href="../../laspec.html#laspec.bh.calculate_m2">[docs]</a><span class="k">def</span> <span class="nf">calculate_m2</span><span class="p">(</span><span class="n">Pday</span><span class="o">=</span><span class="mf">14.5</span><span class="p">,</span> <span class="n">ideg</span><span class="o">=</span><span class="mi">90</span><span class="p">,</span> <span class="n">m1</span><span class="o">=</span><span class="mf">2.16</span><span class="p">,</span> <span class="n">Kkms</span><span class="o">=</span><span class="mi">50</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Calculate the mass of the secondary</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    Pday: float</span>
+<span class="sd">        Period in days</span>
+<span class="sd">    ideg:</span>
+<span class="sd">        inclination in degrees</span>
+<span class="sd">    m1:</span>
+<span class="sd">        the mass of the primary in Msun</span>
+<span class="sd">    Kkms</span>
+<span class="sd">        the K of the primary in km/s</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    M2:</span>
+<span class="sd">        the mass of the secondary</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">Kms</span> <span class="o">=</span> <span class="n">Kkms</span> <span class="o">*</span> <span class="mf">1000.</span>
+    <span class="n">Psec</span> <span class="o">=</span> <span class="n">Pday</span> <span class="o">*</span> <span class="mf">86400.</span>
+    <span class="n">irad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">ideg</span><span class="p">)</span>
+
+    <span class="n">m1kg</span> <span class="o">=</span> <span class="n">m1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">solMass</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">u</span><span class="o">.</span><span class="n">kg</span><span class="p">)</span>
+    <span class="n">m2kg</span> <span class="o">=</span> <span class="n">sympy</span><span class="o">.</span><span class="n">symbols</span><span class="p">(</span><span class="s2">&quot;m2&quot;</span><span class="p">)</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">sympy</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">m2kg</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">irad</span><span class="p">),</span> <span class="mi">3</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">((</span><span class="n">m1kg</span> <span class="o">+</span> <span class="n">m2kg</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">Psec</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">Kms</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span>
+                <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">const</span><span class="o">.</span><span class="n">G</span><span class="o">.</span><span class="n">value</span><span class="p">),</span> <span class="n">m2kg</span><span class="p">)</span>
+    <span class="n">mass</span> <span class="o">=</span> <span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">mass</span> <span class="o">/</span> <span class="n">u</span><span class="o">.</span><span class="n">solMass</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">u</span><span class="o">.</span><span class="n">kg</span><span class="p">)</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">calculate_m2</span><span class="p">())</span>
+
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Bo Zhang.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

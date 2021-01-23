@@ -1,0 +1,453 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>laspec.qconv &mdash; laspec 2021.119.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> laspec
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2021.119.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html">laspec</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html#authors">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">laspec</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">laspec</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>laspec.qconv</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for laspec.qconv</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">datetime</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">signal</span>
+
+<span class="kn">from</span> <span class="nn">.wavelength</span> <span class="kn">import</span> <span class="n">wave_log10</span>
+
+
+<div class="viewcode-block" id="Gaussian_kernel"><a class="viewcode-back" href="../../laspec.html#laspec.qconv.Gaussian_kernel">[docs]</a><span class="k">def</span> <span class="nf">Gaussian_kernel</span><span class="p">(</span><span class="n">dRV_sampling</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">dRV_Gk</span><span class="o">=</span><span class="mf">2.3548200450309493</span><span class="p">,</span> <span class="n">n_sigma_Gk</span><span class="o">=</span><span class="mf">5.</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Gaussian kernel</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dRV_sampling:</span>
+<span class="sd">         the sampling rate of the input spectrum (km/s)</span>
+<span class="sd">    dRV_Gk:</span>
+<span class="sd">        the sampling rate of the Gaussian kernel (km/s)</span>
+<span class="sd">    n_sigma_Gk:</span>
+<span class="sd">        the length of the Gaussian kernel, in terms of sigma</span>
+
+<span class="sd">    Return</span>
+<span class="sd">    ------</span>
+<span class="sd">    Gaussian kernel</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># FWHM --&gt; sigma</span>
+    <span class="n">sigma</span> <span class="o">=</span> <span class="n">dRV_Gk</span><span class="o">/</span><span class="n">dRV_sampling</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">2</span><span class="p">)))</span>
+    
+    <span class="c1"># determine X</span>
+    <span class="n">npix_half</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">(</span><span class="n">sigma</span><span class="o">*</span><span class="n">n_sigma_Gk</span><span class="p">)</span>
+    <span class="c1"># npix = 2 * npix_half + 1</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="n">npix_half</span><span class="p">,</span> <span class="n">npix_half</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+        
+    <span class="c1"># normalized Gaussian kernel</span>
+    <span class="n">kernel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-.</span><span class="mi">5</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="o">/</span><span class="n">sigma</span><span class="p">)</span><span class="o">**</span><span class="mf">2.</span><span class="p">)</span>
+    <span class="n">kernel</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">kernel</span></div>
+
+
+<div class="viewcode-block" id="Rotation_kernel"><a class="viewcode-back" href="../../laspec.html#laspec.qconv.Rotation_kernel">[docs]</a><span class="k">def</span> <span class="nf">Rotation_kernel</span><span class="p">(</span><span class="n">dRV_sampling</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">vsini</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">osr_kernel</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Rotation kernel</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dRV_sampling:</span>
+<span class="sd">        the sampling rate of the input spectrum (km/s)</span>
+<span class="sd">    vsini:</span>
+<span class="sd">        v*sin(i)  (km/s)</span>
+<span class="sd">    epsilon:</span>
+<span class="sd">        the limb-darkening coefficient (0, 1)</span>
+<span class="sd">    osr_kernel:</span>
+<span class="sd">        the over-sampling rate of the kernel</span>
+
+<span class="sd">    Return</span>
+<span class="sd">    ------</span>
+<span class="sd">    rotation kernel</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">osr_kernel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">osr_kernel</span> <span class="o">/</span> <span class="mi">2</span><span class="p">))</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span>  <span class="c1"># an odd number</span>
+    <span class="c1"># determine X</span>
+    <span class="n">npix_half</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">vsini</span> <span class="o">/</span> <span class="n">dRV_sampling</span><span class="p">))</span>
+    <span class="n">npix_half</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">(</span><span class="n">npix_half</span> <span class="o">*</span> <span class="n">osr_kernel</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">osr_kernel</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="c1"># npix = 2 * npix_half + 1</span>
+    <span class="n">vvl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="n">npix_half</span><span class="p">,</span> <span class="n">npix_half</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">osr_kernel</span> <span class="o">*</span> <span class="n">dRV_sampling</span> <span class="o">/</span> <span class="n">vsini</span>
+
+    <span class="c1"># rotation kernel</span>
+    <span class="n">denominator</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">vsini</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">epsilon</span> <span class="o">/</span> <span class="mf">3.0</span><span class="p">)</span>
+    <span class="n">c1</span> <span class="o">=</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">epsilon</span><span class="p">)</span> <span class="o">/</span> <span class="n">denominator</span>
+    <span class="n">c2</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">epsilon</span> <span class="o">/</span> <span class="n">denominator</span>
+    <span class="n">kernel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">vvl</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">,</span>
+                      <span class="n">c1</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">vvl</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">c2</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">vvl</span> <span class="o">**</span> <span class="mi">2</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">kernel</span> <span class="o">=</span> <span class="n">kernel</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">osr_kernel</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">kernel</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">kernel</span></div>
+
+
+<div class="viewcode-block" id="conv_spec_Gaussian"><a class="viewcode-back" href="../../laspec.html#laspec.qconv.conv_spec_Gaussian">[docs]</a><span class="k">def</span> <span class="nf">conv_spec_Gaussian</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">dRV_Gk</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                       <span class="n">R_hi</span><span class="o">=</span><span class="mf">3e5</span><span class="p">,</span> <span class="n">R_lo</span><span class="o">=</span><span class="mf">2000.</span><span class="p">,</span> <span class="n">n_sigma_Gk</span><span class="o">=</span><span class="mf">5.</span><span class="p">,</span> 
+                       <span class="n">interp</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">osr_ext</span><span class="o">=</span><span class="mf">3.</span><span class="p">,</span> <span class="n">wave_new</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; to convolve instrumental broadening (high-R spectrum to low-R spectrum)</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    wave: array</span>
+<span class="sd">        wavelength</span>
+<span class="sd">    flux: array</span>
+<span class="sd">        flux array</span>
+<span class="sd">    dRV_Gk: float</span>
+<span class="sd">        the FWHM of the Gaussian kernel (km/s)</span>
+<span class="sd">        if None, determined by R_hi and R_lo</span>
+<span class="sd">    R_hi: float</span>
+<span class="sd">        higher resolution</span>
+<span class="sd">    R_lo: float</span>
+<span class="sd">        lower resolution</span>
+<span class="sd">    n_sigma_Gk: float</span>
+<span class="sd">        the gaussian kernel width in terms of sigma</span>
+<span class="sd">    interp: bool</span>
+<span class="sd">        if True, interpolate to log10 wavelength</span>
+<span class="sd">    osr_ext:</span>
+<span class="sd">        the extra oversampling rate if interp is True.</span>
+<span class="sd">    wave_new:</span>
+<span class="sd">        if not None, return convolved spectrum at wave_new</span>
+<span class="sd">        if None, return log10 spectrum</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    wave_new, flux_new</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">interp</span><span class="p">:</span>
+        <span class="n">wave_interp</span> <span class="o">=</span> <span class="n">wave_log10</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">osr_ext</span><span class="o">=</span><span class="n">osr_ext</span><span class="p">)</span>
+        <span class="n">flux_interp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">wave_interp</span><span class="p">,</span> <span class="n">wave</span><span class="p">,</span> <span class="n">flux</span><span class="p">)</span> <span class="c1"># 10 times faster</span>
+        <span class="c1"># flux_interp = interp1d(wave, flux, kind=&quot;linear&quot;, bounds_error=False)(wave_interp)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">wave_interp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">wave</span><span class="p">)</span>
+        <span class="n">flux_interp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">flux</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">flux_interp</span><span class="p">))</span>
+    
+    <span class="c1"># evaluate the RV sampling rate via log10(wave) sampling rate</span>
+    <span class="c1"># d(log10(wave)) = z / ln(10) = d(RV)/(c*ln(10))</span>
+    <span class="c1"># --&gt; d(RV) = c*ln(10)*d(log10(wave))</span>
+    <span class="n">dRV_sampling</span> <span class="o">=</span> <span class="mf">299792.458</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">wave_interp</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">wave_interp</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="k">if</span> <span class="n">dRV_Gk</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">R_Gk</span> <span class="o">=</span> <span class="n">R_hi</span><span class="o">*</span><span class="n">R_lo</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">R_hi</span><span class="o">**</span><span class="mi">2</span><span class="o">-</span><span class="n">R_lo</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="c1"># Gaussian kernel resolution</span>
+        <span class="n">dRV_Gk</span> <span class="o">=</span> <span class="mf">299792.458</span> <span class="o">/</span> <span class="n">R_Gk</span> <span class="c1"># Gaussian kernel resolution (FWHM) --&gt; RV resolution</span>
+    <span class="c1"># generate Gaussian kernel</span>
+    <span class="n">Gk</span> <span class="o">=</span> <span class="n">Gaussian_kernel</span><span class="p">(</span><span class="n">dRV_sampling</span><span class="p">,</span> <span class="n">dRV_Gk</span><span class="p">,</span> <span class="n">n_sigma_Gk</span><span class="o">=</span><span class="n">n_sigma_Gk</span><span class="p">)</span>
+    
+    <span class="c1"># convolution</span>
+    <span class="c1"># fftconvolve is the most efficient ...currently</span>
+    <span class="n">flux_conv</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">fftconvolve</span><span class="p">(</span><span class="n">flux_interp</span><span class="p">,</span> <span class="n">Gk</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;same&quot;</span><span class="p">)</span>
+    <span class="c1"># flux_conv = np.convolve(flux_interp, Gk, mode=&quot;same&quot;)</span>
+    <span class="c1"># flux_conv = signal.convolve(flux_interp, Gk, mode=&quot;same&quot;)</span>
+    
+    <span class="c1"># interpolate to new wavelength grid if necessary</span>
+    <span class="k">if</span> <span class="n">wave_new</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">wave_interp</span><span class="p">,</span> <span class="n">flux_conv</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">flux_conv_interp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">wave_new</span><span class="p">,</span> <span class="n">wave_interp</span><span class="p">,</span> <span class="n">flux_conv</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">wave_new</span><span class="p">,</span> <span class="n">flux_conv_interp</span></div>
+    
+
+<div class="viewcode-block" id="conv_spec_Rotation"><a class="viewcode-back" href="../../laspec.html#laspec.qconv.conv_spec_Rotation">[docs]</a><span class="k">def</span> <span class="nf">conv_spec_Rotation</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">vsini</span><span class="o">=</span><span class="mf">100.</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span>
+                       <span class="n">interp</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">osr_ext</span><span class="o">=</span><span class="mf">3.</span><span class="p">,</span> <span class="n">wave_new</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; to convolve instrumental broadening (high-R spectrum to low-R spectrum)</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    wave: array</span>
+<span class="sd">        wavelength</span>
+<span class="sd">    flux: array</span>
+<span class="sd">        flux array</span>
+<span class="sd">    vsini: float</span>
+<span class="sd">        the projected stellar rotational velocity (km/s)</span>
+<span class="sd">    epsilon: float</span>
+<span class="sd">        0 to 1, the limb-darkening coefficient, default 0.6.</span>
+<span class="sd">    interp: bool</span>
+<span class="sd">        if True, interpolate to log10 wavelength</span>
+<span class="sd">    osr_ext:</span>
+<span class="sd">        the extra oversampling rate if interp is True.</span>
+<span class="sd">    wave_new:</span>
+<span class="sd">        if not None, return convolved spectrum at wave_new</span>
+<span class="sd">        if None, return log10 spectrum</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    wave_new, flux_new OR Table([wave, flux])</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">vsini</span> <span class="o">&gt;</span> <span class="mf">0.</span>
+    <span class="k">if</span> <span class="n">interp</span><span class="p">:</span>
+        <span class="n">wave_interp</span> <span class="o">=</span> <span class="n">wave_log10</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">osr_ext</span><span class="o">=</span><span class="n">osr_ext</span><span class="p">)</span>
+        <span class="n">flux_interp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">wave_interp</span><span class="p">,</span> <span class="n">wave</span><span class="p">,</span> <span class="n">flux</span><span class="p">)</span> <span class="c1"># 10 times faster</span>
+        <span class="c1"># flux_interp = interp1d(wave, flux, kind=&quot;linear&quot;, bounds_error=False)(wave_interp)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">wave_interp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">wave</span><span class="p">)</span>
+        <span class="n">flux_interp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">flux</span><span class="p">)</span>
+    <span class="c1">#assert np.all(np.isfinite(flux_interp))</span>
+    
+    <span class="c1"># evaluate the RV sampling rate via log10(wave) sampling rate</span>
+    <span class="c1"># d(log10(wave)) = z / ln(10) = d(RV)/(c*ln(10))</span>
+    <span class="c1"># --&gt; d(RV) = c*ln(10)*d(log10(wave))</span>
+    <span class="n">dRV_sampling</span> <span class="o">=</span> <span class="mf">299792.458</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">wave_interp</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">wave_interp</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+
+    <span class="c1"># generate rotation kernel</span>
+    <span class="n">Rk</span> <span class="o">=</span> <span class="n">Rotation_kernel</span><span class="p">(</span><span class="n">dRV_sampling</span><span class="p">,</span> <span class="n">vsini</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="n">epsilon</span><span class="p">,</span> <span class="n">osr_kernel</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+
+    <span class="c1"># convolution</span>
+    <span class="c1"># fftconvolve is the most efficient ...currently</span>
+    <span class="n">flux_conv</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">fftconvolve</span><span class="p">(</span><span class="n">flux_interp</span><span class="p">,</span> <span class="n">Rk</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;same&quot;</span><span class="p">)</span>
+    <span class="c1"># flux_conv = np.convolve(flux_interp, Gk, mode=&quot;same&quot;)</span>
+    <span class="c1"># flux_conv = signal.convolve(flux_interp, Gk, mode=&quot;same&quot;)</span>
+    
+    <span class="c1"># interpolate to new wavelength grid if necessary</span>
+    <span class="k">if</span> <span class="n">wave_new</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">wave_interp</span><span class="p">,</span> <span class="n">flux_conv</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">flux_conv_interp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">wave_new</span><span class="p">,</span> <span class="n">wave_interp</span><span class="p">,</span> <span class="n">flux_conv</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">wave_new</span><span class="p">,</span> <span class="n">flux_conv_interp</span></div>
+
+
+<div class="viewcode-block" id="read_phoenix_sun"><a class="viewcode-back" href="../../laspec.html#laspec.qconv.read_phoenix_sun">[docs]</a><span class="k">def</span> <span class="nf">read_phoenix_sun</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot; read PHOENIX synthetic spectrum for the Sun &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">laspec</span>
+    <span class="kn">from</span> <span class="nn">astropy.io</span> <span class="kn">import</span> <span class="n">fits</span>
+    <span class="n">flux_sun</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">laspec</span><span class="o">.</span><span class="n">__path__</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;/data/phoenix/lte05800-4.50-0.0.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+    <span class="n">wave_sun</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">laspec</span><span class="o">.</span><span class="n">__path__</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;/data/phoenix/WAVE_PHOENIX-ACES-AGSS-COND-2011.fits&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+    <span class="k">return</span> <span class="n">wave_sun</span><span class="p">,</span> <span class="n">flux_sun</span></div>
+
+
+<div class="viewcode-block" id="test_convolution"><a class="viewcode-back" href="../../laspec.html#laspec.qconv.test_convolution">[docs]</a><span class="k">def</span> <span class="nf">test_convolution</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot; testing convolving PHOENIX synthetic spectrum for the Sun &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+    <span class="kn">from</span> <span class="nn">laspec.convolution</span> <span class="kn">import</span> <span class="n">conv_spec</span>
+    <span class="n">wave_sun</span><span class="p">,</span> <span class="n">flux_sun</span> <span class="o">=</span> <span class="n">read_phoenix_sun</span><span class="p">()</span>
+    <span class="n">ind_optical</span> <span class="o">=</span> <span class="p">(</span><span class="n">wave_sun</span> <span class="o">&gt;</span> <span class="mi">4000</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">wave_sun</span> <span class="o">&lt;</span> <span class="mi">6000</span><span class="p">)</span>
+    <span class="n">wave</span> <span class="o">=</span> <span class="n">wave_sun</span><span class="p">[</span><span class="n">ind_optical</span><span class="p">]</span>
+    <span class="n">flux</span> <span class="o">=</span> <span class="n">flux_sun</span><span class="p">[</span><span class="n">ind_optical</span><span class="p">]</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;testing laspec.convolution.conv_spec ...  &quot;</span><span class="p">)</span>
+    <span class="n">t0</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>    
+    <span class="n">wave_conv1</span><span class="p">,</span> <span class="n">flux_conv1</span> <span class="o">=</span> <span class="n">conv_spec</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">R_hi</span><span class="o">=</span><span class="mf">3e5</span><span class="p">,</span> <span class="n">R_lo</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;time spent: &quot;</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span><span class="p">,</span> <span class="s2">&quot;npix = &quot;</span><span class="p">,</span> <span class="n">wave_conv1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    
+    <span class="n">wave_interp</span> <span class="o">=</span> <span class="n">wave_log10</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">osr_ext</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+    <span class="n">flux_interp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">wave_interp</span><span class="p">,</span> <span class="n">wave</span><span class="p">,</span> <span class="n">flux</span><span class="p">)</span> <span class="c1"># 10 times faster</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;testing laspec.qconv.conv_spec_Gaussian ...  &quot;</span><span class="p">)</span>
+    <span class="n">t0</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+    <span class="n">wave_conv2</span><span class="p">,</span> <span class="n">flux_conv2</span> <span class="o">=</span> <span class="n">conv_spec_Gaussian</span><span class="p">(</span><span class="n">wave_interp</span><span class="p">,</span> <span class="n">flux_interp</span><span class="p">,</span> <span class="n">R_hi</span><span class="o">=</span><span class="mf">3e5</span><span class="p">,</span> <span class="n">R_lo</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;time spent: &quot;</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span><span class="p">,</span> <span class="s2">&quot;npix = &quot;</span><span class="p">,</span> <span class="n">wave_conv2</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;testing laspec.qconv.conv_spec_Rotation ...  &quot;</span><span class="p">)</span>
+    <span class="n">t0</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>    
+    <span class="n">wave_conv3</span><span class="p">,</span> <span class="n">flux_conv3</span> <span class="o">=</span> <span class="n">conv_spec_Rotation</span><span class="p">(</span><span class="n">wave_conv2</span><span class="p">,</span> <span class="n">flux_conv2</span><span class="p">,</span> <span class="n">vsini</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;time spent: &quot;</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span><span class="p">,</span> <span class="s2">&quot;npix = &quot;</span><span class="p">,</span> <span class="n">wave_conv3</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    
+    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">flux</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">wave_conv1</span><span class="p">,</span> <span class="n">flux_conv1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;conv_spec&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">wave_conv2</span><span class="p">,</span> <span class="n">flux_conv2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;conv_spec_Gaussian&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">wave_conv3</span><span class="p">,</span> <span class="n">flux_conv3</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;conv_spec&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;upper right&quot;</span><span class="p">)</span>
+    <span class="k">return</span></div>
+    
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">test_convolution</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Bo Zhang.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

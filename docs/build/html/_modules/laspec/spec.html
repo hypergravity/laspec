@@ -1,0 +1,382 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>laspec.spec &mdash; laspec 2021.119.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> laspec
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2021.119.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html">laspec</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html#authors">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">laspec</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">laspec</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>laspec.spec</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for laspec.spec</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">Author</span>
+<span class="sd">------</span>
+<span class="sd">Bo Zhang</span>
+
+<span class="sd">Email</span>
+<span class="sd">-----</span>
+<span class="sd">bozhang@nao.cas.cn</span>
+
+<span class="sd">Created on</span>
+<span class="sd">----------</span>
+<span class="sd">- Sun Feb  28 15:02:06 2016    Spec</span>
+
+<span class="sd">Modifications</span>
+<span class="sd">-------------</span>
+<span class="sd">- Fri Nov 20 10:16:00 2015    reformatting code</span>
+<span class="sd">- Tue Mar  1 12:33:00 2016</span>
+
+<span class="sd">Aims</span>
+<span class="sd">----</span>
+<span class="sd">- spec class</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">astropy.table</span> <span class="kn">import</span> <span class="n">Table</span><span class="p">,</span> <span class="n">Column</span>
+
+
+<div class="viewcode-block" id="Spec"><a class="viewcode-back" href="../../laspec.html#laspec.spec.Spec">[docs]</a><span class="k">class</span> <span class="nc">Spec</span><span class="p">(</span><span class="n">Table</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Spec</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="c1"># print self.colnames</span>
+        <span class="c1"># assert &#39;wave&#39; in self.colnames</span>
+        <span class="c1"># assert &#39;flux&#39; in self.colnames</span>
+        <span class="c1"># why???</span>
+
+<div class="viewcode-block" id="Spec.norm_spec_pixel"><a class="viewcode-back" href="../../laspec.html#laspec.spec.Spec.norm_spec_pixel">[docs]</a>    <span class="k">def</span> <span class="nf">norm_spec_pixel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">norm_wave</span><span class="p">):</span>
+        <span class="n">sub_nearest_pixel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;wave&#39;</span><span class="p">]</span><span class="o">-</span><span class="n">norm_wave</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">]</span> <span class="o">/=</span> <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">][</span><span class="n">sub_nearest_pixel</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="Spec.norm_spec_median"><a class="viewcode-back" href="../../laspec.html#laspec.spec.Spec.norm_spec_median">[docs]</a>    <span class="k">def</span> <span class="nf">norm_spec_median</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">]</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="Spec.extract_chunk_wave_interval"><a class="viewcode-back" href="../../laspec.html#laspec.spec.Spec.extract_chunk_wave_interval">[docs]</a>    <span class="k">def</span> <span class="nf">extract_chunk_wave_interval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wave_intervals</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; return spec chunk in a given wavelength interval &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">wave_intervals</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">spec_chunks</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="c1"># should use ind (not sub)</span>
+            <span class="k">for</span> <span class="n">wave_interval</span> <span class="ow">in</span> <span class="n">wave_intervals</span><span class="p">:</span>
+                <span class="n">ind_wave_interval</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;wave&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">wave_interval</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                    <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;wave&#39;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">wave_interval</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                <span class="n">spec_chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="n">ind_wave_interval</span><span class="p">])</span>
+            <span class="k">return</span> <span class="n">spec_chunks</span></div></div>
+
+
+<span class="c1"># ############################# #</span>
+<span class="c1"># spectrum quick initialization #</span>
+<span class="c1"># ############################# #</span>
+
+<div class="viewcode-block" id="spec_quick_init"><a class="viewcode-back" href="../../laspec.html#laspec.spec.spec_quick_init">[docs]</a><span class="k">def</span> <span class="nf">spec_quick_init</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">flux</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    wave : numpy.ndarray</span>
+<span class="sd">        wavelength array</span>
+
+<span class="sd">    flux : numpy.ndarray</span>
+<span class="sd">        flux array</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    spec_ : bopy.spec.Spec</span>
+<span class="sd">        Spec, at least contains &#39;wave&#39; and &#39;flux&#39; columns.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">spec_</span> <span class="o">=</span> <span class="n">Spec</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">Column</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">wave</span><span class="p">),</span> <span class="s1">&#39;wave&#39;</span><span class="p">),</span>
+         <span class="n">Column</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">flux</span><span class="p">),</span> <span class="s1">&#39;flux&#39;</span><span class="p">)])</span>
+    <span class="k">return</span> <span class="n">spec_</span></div>
+
+
+<span class="k">def</span> <span class="nf">_test_spec_quick_init</span><span class="p">():</span>
+    <span class="n">wave</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">5000.</span><span class="p">,</span> <span class="mf">7000.</span><span class="p">,</span> <span class="mf">0.91</span><span class="p">)</span>
+    <span class="n">flux</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">wave</span><span class="o">/</span><span class="mi">1000</span><span class="p">)</span><span class="o">*</span><span class="mi">1000</span> <span class="o">+</span> <span class="mf">30000.</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">wave</span><span class="p">))</span>
+    <span class="n">spec_qi</span> <span class="o">=</span> <span class="n">spec_quick_init</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">flux</span><span class="p">)</span>
+    <span class="n">spec_qi</span><span class="o">.</span><span class="n">pprint</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;--------------------------------------&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;@Cham: _test_spec_quick_init() OK ... &#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;--------------------------------------&#39;</span><span class="p">)</span>
+
+
+<span class="c1"># ###################################### #</span>
+<span class="c1"># continuum normalization for a spectrum #</span>
+<span class="c1"># ###################################### #</span>
+
+<div class="viewcode-block" id="wave2ranges"><a class="viewcode-back" href="../../laspec.html#laspec.spec.wave2ranges">[docs]</a><span class="k">def</span> <span class="nf">wave2ranges</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">wave_intervals</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; convert wavelength intervals to (pixel) ranges &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">wave_intervals</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">wave_intervals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">wave_intervals</span><span class="p">)</span>
+
+        <span class="c1"># assert wave_intervals is a 2-column array</span>
+        <span class="k">assert</span> <span class="n">wave_intervals</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">2</span>
+
+        <span class="n">ranges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">wave_intervals</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">wave_intervals</span><span class="p">)):</span>
+            <span class="n">ranges</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">wave</span> <span class="o">&lt;</span> <span class="n">wave_intervals</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+            <span class="n">ranges</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">wave</span> <span class="o">&lt;</span> <span class="n">wave_intervals</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">ranges</span></div>
+
+
+<span class="c1"># ################################## #</span>
+<span class="c1"># other ways to normalize a spectrum #</span>
+<span class="c1"># ################################## #</span>
+
+<div class="viewcode-block" id="norm_spec_pixel"><a class="viewcode-back" href="../../laspec.html#laspec.spec.norm_spec_pixel">[docs]</a><span class="k">def</span> <span class="nf">norm_spec_pixel</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="n">norm_wave</span><span class="p">):</span>
+    <span class="n">sub_nearest_pixel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">spec</span><span class="p">[</span><span class="s1">&#39;wave&#39;</span><span class="p">]</span><span class="o">-</span><span class="n">norm_wave</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">spec</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">]</span> <span class="o">/=</span> <span class="n">spec</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">][</span><span class="n">sub_nearest_pixel</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">spec</span></div>
+
+
+<div class="viewcode-block" id="norm_spec_median"><a class="viewcode-back" href="../../laspec.html#laspec.spec.norm_spec_median">[docs]</a><span class="k">def</span> <span class="nf">norm_spec_median</span><span class="p">(</span><span class="n">spec</span><span class="p">):</span>
+    <span class="n">spec</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">]</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">spec</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">spec</span></div>
+
+
+<div class="viewcode-block" id="norm_spec_chunk_median"><a class="viewcode-back" href="../../laspec.html#laspec.spec.norm_spec_chunk_median">[docs]</a><span class="k">def</span> <span class="nf">norm_spec_chunk_median</span><span class="p">(</span><span class="n">spec_chunks</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">spec_chunks</span><span class="p">)):</span>
+        <span class="n">spec_chunks</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;flux&#39;</span><span class="p">]</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">spec_chunks</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;flux&#39;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">spec_chunks</span></div>
+
+
+<span class="c1"># ##################################################### #</span>
+<span class="c1"># it is useful to break spectrum into chunks, sometimes #</span>
+<span class="c1"># ##################################################### #</span>
+
+<div class="viewcode-block" id="break_spectrum_into_chunks"><a class="viewcode-back" href="../../laspec.html#laspec.spec.break_spectrum_into_chunks">[docs]</a><span class="k">def</span> <span class="nf">break_spectrum_into_chunks</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="n">ranges</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">amp</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">ranges</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># let&#39;s break this spectrum into chunks</span>
+
+        <span class="c1"># re-format ranges into numpy.array</span>
+        <span class="n">ranges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ranges</span><span class="p">)</span>
+
+        <span class="c1"># assert amp is None or a list with the same length</span>
+        <span class="k">if</span> <span class="n">amp</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">amp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ranges</span><span class="p">))</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">amp</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">ranges</span><span class="p">)</span>
+
+        <span class="c1"># break spectrum into chunks</span>
+        <span class="n">spec_chunks</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ranges</span><span class="p">)):</span>
+            <span class="n">ind_chunk</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">spec</span><span class="p">[</span><span class="s1">&#39;wave&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">ranges</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">spec</span><span class="p">[</span><span class="s1">&#39;wave&#39;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">ranges</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">spec_chunk</span> <span class="o">=</span> <span class="n">spec</span><span class="p">[</span><span class="n">ind_chunk</span><span class="p">]</span>
+            <span class="n">spec_chunk</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">]</span> <span class="o">*=</span> <span class="n">amp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">spec_chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">spec_chunk</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># then this spectrum is continuous, return itself</span>
+        <span class="k">return</span> <span class="n">spec</span></div>
+
+
+<div class="viewcode-block" id="break_spectra_into_chunks"><a class="viewcode-back" href="../../laspec.html#laspec.spec.break_spectra_into_chunks">[docs]</a><span class="k">def</span> <span class="nf">break_spectra_into_chunks</span><span class="p">(</span><span class="n">spec_list</span><span class="p">,</span> <span class="n">ranges</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">amp</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">break_spectrum_into_chunks</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="n">ranges</span><span class="p">,</span> <span class="n">amp</span><span class="p">)</span> <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">spec_list</span><span class="p">]</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">_test_spec_quick_init</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Bo Zhang.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

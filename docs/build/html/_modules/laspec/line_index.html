@@ -1,0 +1,803 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>laspec.line_index &mdash; laspec 2021.119.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> laspec
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2021.119.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html">laspec</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html#authors">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">laspec</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">laspec</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>laspec.line_index</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for laspec.line_index</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">Author</span>
+<span class="sd">------</span>
+<span class="sd">Bo Zhang</span>
+
+<span class="sd">Email</span>
+<span class="sd">-----</span>
+<span class="sd">bozhang@nao.cas.cn</span>
+
+<span class="sd">Created on</span>
+<span class="sd">----------</span>
+<span class="sd">- Fri Jul  3 13:13:06 2015    read_spectrum</span>
+
+<span class="sd">Modifications</span>
+<span class="sd">-------------</span>
+<span class="sd">- Wed Jul 29 21:46:00 2015    measure_line_index</span>
+<span class="sd">- Fri Nov 20 10:16:59 2015    reformatting code</span>
+<span class="sd">- Sat Jan 16 19:55:57 2016    migrate from spec.py</span>
+<span class="sd">- Thu Jul 14 23:57:57 2016    plot every line indice</span>
+<span class="sd">- Sat Jul 23 17:35:00 2016    update line_index.py</span>
+
+<span class="sd">Aims</span>
+<span class="sd">----</span>
+<span class="sd">- measure line index from spectra</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">collections</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">lmfit.models</span> <span class="kn">import</span> <span class="n">LinearModel</span><span class="p">,</span> <span class="n">GaussianModel</span>
+<span class="kn">from</span> <span class="nn">.read_spectrum</span> <span class="kn">import</span> <span class="n">read_spectrum</span>
+
+
+<div class="viewcode-block" id="integrate_spectrum"><a class="viewcode-back" href="../../laspec.html#laspec.line_index.integrate_spectrum">[docs]</a><span class="k">def</span> <span class="nf">integrate_spectrum</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">flux_norm</span><span class="p">,</span> <span class="n">flux_norm_err</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nmc</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">wave_range</span><span class="o">=</span><span class="p">(</span><span class="mi">6554</span><span class="p">,</span> <span class="mi">6574</span><span class="p">),</span> <span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;Ha&quot;</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">suffix</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+        <span class="n">suffix</span> <span class="o">=</span> <span class="s2">&quot;_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">suffix</span><span class="p">)</span>
+
+    <span class="n">rew</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="n">ind_range</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">wave</span> <span class="o">&gt;</span> <span class="n">wave_range</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">wave</span> <span class="o">&lt;</span> <span class="n">wave_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]))[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">npix_range</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ind_range</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">wave</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">wave_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">wave_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">wave</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">and</span> <span class="n">npix_range</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="c1"># good data</span>
+        <span class="n">wave_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">wave</span><span class="p">[</span><span class="n">ind_range</span><span class="p">])</span>
+        <span class="n">wave_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">wave_diff</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">(</span><span class="n">wave_diff</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">+</span> <span class="n">wave_diff</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">wave_diff</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="n">rew</span><span class="p">[</span><span class="s2">&quot;EW</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">suffix</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="mi">1</span> <span class="o">-</span> <span class="n">flux_norm</span><span class="p">[</span><span class="n">ind_range</span><span class="p">])</span> <span class="o">*</span> <span class="n">wave_diff</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">flux_norm_err</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># evaluate pct</span>
+            <span class="n">noise</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">flux_norm</span><span class="p">[</span><span class="n">ind_range</span><span class="p">],</span> <span class="n">flux_norm_err</span><span class="p">[</span><span class="n">ind_range</span><span class="p">],</span> <span class="p">(</span><span class="n">nmc</span><span class="p">,</span> <span class="n">npix_range</span><span class="p">))</span>
+            <span class="n">rew</span><span class="p">[</span><span class="s2">&quot;EW16</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">suffix</span><span class="p">)],</span> <span class="n">rew</span><span class="p">[</span><span class="s2">&quot;EW50</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">suffix</span><span class="p">)],</span> <span class="n">rew</span><span class="p">[</span><span class="s2">&quot;EW84</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">suffix</span><span class="p">)]</span> <span class="o">=</span> \
+                <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="mi">1</span> <span class="o">-</span> <span class="n">noise</span><span class="p">)</span> <span class="o">*</span> <span class="n">wave_diff</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="p">[</span><span class="mi">16</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">84</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rew</span><span class="p">[</span><span class="s2">&quot;EW16</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">suffix</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="n">rew</span><span class="p">[</span><span class="s2">&quot;EW50</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">suffix</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="n">rew</span><span class="p">[</span><span class="s2">&quot;EW84</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">suffix</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+        <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">rew</span><span class="p">[</span><span class="s2">&quot;EWnbad</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">suffix</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">mask</span><span class="p">[</span><span class="n">ind_range</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rew</span><span class="p">[</span><span class="s2">&quot;EWnbad</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">suffix</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="n">rew</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># bad data</span>
+        <span class="n">rew</span><span class="p">[</span><span class="s2">&quot;EW</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">suffix</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="n">rew</span><span class="p">[</span><span class="s2">&quot;EW16</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">suffix</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="n">rew</span><span class="p">[</span><span class="s2">&quot;EW50</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">suffix</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="n">rew</span><span class="p">[</span><span class="s2">&quot;EW84</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">suffix</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="n">rew</span><span class="p">[</span><span class="s2">&quot;EWnbad</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">suffix</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="n">rew</span></div>
+
+
+<span class="c1"># old code below ----</span>
+<span class="c1"># should consider whether to maintain filepath arg</span>
+<span class="c1"># since the plot function could be replaced using recover</span>
+<div class="viewcode-block" id="measure_line_index"><a class="viewcode-back" href="../../laspec.html#laspec.line_index.measure_line_index">[docs]</a><span class="k">def</span> <span class="nf">measure_line_index</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span>
+                       <span class="n">flux</span><span class="p">,</span>
+                       <span class="n">flux_err</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                       <span class="n">mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                       <span class="n">z</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                       <span class="n">line_info</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                       <span class="n">num_refit</span><span class="o">=</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                       <span class="n">filepath</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                       <span class="n">return_type</span><span class="o">=</span><span class="s1">&#39;dict&#39;</span><span class="p">,</span>
+                       <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Measure line index / EW and have it plotted</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    wave: array-like</span>
+<span class="sd">        wavelength vector</span>
+
+<span class="sd">    flux: array-like</span>
+<span class="sd">        flux vector</span>
+
+<span class="sd">    flux_err: array-like</span>
+<span class="sd">        flux error vector (optional)</span>
+<span class="sd">        If un-specified, auto-generate an np.ones array</span>
+
+<span class="sd">    mask: array-like</span>
+<span class="sd">        andmask or ormask (optional)</span>
+<span class="sd">        If un-specified, auto-generate an np.ones array (evenly weighted)</span>
+
+<span class="sd">    line_info: dict</span>
+<span class="sd">        information about spectral line, eg:</span>
+<span class="sd">        line_info_dib5780 = {&#39;line_center&#39;:         5780,</span>
+<span class="sd">                             &#39;line_range&#39;:          (5775, 5785),</span>
+<span class="sd">                             &#39;line_shoulder_left&#39;:  (5755, 5775),</span>
+<span class="sd">                             &#39;line_shoulder_right&#39;: (5805, 5825)}</span>
+
+<span class="sd">    num_refit: non-negative integer</span>
+<span class="sd">        number of refitting.</span>
+<span class="sd">        If 0, no refit will be performed</span>
+<span class="sd">        If positive, refits will be performed after adding normal random noise</span>
+
+<span class="sd">    z: float</span>
+<span class="sd">        redshift (only specify when z is large)</span>
+
+<span class="sd">    filepath: string</span>
+<span class="sd">        path of the diagnostic figure</span>
+<span class="sd">        if None, do nothing, else print diagnostic figure</span>
+
+<span class="sd">    return_type: string</span>
+<span class="sd">        &#39;dict&#39; or &#39;array&#39;</span>
+<span class="sd">        if &#39;array&#39;, np.array(return dict.values())</span>
+
+<span class="sd">    verbose: bool</span>
+<span class="sd">        if True, print details</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    line_indx: dict</span>
+<span class="sd">        A dictionary type result of line index.</span>
+<span class="sd">        If any problem encountered, return the default result (filled with nan).</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># 0. do some input check</span>
+        <span class="c1"># 0.1&gt; check line_info</span>
+        <span class="n">line_info_keys</span> <span class="o">=</span> <span class="n">line_info</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="s1">&#39;line_range&#39;</span> <span class="ow">in</span> <span class="n">line_info_keys</span>
+        <span class="k">assert</span> <span class="s1">&#39;line_shoulder_left&#39;</span> <span class="ow">in</span> <span class="n">line_info_keys</span>
+        <span class="k">assert</span> <span class="s1">&#39;line_shoulder_right&#39;</span> <span class="ow">in</span> <span class="n">line_info_keys</span>
+        <span class="c1"># 0.2&gt; check line range/shoulder in spectral range</span>
+        <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">wave</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">line_info</span><span class="p">[</span><span class="s1">&#39;line_shoulder_left&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">wave</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">line_info</span><span class="p">[</span><span class="s1">&#39;line_shoulder_right&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># 1. get line information</span>
+        <span class="c1"># line_center = line_info[&#39;line_center&#39;]  # not used</span>
+        <span class="n">line_range</span> <span class="o">=</span> <span class="n">line_info</span><span class="p">[</span><span class="s1">&#39;line_range&#39;</span><span class="p">]</span>
+        <span class="n">line_shoulder_left</span> <span class="o">=</span> <span class="n">line_info</span><span class="p">[</span><span class="s1">&#39;line_shoulder_left&#39;</span><span class="p">]</span>
+        <span class="n">line_shoulder_right</span> <span class="o">=</span> <span class="n">line_info</span><span class="p">[</span><span class="s1">&#39;line_shoulder_right&#39;</span><span class="p">]</span>
+
+        <span class="c1"># 2. data preparation</span>
+        <span class="c1"># 2.1&gt; shift spectra to rest-frame</span>
+        <span class="n">wave</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">wave</span><span class="p">)</span>
+        <span class="n">flux</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">flux</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">z</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">wave</span> <span class="o">/=</span> <span class="mf">1.</span> <span class="o">+</span> <span class="n">z</span>
+        <span class="c1"># 2.2&gt; generate flux_err and mask if un-specified</span>
+        <span class="k">if</span> <span class="n">flux_err</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">flux_err</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">wave</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">mask</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">wave</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">mask_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">wave</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">ind_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">([</span><span class="n">mask</span><span class="o">!=</span><span class="mi">0</span><span class="p">],</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">mask_</span><span class="p">[</span><span class="n">ind_mask</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">mask_</span>
+
+        <span class="c1"># 3. estimate the local continuum</span>
+        <span class="c1"># 3.1&gt; shoulder wavelength range</span>
+        <span class="n">ind_shoulder</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">([</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">([</span><span class="n">wave</span> <span class="o">&gt;</span> <span class="n">line_shoulder_left</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                    <span class="n">wave</span> <span class="o">&lt;</span> <span class="n">line_shoulder_left</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">([</span><span class="n">wave</span> <span class="o">&gt;</span> <span class="n">line_shoulder_right</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                    <span class="n">wave</span> <span class="o">&lt;</span> <span class="n">line_shoulder_right</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">wave_shoulder</span> <span class="o">=</span> <span class="n">wave</span><span class="p">[</span><span class="n">ind_shoulder</span><span class="p">]</span>
+        <span class="n">flux_shoulder</span> <span class="o">=</span> <span class="n">flux</span><span class="p">[</span><span class="n">ind_shoulder</span><span class="p">]</span>
+
+        <span class="c1"># 3.2&gt; integrated/fitted wavelength range</span>
+        <span class="n">ind_range</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">wave</span> <span class="o">&gt;</span> <span class="n">line_range</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">wave</span> <span class="o">&lt;</span> <span class="n">line_range</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">wave_range</span> <span class="o">=</span> <span class="n">wave</span><span class="p">[</span><span class="n">ind_range</span><span class="p">]</span>
+        <span class="n">flux_range</span> <span class="o">=</span> <span class="n">flux</span><span class="p">[</span><span class="n">ind_range</span><span class="p">]</span>
+        <span class="c1"># flux_err_range = flux_err[ind_range]  # not used</span>
+        <span class="n">mask_range</span> <span class="o">=</span> <span class="n">mask</span><span class="p">[</span><span class="n">ind_range</span><span class="p">]</span>
+        <span class="n">flux_err_shoulder</span> <span class="o">=</span> <span class="n">flux_err</span><span class="p">[</span><span class="n">ind_shoulder</span><span class="p">]</span>
+        <span class="c1"># mask_shoulder = mask[ind_shoulder]    # not used</span>
+
+        <span class="c1"># 4. linear model</span>
+        <span class="n">mod_linear</span> <span class="o">=</span> <span class="n">LinearModel</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s1">&#39;mod_linear_&#39;</span><span class="p">)</span>
+        <span class="n">par_linear</span> <span class="o">=</span> <span class="n">mod_linear</span><span class="o">.</span><span class="n">guess</span><span class="p">(</span><span class="n">flux_shoulder</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">wave_shoulder</span><span class="p">)</span>
+        <span class="c1"># ############################################# #</span>
+        <span class="c1"># to see the parameter names:                   #</span>
+        <span class="c1"># model_linear.param_names                      #</span>
+        <span class="c1"># {&#39;linear_fun_intercept&#39;, &#39;linear_fun_slope&#39;}  #</span>
+        <span class="c1"># ############################################# #</span>
+        <span class="n">out_linear</span> <span class="o">=</span> <span class="n">mod_linear</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">flux_shoulder</span><span class="p">,</span>
+                                    <span class="n">par_linear</span><span class="p">,</span>
+                                    <span class="n">x</span><span class="o">=</span><span class="n">wave_shoulder</span><span class="p">,</span>
+                                    <span class="n">method</span><span class="o">=</span><span class="s1">&#39;leastsq&#39;</span><span class="p">)</span>
+
+        <span class="c1"># 5. estimate continuum</span>
+        <span class="n">cont_shoulder</span> <span class="o">=</span> <span class="n">out_linear</span><span class="o">.</span><span class="n">best_fit</span>
+        <span class="n">noise_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">flux_shoulder</span> <span class="o">/</span> <span class="n">cont_shoulder</span><span class="p">)</span>
+        <span class="n">cont_range</span> <span class="o">=</span> <span class="n">mod_linear</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">out_linear</span><span class="o">.</span><span class="n">params</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">wave_range</span><span class="p">)</span>
+        <span class="n">resi_range</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">flux_range</span> <span class="o">/</span> <span class="n">cont_range</span>
+
+        <span class="c1"># 6.1 Integrated EW (</span>
+        <span class="c1"># estimate EW_int</span>
+        <span class="n">wave_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">wave_range</span><span class="p">)</span>
+        <span class="n">wave_step</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">wave_diff</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">wave_diff</span><span class="p">]),</span>
+                                       <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">wave_diff</span><span class="p">,</span> <span class="n">wave_diff</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]])]),</span>
+                            <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">EW_int</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">resi_range</span><span class="p">,</span> <span class="n">wave_step</span><span class="p">)</span>
+
+        <span class="c1"># estimate EW_int_err</span>
+        <span class="n">num_refit_</span> <span class="o">=</span> <span class="n">num_refit</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">num_refit_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">num_refit_</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+            <span class="n">EW_int_err</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">resi_range</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">num_refit_</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">+</span>
+                 <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">num_refit_</span><span class="p">,</span> <span class="n">resi_range</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="o">*</span> <span class="n">noise_std</span><span class="p">),</span>
+                <span class="n">wave_step</span><span class="p">))</span>
+
+        <span class="c1"># 6.2 Gaussian model</span>
+        <span class="c1"># estimate EW_fit</span>
+        <span class="n">mod_gauss</span> <span class="o">=</span> <span class="n">GaussianModel</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s1">&#39;mod_gauss_&#39;</span><span class="p">)</span>
+        <span class="n">par_gauss</span> <span class="o">=</span> <span class="n">mod_gauss</span><span class="o">.</span><span class="n">guess</span><span class="p">(</span><span class="n">resi_range</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">wave_range</span><span class="p">)</span>
+        <span class="n">out_gauss</span> <span class="o">=</span> <span class="n">mod_gauss</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">resi_range</span><span class="p">,</span> <span class="n">par_gauss</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">wave_range</span><span class="p">)</span>
+        <span class="n">line_indx</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">OrderedDict</span><span class="p">([</span>
+            <span class="p">(</span><span class="s1">&#39;SN_local_flux_err&#39;</span><span class="p">,</span>        <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">flux_shoulder</span> <span class="o">/</span> <span class="n">flux_err_shoulder</span><span class="p">)),</span>
+            <span class="p">(</span><span class="s1">&#39;SN_local_flux_std&#39;</span><span class="p">,</span>        <span class="mf">1.</span> <span class="o">/</span> <span class="n">noise_std</span><span class="p">),</span>
+            <span class="p">(</span><span class="s1">&#39;num_bad_pixel&#39;</span><span class="p">,</span>            <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">mask_range</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)),</span>
+            <span class="p">(</span><span class="s1">&#39;EW_int&#39;</span><span class="p">,</span>                   <span class="n">EW_int</span><span class="p">),</span>
+            <span class="p">(</span><span class="s1">&#39;EW_int_err&#39;</span><span class="p">,</span>               <span class="n">EW_int_err</span><span class="p">),</span>
+            <span class="p">(</span><span class="s1">&#39;mod_linear_slope&#39;</span><span class="p">,</span>         <span class="n">out_linear</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">mod_linear</span><span class="o">.</span><span class="n">prefix</span> <span class="o">+</span> <span class="s1">&#39;slope&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">),</span>
+            <span class="p">(</span><span class="s1">&#39;mod_linear_slope_err&#39;</span><span class="p">,</span>     <span class="n">out_linear</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">mod_linear</span><span class="o">.</span><span class="n">prefix</span> <span class="o">+</span> <span class="s1">&#39;slope&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">stderr</span><span class="p">),</span>
+            <span class="p">(</span><span class="s1">&#39;mod_linear_intercept&#39;</span><span class="p">,</span>     <span class="n">out_linear</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">mod_linear</span><span class="o">.</span><span class="n">prefix</span> <span class="o">+</span> <span class="s1">&#39;intercept&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">),</span>
+            <span class="p">(</span><span class="s1">&#39;mod_linear_intercept_err&#39;</span><span class="p">,</span> <span class="n">out_linear</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">mod_linear</span><span class="o">.</span><span class="n">prefix</span> <span class="o">+</span> <span class="s1">&#39;intercept&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">stderr</span><span class="p">),</span>
+            <span class="p">(</span><span class="s1">&#39;mod_gauss_amplitude&#39;</span><span class="p">,</span>      <span class="n">out_gauss</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">mod_gauss</span><span class="o">.</span><span class="n">prefix</span> <span class="o">+</span> <span class="s1">&#39;amplitude&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">),</span>
+            <span class="p">(</span><span class="s1">&#39;mod_gauss_amplitude_err&#39;</span><span class="p">,</span>  <span class="n">out_gauss</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">mod_gauss</span><span class="o">.</span><span class="n">prefix</span> <span class="o">+</span> <span class="s1">&#39;amplitude&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">stderr</span><span class="p">),</span>
+            <span class="p">(</span><span class="s1">&#39;mod_gauss_center&#39;</span><span class="p">,</span>         <span class="n">out_gauss</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">mod_gauss</span><span class="o">.</span><span class="n">prefix</span> <span class="o">+</span> <span class="s1">&#39;center&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">),</span>
+            <span class="p">(</span><span class="s1">&#39;mod_gauss_center_err&#39;</span><span class="p">,</span>     <span class="n">out_gauss</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">mod_gauss</span><span class="o">.</span><span class="n">prefix</span> <span class="o">+</span> <span class="s1">&#39;center&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">stderr</span><span class="p">),</span>
+            <span class="p">(</span><span class="s1">&#39;mod_gauss_sigma&#39;</span><span class="p">,</span>          <span class="n">out_gauss</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">mod_gauss</span><span class="o">.</span><span class="n">prefix</span> <span class="o">+</span> <span class="s1">&#39;sigma&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">),</span>
+            <span class="p">(</span><span class="s1">&#39;mod_gauss_sigma_err&#39;</span><span class="p">,</span>      <span class="n">out_gauss</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">mod_gauss</span><span class="o">.</span><span class="n">prefix</span> <span class="o">+</span> <span class="s1">&#39;sigma&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">stderr</span><span class="p">),</span>
+            <span class="p">(</span><span class="s1">&#39;mod_gauss_amplitude_std&#39;</span><span class="p">,</span>  <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span>
+            <span class="p">(</span><span class="s1">&#39;mod_gauss_center_std&#39;</span><span class="p">,</span>     <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span>
+            <span class="p">(</span><span class="s1">&#39;mod_gauss_sigma_std&#39;</span><span class="p">,</span>      <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)])</span>
+
+        <span class="c1"># estimate EW_fit_err</span>
+        <span class="n">num_refit_</span> <span class="o">=</span> <span class="n">num_refit</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">num_refit_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">num_refit_</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="c1"># {&#39;mod_gauss_amplitude&#39;,</span>
+            <span class="c1">#  &#39;mod_gauss_center&#39;,</span>
+            <span class="c1">#  &#39;mod_gauss_fwhm&#39;,</span>
+            <span class="c1">#  &#39;mod_gauss_sigma&#39;}</span>
+            <span class="n">out_gauss_refit_amplitude</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_refit_</span><span class="p">)</span>
+            <span class="n">out_gauss_refit_center</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_refit_</span><span class="p">)</span>
+            <span class="n">out_gauss_refit_sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_refit_</span><span class="p">)</span>
+            <span class="c1"># noise_fit = np.random.randn(num_refit,resi_range.size)*noise_std</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">num_refit_</span><span class="p">)):</span>
+                <span class="c1"># resi_range_with_noise = resi_range + noise_fit[i,:]</span>
+                <span class="n">resi_range_with_noise</span> <span class="o">=</span> <span class="n">resi_range</span> <span class="o">+</span> \
+                                        <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">resi_range</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="o">*</span> <span class="n">noise_std</span>
+                <span class="n">out_gauss_refit</span> <span class="o">=</span> <span class="n">mod_gauss</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">resi_range_with_noise</span><span class="p">,</span>
+                                                <span class="n">par_gauss</span><span class="p">,</span>
+                                                <span class="n">x</span><span class="o">=</span><span class="n">wave_range</span><span class="p">)</span>
+                <span class="n">out_gauss_refit_amplitude</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>\
+                <span class="n">out_gauss_refit_center</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>\
+                <span class="n">out_gauss_refit_sigma</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span>\
+                    <span class="n">out_gauss_refit</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">mod_gauss</span><span class="o">.</span><span class="n">prefix</span> <span class="o">+</span> <span class="s1">&#39;amplitude&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>\
+                    <span class="n">out_gauss_refit</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">mod_gauss</span><span class="o">.</span><span class="n">prefix</span> <span class="o">+</span> <span class="s1">&#39;center&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>\
+                    <span class="n">out_gauss_refit</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">mod_gauss</span><span class="o">.</span><span class="n">prefix</span> <span class="o">+</span> <span class="s1">&#39;sigma&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">out_gauss_refit_amplitude</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">out_gauss_refit_center</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">out_gauss_refit_sigma</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">line_indx</span><span class="o">.</span><span class="n">update</span><span class="p">([</span>
+                              <span class="p">(</span><span class="s1">&#39;mod_gauss_amplitude_std&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nanstd</span><span class="p">(</span><span class="n">out_gauss_refit_amplitude</span><span class="p">)),</span>
+                              <span class="p">(</span><span class="s1">&#39;mod_gauss_center_std&#39;</span><span class="p">,</span>    <span class="n">np</span><span class="o">.</span><span class="n">nanstd</span><span class="p">(</span><span class="n">out_gauss_refit_center</span><span class="p">)),</span>
+                              <span class="p">(</span><span class="s1">&#39;mod_gauss_sigma_std&#39;</span><span class="p">,</span>     <span class="n">np</span><span class="o">.</span><span class="n">nanstd</span><span class="p">(</span><span class="n">out_gauss_refit_sigma</span><span class="p">))</span>
+                              <span class="p">])</span>
+
+        <span class="c1"># 7. plot and save image</span>
+        <span class="k">if</span> <span class="n">filepath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">filepath</span><span class="p">)):</span>
+            <span class="n">save_image_line_indice</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">wave</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">ind_range</span><span class="p">,</span> <span class="n">cont_range</span><span class="p">,</span>
+                                   <span class="n">ind_shoulder</span><span class="p">,</span> <span class="n">line_info</span><span class="p">)</span>
+
+        <span class="c1"># if necessary, convert to array</span>
+        <span class="c1"># NOTE: for a non-ordered dict the order of keys and values may change!</span>
+        <span class="k">if</span> <span class="n">return_type</span> <span class="o">==</span> <span class="s1">&#39;array&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">line_indx</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">line_indx</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">measure_line_index_null_result</span><span class="p">(</span><span class="n">return_type</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="measure_line_index_null_result"><a class="viewcode-back" href="../../laspec.html#laspec.line_index.measure_line_index_null_result">[docs]</a><span class="k">def</span> <span class="nf">measure_line_index_null_result</span><span class="p">(</span><span class="n">return_type</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;generate default value (nan/False) when measurement fails</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    default value (nan/False)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">line_indx</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">OrderedDict</span><span class="p">([</span>
+                  <span class="p">(</span><span class="s1">&#39;SN_local_flux_err&#39;</span><span class="p">,</span>        <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span>
+                  <span class="p">(</span><span class="s1">&#39;SN_local_flux_std&#39;</span><span class="p">,</span>        <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span>
+                  <span class="p">(</span><span class="s1">&#39;num_bad_pixel&#39;</span><span class="p">,</span>            <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span>
+                  <span class="p">(</span><span class="s1">&#39;EW_int&#39;</span><span class="p">,</span>                   <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span>
+                  <span class="p">(</span><span class="s1">&#39;EW_int_err&#39;</span><span class="p">,</span>               <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span>
+                  <span class="p">(</span><span class="s1">&#39;mod_linear_slope&#39;</span><span class="p">,</span>         <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span>
+                  <span class="p">(</span><span class="s1">&#39;mod_linear_slope_err&#39;</span><span class="p">,</span>     <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span>
+                  <span class="p">(</span><span class="s1">&#39;mod_linear_intercept&#39;</span><span class="p">,</span>     <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span>
+                  <span class="p">(</span><span class="s1">&#39;mod_linear_intercept_err&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span>
+                  <span class="p">(</span><span class="s1">&#39;mod_gauss_amplitude&#39;</span><span class="p">,</span>      <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span>
+                  <span class="p">(</span><span class="s1">&#39;mod_gauss_amplitude_err&#39;</span><span class="p">,</span>  <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span>
+                  <span class="p">(</span><span class="s1">&#39;mod_gauss_center&#39;</span><span class="p">,</span>         <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span>
+                  <span class="p">(</span><span class="s1">&#39;mod_gauss_center_err&#39;</span><span class="p">,</span>     <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span>
+                  <span class="p">(</span><span class="s1">&#39;mod_gauss_sigma&#39;</span><span class="p">,</span>          <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span>
+                  <span class="p">(</span><span class="s1">&#39;mod_gauss_sigma_err&#39;</span><span class="p">,</span>      <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span>
+                  <span class="p">(</span><span class="s1">&#39;mod_gauss_amplitude_std&#39;</span><span class="p">,</span>  <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span>
+                  <span class="p">(</span><span class="s1">&#39;mod_gauss_center_std&#39;</span><span class="p">,</span>     <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span>
+                  <span class="p">(</span><span class="s1">&#39;mod_gauss_sigma_std&#39;</span><span class="p">,</span>      <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)])</span>
+    <span class="k">if</span> <span class="n">return_type</span> <span class="o">==</span> <span class="s1">&#39;array&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">line_indx</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+    <span class="k">return</span> <span class="n">line_indx</span></div>
+
+
+<span class="c1"># pure fit:    100 loops, best of 3: 8.06 ms per loop (1 int + 1 fit)</span>
+<span class="c1"># 1000 re-fit: 1 loops, best of 3: 378 ms per loop (1 int + 1 fit + 100 re-fit)</span>
+
+
+<div class="viewcode-block" id="measure_line_index_loopfun"><a class="viewcode-back" href="../../laspec.html#laspec.line_index.measure_line_index_loopfun">[docs]</a><span class="k">def</span> <span class="nf">measure_line_index_loopfun</span><span class="p">(</span><span class="n">filepath</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;loopfun for measuring line index</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    filepath: string</span>
+<span class="sd">        path of the spec document</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    several line_indx: tuple</span>
+<span class="sd">        every line_indx is a dictionary type result of line index.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">num_refit</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">return_type</span> <span class="o">=</span> <span class="s1">&#39;array&#39;</span>
+    <span class="n">line_info_dib5780</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;line_center&#39;</span><span class="p">:</span>         <span class="mi">5780</span><span class="p">,</span>
+                         <span class="s1">&#39;line_range&#39;</span><span class="p">:</span>          <span class="p">(</span><span class="mi">5775</span><span class="p">,</span> <span class="mi">5785</span><span class="p">),</span>
+                         <span class="s1">&#39;line_shoulder_left&#39;</span><span class="p">:</span>  <span class="p">(</span><span class="mi">5755</span><span class="p">,</span> <span class="mi">5775</span><span class="p">),</span>
+                         <span class="s1">&#39;line_shoulder_right&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">5805</span><span class="p">,</span> <span class="mi">5825</span><span class="p">)}</span>
+    <span class="n">line_info_dib5797</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;line_center&#39;</span><span class="p">:</span>         <span class="mi">5797</span><span class="p">,</span>
+                         <span class="s1">&#39;line_range&#39;</span><span class="p">:</span>          <span class="p">(</span><span class="mi">5792</span><span class="p">,</span> <span class="mi">5802</span><span class="p">),</span>
+                         <span class="s1">&#39;line_shoulder_left&#39;</span><span class="p">:</span>  <span class="p">(</span><span class="mi">5755</span><span class="p">,</span> <span class="mi">5775</span><span class="p">),</span>
+                         <span class="s1">&#39;line_shoulder_right&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">5805</span><span class="p">,</span> <span class="mi">5825</span><span class="p">)}</span>
+    <span class="n">line_info_dib6284</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;line_center&#39;</span><span class="p">:</span>         <span class="mi">6285</span><span class="p">,</span>
+                         <span class="s1">&#39;line_range&#39;</span><span class="p">:</span>          <span class="p">(</span><span class="mi">6280</span><span class="p">,</span> <span class="mi">6290</span><span class="p">),</span>
+                         <span class="s1">&#39;line_shoulder_left&#39;</span><span class="p">:</span>  <span class="p">(</span><span class="mi">6260</span><span class="p">,</span> <span class="mi">6280</span><span class="p">),</span>
+                         <span class="s1">&#39;line_shoulder_right&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">6310</span><span class="p">,</span> <span class="mi">6330</span><span class="p">)}</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># read spectrum</span>
+        <span class="c1"># -------------</span>
+        <span class="n">spec</span> <span class="o">=</span> <span class="n">read_spectrum</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s1">&#39;auto&#39;</span><span class="p">)</span>
+
+        <span class="c1"># measure DIBs</span>
+        <span class="c1"># ------------</span>
+        <span class="c1"># DIB5780</span>
+        <span class="n">line_indx_dib5780</span> <span class="o">=</span> <span class="n">measure_line_index</span><span class="p">(</span><span class="n">wave</span><span class="o">=</span><span class="n">spec</span><span class="p">[</span><span class="s1">&#39;wave&#39;</span><span class="p">],</span>
+                                               <span class="n">flux</span><span class="o">=</span><span class="n">spec</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">],</span>
+                                               <span class="n">flux_err</span><span class="o">=</span><span class="n">spec</span><span class="p">[</span><span class="s1">&#39;flux_err&#39;</span><span class="p">],</span>
+                                               <span class="n">mask</span><span class="o">=</span><span class="n">spec</span><span class="p">[</span><span class="s1">&#39;and_mask&#39;</span><span class="p">],</span>
+                                               <span class="n">line_info</span><span class="o">=</span><span class="n">line_info_dib5780</span><span class="p">,</span>
+                                               <span class="n">num_refit</span><span class="o">=</span><span class="n">num_refit</span><span class="p">,</span>
+                                               <span class="n">return_type</span><span class="o">=</span><span class="n">return_type</span><span class="p">,</span>
+                                               <span class="n">z</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="c1"># DIB5797</span>
+        <span class="n">line_indx_dib5797</span> <span class="o">=</span> <span class="n">measure_line_index</span><span class="p">(</span><span class="n">wave</span><span class="o">=</span><span class="n">spec</span><span class="p">[</span><span class="s1">&#39;wave&#39;</span><span class="p">],</span>
+                                               <span class="n">flux</span><span class="o">=</span><span class="n">spec</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">],</span>
+                                               <span class="n">flux_err</span><span class="o">=</span><span class="n">spec</span><span class="p">[</span><span class="s1">&#39;flux_err&#39;</span><span class="p">],</span>
+                                               <span class="n">mask</span><span class="o">=</span><span class="n">spec</span><span class="p">[</span><span class="s1">&#39;and_mask&#39;</span><span class="p">],</span>
+                                               <span class="n">line_info</span><span class="o">=</span><span class="n">line_info_dib5797</span><span class="p">,</span>
+                                               <span class="n">num_refit</span><span class="o">=</span><span class="n">num_refit</span><span class="p">,</span>
+                                               <span class="n">return_type</span><span class="o">=</span><span class="n">return_type</span><span class="p">,</span>
+                                               <span class="n">z</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="c1"># DIB6284 </span>
+        <span class="n">line_indx_dib6284</span> <span class="o">=</span> <span class="n">measure_line_index</span><span class="p">(</span><span class="n">wave</span><span class="o">=</span><span class="n">spec</span><span class="p">[</span><span class="s1">&#39;wave&#39;</span><span class="p">],</span>
+                                               <span class="n">flux</span><span class="o">=</span><span class="n">spec</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">],</span>
+                                               <span class="n">flux_err</span><span class="o">=</span><span class="n">spec</span><span class="p">[</span><span class="s1">&#39;flux_err&#39;</span><span class="p">],</span>
+                                               <span class="n">mask</span><span class="o">=</span><span class="n">spec</span><span class="p">[</span><span class="s1">&#39;and_mask&#39;</span><span class="p">],</span>
+                                               <span class="n">line_info</span><span class="o">=</span><span class="n">line_info_dib6284</span><span class="p">,</span>
+                                               <span class="n">num_refit</span><span class="o">=</span><span class="n">num_refit</span><span class="p">,</span>
+                                               <span class="n">return_type</span><span class="o">=</span><span class="n">return_type</span><span class="p">,</span>
+                                               <span class="n">z</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">line_indx_dib5780</span><span class="p">,</span> <span class="n">line_indx_dib5797</span><span class="p">,</span> <span class="n">line_indx_dib6284</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">measure_line_index_null_result</span><span class="p">(</span><span class="n">return_type</span><span class="p">),</span>
+                <span class="n">measure_line_index_null_result</span><span class="p">(</span><span class="n">return_type</span><span class="p">),</span>
+                <span class="n">measure_line_index_null_result</span><span class="p">(</span><span class="n">return_type</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="measure_line_index_recover_spectrum"><a class="viewcode-back" href="../../laspec.html#laspec.line_index.measure_line_index_recover_spectrum">[docs]</a><span class="k">def</span> <span class="nf">measure_line_index_recover_spectrum</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; recover the fitted line profile from params</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    wave: array-like</span>
+<span class="sd">        the wavelength to which the recovered flux correspond</span>
+
+<span class="sd">    params: 5-element tuple</span>
+<span class="sd">        the 1 to 5 elements are:</span>
+<span class="sd">        mod_linear_slope</span>
+<span class="sd">        mod_linear_intercept</span>
+<span class="sd">        mod_gauss_amplitude</span>
+<span class="sd">        mod_gauss_center</span>
+<span class="sd">        mod_gauss_sigma</span>
+
+<span class="sd">    norm: bool</span>
+<span class="sd">        if True, linear model (continuum) is deprecated</span>
+<span class="sd">        else linear + Gaussian model is used</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">lmfit.models</span> <span class="kn">import</span> <span class="n">LinearModel</span><span class="p">,</span> <span class="n">GaussianModel</span>
+    <span class="n">mod_linear</span> <span class="o">=</span> <span class="n">LinearModel</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s1">&#39;mod_linear_&#39;</span><span class="p">)</span>
+    <span class="n">mod_gauss</span> <span class="o">=</span> <span class="n">GaussianModel</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s1">&#39;mod_gauss_&#39;</span><span class="p">)</span>
+    <span class="n">par_linear</span> <span class="o">=</span> <span class="n">mod_linear</span><span class="o">.</span><span class="n">make_params</span><span class="p">()</span>
+    <span class="n">par_gauss</span> <span class="o">=</span> <span class="n">mod_gauss</span><span class="o">.</span><span class="n">make_params</span><span class="p">()</span>
+    <span class="n">par_linear</span><span class="p">[</span><span class="s1">&#39;mod_linear_slope&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">par_linear</span><span class="p">[</span><span class="s1">&#39;mod_linear_intercept&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">par_gauss</span><span class="p">[</span><span class="s1">&#39;mod_gauss_amplitude&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">par_gauss</span><span class="p">[</span><span class="s1">&#39;mod_gauss_center&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+    <span class="n">par_gauss</span><span class="p">[</span><span class="s1">&#39;mod_gauss_sigma&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">norm</span><span class="p">:</span>
+        <span class="n">flux</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">mod_gauss</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">params</span><span class="o">=</span><span class="n">par_gauss</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">wave</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">flux</span> <span class="o">=</span> \
+            <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">mod_gauss</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">params</span><span class="o">=</span><span class="n">par_gauss</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">wave</span><span class="p">))</span> <span class="o">*</span> \
+            <span class="n">mod_linear</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">params</span><span class="o">=</span><span class="n">par_linear</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">wave</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">flux</span></div>
+
+
+<div class="viewcode-block" id="save_image_line_indice"><a class="viewcode-back" href="../../laspec.html#laspec.line_index.save_image_line_indice">[docs]</a><span class="k">def</span> <span class="nf">save_image_line_indice</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">wave</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">ind_range</span><span class="p">,</span> <span class="n">cont_range</span><span class="p">,</span>
+                           <span class="n">ind_shoulder</span><span class="p">,</span> <span class="n">line_info</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Plot a line indice and save it as a .png document.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    filepath: string</span>
+<span class="sd">        path of the spec document</span>
+
+<span class="sd">    wave: array</span>
+<span class="sd">        wavelength vector</span>
+
+<span class="sd">    flux: array</span>
+<span class="sd">        flux vector</span>
+
+<span class="sd">    ind_range: array</span>
+<span class="sd">        bool indicating the middle range of a particular line</span>
+
+<span class="sd">    cont_range: array</span>
+<span class="sd">        continuum flux of the middle range derived from linear model</span>
+
+<span class="sd">    ind_shoulder: array</span>
+<span class="sd">        bool indicating the shoulder range of a particular line</span>
+
+<span class="sd">    line_info: dict</span>
+<span class="sd">        information about spectral line, eg:</span>
+<span class="sd">        line_info_dib5780 = {&#39;line_center&#39;:         5780,</span>
+<span class="sd">                             &#39;line_range&#39;:          (5775, 5785),</span>
+<span class="sd">                             &#39;line_shoulder_left&#39;:  (5755, 5775),</span>
+<span class="sd">                             &#39;line_shoulder_right&#39;: (5805, 5825)}</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">wave</span><span class="p">[</span><span class="n">ind_range</span><span class="p">],</span> <span class="n">flux</span><span class="p">[</span><span class="n">ind_range</span><span class="p">],</span> <span class="s1">&#39;r-&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">wave</span><span class="p">[</span><span class="n">ind_range</span><span class="p">],</span> <span class="n">cont_range</span><span class="p">,</span> <span class="s1">&#39;b-&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">wave</span><span class="p">[</span><span class="n">ind_shoulder</span><span class="p">],</span> <span class="n">flux</span><span class="p">[</span><span class="n">ind_shoulder</span><span class="p">],</span> <span class="s1">&#39;m-&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;line&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">line_info</span><span class="p">[</span><span class="s1">&#39;line_center&#39;</span><span class="p">])</span> <span class="o">+</span> <span class="sa">r</span><span class="s1">&#39;of &#39;</span> <span class="o">+</span> <span class="n">filename</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_"><a class="viewcode-back" href="../../laspec.html#laspec.line_index.test_">[docs]</a><span class="k">def</span> <span class="nf">test_</span><span class="p">():</span>
+    <span class="c1"># filepath = walk_dir()</span>
+    <span class="c1"># filesource = &#39;auto&#39;</span>
+    <span class="n">filepath</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;/pool/lamost/dr2/spectra/fits/F5902/spec-55859-F5902_sp01-001.fits&#39;</span>
+    <span class="n">filesource</span> <span class="o">=</span> <span class="s1">&#39;lamost_dr2&#39;</span>
+    <span class="n">spec</span> <span class="o">=</span> <span class="n">read_spectrum</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">filesource</span><span class="p">)</span>
+    <span class="c1"># 10 loops, best of 3: 35.7 ms per loop</span>
+    <span class="c1"># line_indx_pack = measure_line_index_loopfun(filepath)</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="mf">0.00205785</span>
+    <span class="n">line_info_dib6284</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;line_center&#39;</span><span class="p">:</span>         <span class="mi">6285</span><span class="p">,</span>
+                         <span class="s1">&#39;line_range&#39;</span><span class="p">:</span>          <span class="p">(</span><span class="mi">6280</span><span class="p">,</span> <span class="mi">6290</span><span class="p">),</span>
+                         <span class="s1">&#39;line_shoulder_left&#39;</span><span class="p">:</span>  <span class="p">(</span><span class="mi">6260</span><span class="p">,</span> <span class="mi">6280</span><span class="p">),</span>
+                         <span class="s1">&#39;line_shoulder_right&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">6310</span><span class="p">,</span> <span class="mi">6330</span><span class="p">)}</span>
+    <span class="n">line_indx</span> <span class="o">=</span> <span class="n">measure_line_index</span><span class="p">(</span><span class="n">wave</span><span class="o">=</span><span class="n">spec</span><span class="p">[</span><span class="s1">&#39;wave&#39;</span><span class="p">],</span>
+                                   <span class="n">flux</span><span class="o">=</span><span class="n">spec</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">],</span>
+                                   <span class="n">flux_err</span><span class="o">=</span><span class="n">spec</span><span class="p">[</span><span class="s1">&#39;flux_err&#39;</span><span class="p">],</span>
+                                   <span class="n">mask</span><span class="o">=</span><span class="n">spec</span><span class="p">[</span><span class="s1">&#39;and_mask&#39;</span><span class="p">],</span>
+                                   <span class="n">line_info</span><span class="o">=</span><span class="n">line_info_dib6284</span><span class="p">,</span>
+                                   <span class="n">num_refit</span><span class="o">=</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+                                   <span class="n">return_type</span><span class="o">=</span><span class="s1">&#39;dict&#39;</span><span class="p">,</span>
+                                   <span class="n">z</span><span class="o">=</span><span class="n">z</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">line_indx</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="nb">print</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">line_indx</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">line_indx</span><span class="o">.</span><span class="n">values</span><span class="p">())))</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    45 ms for integration and other procedures</span>
+<span class="sd">    380 ms for 100 refits</span>
+<span class="sd">    In the fastest way (45ms), run 40 line indices on 4 million spectra:</span>
+<span class="sd">    0.045*40*4E6/24/86400 ~ 3.5 days</span>
+<span class="sd">    In the slowest way (380ms)</span>
+<span class="sd">    0.420*40*4E6/24/86400 ~ 32.5 days</span>
+<span class="sd">    &#39;&#39;&#39;</span></div>
+
+
+<span class="c1"># I don&#39;t think this function should be implemented here,</span>
+<span class="c1"># it could be useful if under the bopy.core package</span>
+<div class="viewcode-block" id="walk_dir"><a class="viewcode-back" href="../../laspec.html#laspec.line_index.walk_dir">[docs]</a><span class="k">def</span> <span class="nf">walk_dir</span><span class="p">(</span><span class="n">dirpath</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; enumerate all files under dirpath</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dirpath: string</span>
+<span class="sd">        the directory to be walked in</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    filename: list</span>
+<span class="sd">        filepaths of all the spectra in finder dirpath</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">filename_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">parent</span><span class="p">,</span> <span class="n">dirnames</span><span class="p">,</span> <span class="n">filenames</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="n">dirpath</span><span class="p">):</span>
+        <span class="n">filename_list</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+                              <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">filenames</span><span class="p">])</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">filename_list</span><span class="p">)</span>
+    <span class="n">filename_list</span> <span class="o">=</span> <span class="n">filename_list</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">filename_list</span></div>
+    
+
+<span class="c1"># for fucntions below, consider whether it is need to be here</span>
+<span class="c1"># #############################################################################</span>
+
+
+<div class="viewcode-block" id="test_measure_line_index"><a class="viewcode-back" href="../../laspec.html#laspec.line_index.test_measure_line_index">[docs]</a><span class="k">def</span> <span class="nf">test_measure_line_index</span><span class="p">():</span>
+    <span class="n">filepath</span> <span class="o">=</span> <span class="n">walk_dir</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+    <span class="n">line_indx_star</span> <span class="o">=</span> <span class="p">[[]</span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+        <span class="n">line_indx</span> <span class="o">=</span> <span class="n">measure_line_index_loopfun</span><span class="p">(</span><span class="n">filepath</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="n">line_indx_star</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line_indx</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">line_indx_star</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line_indx</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">line_indx_star</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line_indx</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">line_indx_star</span></div>
+
+
+<div class="viewcode-block" id="get_equivalent_width"><a class="viewcode-back" href="../../laspec.html#laspec.line_index.get_equivalent_width">[docs]</a><span class="k">def</span> <span class="nf">get_equivalent_width</span><span class="p">(</span><span class="n">line_indx_star</span><span class="p">):</span>
+    <span class="n">EW</span> <span class="o">=</span> <span class="p">[[]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)]</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">line_indx_star</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="n">EW</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line_indx_star</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">][</span><span class="s1">&#39;EW_int&#39;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">EW</span></div>
+    
+
+<div class="viewcode-block" id="plot_equivalent_width_hist"><a class="viewcode-back" href="../../laspec.html#laspec.line_index.plot_equivalent_width_hist">[docs]</a><span class="k">def</span> <span class="nf">plot_equivalent_width_hist</span><span class="p">(</span><span class="n">EW_star</span><span class="p">):</span>
+    <span class="n">titles</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;5780&quot;</span><span class="p">,</span> <span class="s2">&quot;5797&quot;</span><span class="p">,</span> <span class="s2">&quot;6285&quot;</span><span class="p">]</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">EW_star</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;equivalent width&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;number&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Histogram of equivalent width_line&#39;</span><span class="o">+</span><span class="n">titles</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="plot_line_indices"><a class="viewcode-back" href="../../laspec.html#laspec.line_index.plot_line_indices">[docs]</a><span class="k">def</span> <span class="nf">plot_line_indices</span><span class="p">(</span><span class="n">EW_star</span><span class="p">):</span>
+    <span class="n">titles</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;5780&quot;</span><span class="p">,</span> <span class="s2">&quot;5797&quot;</span><span class="p">,</span> <span class="s2">&quot;6285&quot;</span><span class="p">]</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">64</span><span class="p">,</span> <span class="mi">64</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">titles</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="s2">&quot; - &quot;</span><span class="o">+</span><span class="n">titles</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">fontsize</span> <span class="o">=</span> <span class="mi">8</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">titles</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">titles</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">EW_star</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">EW_star</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="s1">&#39;ob&#39;</span><span class="p">,</span><span class="n">markersize</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span></div>
+
+<span class="c1"># #############################################################################</span>
+
+<span class="c1"># %% test</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="c1"># line_indx_star = test_measure_line_index()</span>
+    <span class="c1"># EW_star = get_equivalent_width(line_indx_star)</span>
+    <span class="c1"># plot_equivalent_width_hist(EW_star)</span>
+    <span class="c1"># plot_line_indices(EW_star)</span>
+    <span class="n">test_</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Bo Zhang.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
