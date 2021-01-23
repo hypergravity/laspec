@@ -3,3 +3,8 @@ jupyter
 numpy
 scipy
 joblib
+sympy
+astropy
+tqdm
+matplotlib
+scikit-learn
