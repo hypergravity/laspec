@@ -115,7 +115,7 @@ class MrsSpec:
     snr = 0
     exptime = 0
     lmjm = 0
-    lmjmlist = 0
+    lmjmlist = []
     obsid = 0
     seeing = 0.
     lamplist = ""
@@ -231,21 +231,25 @@ class MrsSpec:
                 flux = spec["FLUX"].data
                 ivar = spec["IVAR"].data
                 mask = spec["ORMASK"].data  # use ormask for coadded spec
-                info = dict(name=hdu.header["EXTNAME"],
-                            lmjmlist=hdu.header["LMJMLIST"],  # not universal
-                            snr=np.float(hdu.header["SNR"]),
-                            lamplist=hdu.header["LAMPLIST"])
+                info = dict(
+                    name=hdu.header["EXTNAME"],
+                    # lmjmlist=hdu.header["LMJMLIST"],  # not universal
+                    snr=np.float(hdu.header["SNR"]),
+                    lamplist=hdu.header["LAMPLIST"],
+                )
             elif hdu.name.startswith("B-") or hdu.name.startswith("R-"):
                 # it's epoch spec
                 wave = 10 ** spec["LOGLAM"].data
                 flux = spec["FLUX"].data
                 ivar = spec["IVAR"].data
                 mask = spec["PIXMASK"].data  # use pixmask for epoch spec
-                info = dict(name=hdu.header["EXTNAME"],
-                            lmjm=np.int(hdu.header["LMJM"]),
-                            exptime=np.float(hdu.header["EXPTIME"]),
-                            snr=np.float(hdu.header["SNR"]),
-                            lamplist=hdu.header["LAMPLIST"])
+                info = dict(
+                    name=hdu.header["EXTNAME"],
+                    lmjm=np.int(hdu.header["LMJM"]),
+                    exptime=np.float(hdu.header["EXPTIME"]),
+                    snr=np.float(hdu.header["SNR"]),
+                    lamplist=hdu.header["LAMPLIST"],
+                )
             else:
                 raise ValueError("@MrsFits: error in reading epoch spec!")
             # initiate MrsSpec
