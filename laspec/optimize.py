@@ -93,8 +93,10 @@ class RandomWalkMinimizer:
             a list of different scales. e.g. []
         maxiter:
             number of max iterations
-        args, kwargs:
-            fun(x, *args, **kwargs)
+        args:
+            arguments
+        kwargs:
+            keyword arguments
         optind:
             a subset ind of parameters, e.g., [5, 7]
         verbose: bool

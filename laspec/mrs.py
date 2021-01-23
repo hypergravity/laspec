@@ -320,8 +320,8 @@ class MrsSpec:
         """ return RV-corrected wavelength array
         Parameter
         ---------
-        rv:
-            float, radial velocity [km/s]
+        rv: float
+            radial velocity [km/s]
         """
         if rv is None:
             rv = self.rv

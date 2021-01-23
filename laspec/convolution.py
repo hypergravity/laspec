@@ -174,8 +174,8 @@ def generate_wave_array_delta_lambda(wave_start, wave_stop,
                                      delta_lambda=(lambda x: 1.),
                                      over_sample=1.,
                                      wave_test_step=1.):
-    """ generate a wavelength array matching the given delta_lambda
-        (delta_lambda given as a fixed number or a function)
+    """ generate a wavelength array matching the given delta_lambda a function of wavelength
+
     Parameters
     ----------
     wave_start: float
@@ -192,6 +192,7 @@ def generate_wave_array_delta_lambda(wave_start, wave_stop,
     Returns
     -------
     wave_guess: array
+        the guess of wavelength array
 
     Example
     -------
