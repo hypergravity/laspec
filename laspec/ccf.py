@@ -393,9 +393,6 @@ class RVM:
                        args=(wave_obs, flux_obs, self.wave_mod, self.flux_mod[imod],
                              w_mod[imod], w_obs),
                        method=method)  # Powell
-
-        # opt = minimize(ccf_cost_interp, x0=rv_best, args=(wave_obs, flux_obs, wave_mod, flux_mod[imod_best]), method="Powell")
-        # x = np.interp(wave, wave_obs/(1+opt.x/SOL_kms), flux_obs).reshape(1, -1)
         result = dict(rv_opt=np.float(opt.x),
                       rv_err=np.float(opt.hess_inv) if method == "BFGS" else np.nan,
                       rv_best=rv_best,
