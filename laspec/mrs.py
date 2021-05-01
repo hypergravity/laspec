@@ -736,9 +736,9 @@ class MrsFits(fits.HDUList):
     # or get one spec (specify a key)?
     def get_one_spec(self, lmjm="COADD", band="B"):
         if lmjm == "COADD":
-            k = "COADD_{}".format(band)
+            k = "COADD_{}".format(band.strip())
         else:
-            k = "{}-{}".format(band, lmjm)
+            k = "{}-{}".format(band.strip(), lmjm)
         return MrsSpec.from_hdu(self[k])
 
     def get_one_epoch(self, lmjm=84420148, norm_type=None, **norm_kwargs):
