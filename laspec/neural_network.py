@@ -318,145 +318,145 @@ class NN:
         return
 
 
-#%%
-def test():
-#%%
-    import numpy as np
-    ntest = 1000
-    ndim = 4
-    x = np.random.uniform(0.2, 0.8, (ntest, ndim))
-    y = x[:, 0] + x[:, 1] * 0.5
-    y = np.sin(x[:, 0]*50) + x[:, 1] * 0.5
-    y = (x[:,0]-0.5)**2
-    y = (y-y.min())/(y.max()-y.min())*0.6+0.2 + np.random.randn(ntest)*0.1
-    # y *=x[:,0]
-    
-    #%%
-    import numpy as np
-    ntest = 1000
-    ndim = 4
-    x = np.random.uniform(0.2, 0.8, (ntest, ndim))
-    y = x[:, 0] + x[:, 1] * 0.5
-    y = np.sin(x[:, 0]*20) + x[:, 1] * 0.5
-    # y = (x[:,0]-0.5)**2
-    y = (y-y.min())/(y.max()-y.min())*0.6+0.2 + np.random.randn(ntest)*0.02
-    # y *=x[:,0]
-    #%%
-    # x = x.reshape(*x.shape, 1)
-    # y = y.reshape(*y.shape, 1)
-
-    nn = NN(kind="nn", ninput=1, nhidden=(100,50), noutput=1, activation_hidden=("relu", "relu"), activation_output="tanh")
-    nn.set_callbacks(patience_earlystopping=100, patience_reducelronplateau=100, filepath="/tmp/cvsearch.h5")
-    nn.train(x[:,0], y, y*0+1, test_size=0.1, epochs=10000, batch_size=np.int(x.shape[0]/20), 
-             loss="mse", metrics="mae", optimizer=optimizers.Adam(lr=1e-1))
-    nn.model = load_model(filepath="/tmp/cvsearch.h5")
-    nn.predict(x[:,0])
-    
-    figure()
-    plot(x[:,0], y,'.')
-    plot(x[:,0], nn.predict(x[:,0]),'.')
-#%%
-from sklearn.neural_network import MLPRegressor
-m = MLPRegressor(hidden_layer_sizes=(100,100), activation="logistic", solver="sgd",learning_rate="adaptive", learning_rate_init=1e-5,tol=0, max_iter=10000, verbose=True)
-m.fit(x, y)
-figure()
-plot(x[:,0], y,'.')
-plot(x[:,0], m.predict(x),'.')
-
-#%%
-from sklearn.svm import SVR
-m = SVR(C=50, epsilon=0.05,gamma=100)
-m.fit(x, y)
-m.predict(x)
-figure()
-plot(x[:,0], y,'.')
-plot(x[:,0], m.predict(x),'.')
-
-#%%
-from sklearn.gaussian_process import GaussianProcessRegressor
-
-m = GaussianProcessRegressor(kernel=None,alpha=1e-10, n_restarts_optimizer=10)
-m.fit(x, y)
-figure()
-plot(x[:,0], y,'.')
-plot(x[:,0], m.predict(x),'.')
-
-#%%
-from sklearn.kernel_ridge import KernelRidge
-k = KernelRidge(kernel="rbf",alpha=1e-2, gamma=100)
-k.fit(x, y)
-k.predict(x)
-figure()
-plot(x[:,0], y,'.')
-plot(x[:,0], k.predict(x),'.')
-
-#%%
-figure()
-plot(x[:,1], y,'.')
-plot(x[:,1], nn.predict(x),'.')
-
-#%%
-def cvserach(x, y, sw=None, test_size=0.1,epochs=200, batch_size=50, 
-             loss="mse", metrics="mae", optimizer=optimizers.Adam(lr=1e-3), 
-             cv=5, nhidden_grid=[5, 10, 20]):
-    
-    import numpy as np
-    x = np.random.uniform(-0.5, 0.5, (1000, 2))
-    y = x[:, 0] + x[:, 1] * 0.5
-    
-    if sw is None:
-        sw = np.ones_like(y, dtype=float)
-        
-    loss_values = np.zeros((len(nhidden_grid), cv))
-    
-    kf = KFold(n_splits=cv, shuffle=True)
-    
-    for i_split, (train_index, test_index) in enumerate(kf.split(x)):
-        xtrain, xtest = x[train_index], x[test_index]
-        ytrain, ytest = y[train_index], y[test_index]
-        swtrain, swtest = sw[train_index], sw[test_index]
-        
-        for i_nhidden, nhidden in enumerate(nhidden_grid):
-            nn = NN(kind="nn", ninput=2, nhidden=nhidden, noutput=1)
-            nn.train(xtrain, ytrain, ytrain*0+1, test_size=0.1,epochs=200, batch_size=50, 
-                     loss="mse", metrics=None, optimizer=optimizers.SGD(lr=1e-2))
-            loss_values[i_nhidden, i_split] = nn.evaluate(xtest, ytest)
-            print(loss_values)
-            
-        
-    
-    
-#%%
-# from keras.models import Sequential
-# from keras.layers import Dense, LSTM, Activation
-# from keras.optimizers import adam, rmsprop, adadelta
-# import numpy as np
-# import matplotlib.pyplot as plt
-#construct model
-
-models = Sequential()
-models.add(Dense(100, activation='relu' ,input_dim=1))
-models.add(Dense(50, activation='relu'))
-models.add(Dense(1,activation='tanh'))
-models.compile(optimizer='rmsprop', loss='mse',metrics=["accuracy"] )
-
-#train data
-dataX = np.linspace(-2 * np.pi,2 * np.pi, 1000)
-dataX = np.reshape(dataX, [dataX.__len__(), 1])
-noise = np.random.rand(dataX.__len__(), 1) * 0.1
-dataY = np.sin(dataX) + noise
-
-models.fit(dataX, dataY, epochs=100, batch_size=10, shuffle=True, verbose = 1)
-predictY = models.predict(dataX, batch_size=1)
-score = models.evaluate(dataX, dataY, batch_size=10)
-
-print(score)
-#plot
-fig, ax = plt.subplots()
-ax.plot(dataX, dataY, 'b-')
-ax.plot(dataX, predictY, 'r.',)
-
-ax.set(xlabel="x", ylabel="y=f(x)", title="y = sin(x),red:predict data,bule:true data")
-ax.grid(True)
-
-plt.show()
+# #%%
+# def test():
+# #%%
+#     import numpy as np
+#     ntest = 1000
+#     ndim = 4
+#     x = np.random.uniform(0.2, 0.8, (ntest, ndim))
+#     y = x[:, 0] + x[:, 1] * 0.5
+#     y = np.sin(x[:, 0]*50) + x[:, 1] * 0.5
+#     y = (x[:,0]-0.5)**2
+#     y = (y-y.min())/(y.max()-y.min())*0.6+0.2 + np.random.randn(ntest)*0.1
+#     # y *=x[:,0]
+#
+#     #%%
+#     import numpy as np
+#     ntest = 1000
+#     ndim = 4
+#     x = np.random.uniform(0.2, 0.8, (ntest, ndim))
+#     y = x[:, 0] + x[:, 1] * 0.5
+#     y = np.sin(x[:, 0]*20) + x[:, 1] * 0.5
+#     # y = (x[:,0]-0.5)**2
+#     y = (y-y.min())/(y.max()-y.min())*0.6+0.2 + np.random.randn(ntest)*0.02
+#     # y *=x[:,0]
+#     #%%
+#     # x = x.reshape(*x.shape, 1)
+#     # y = y.reshape(*y.shape, 1)
+#
+#     nn = NN(kind="nn", ninput=1, nhidden=(100,50), noutput=1, activation_hidden=("relu", "relu"), activation_output="tanh")
+#     nn.set_callbacks(patience_earlystopping=100, patience_reducelronplateau=100, filepath="/tmp/cvsearch.h5")
+#     nn.train(x[:,0], y, y*0+1, test_size=0.1, epochs=10000, batch_size=np.int(x.shape[0]/20),
+#              loss="mse", metrics="mae", optimizer=optimizers.Adam(lr=1e-1))
+#     nn.model = load_model(filepath="/tmp/cvsearch.h5")
+#     nn.predict(x[:,0])
+#
+#     figure()
+#     plot(x[:,0], y,'.')
+#     plot(x[:,0], nn.predict(x[:,0]),'.')
+# #%%
+# from sklearn.neural_network import MLPRegressor
+# m = MLPRegressor(hidden_layer_sizes=(100,100), activation="logistic", solver="sgd",learning_rate="adaptive", learning_rate_init=1e-5,tol=0, max_iter=10000, verbose=True)
+# m.fit(x, y)
+# figure()
+# plot(x[:,0], y,'.')
+# plot(x[:,0], m.predict(x),'.')
+#
+# #%%
+# from sklearn.svm import SVR
+# m = SVR(C=50, epsilon=0.05,gamma=100)
+# m.fit(x, y)
+# m.predict(x)
+# figure()
+# plot(x[:,0], y,'.')
+# plot(x[:,0], m.predict(x),'.')
+#
+# #%%
+# from sklearn.gaussian_process import GaussianProcessRegressor
+#
+# m = GaussianProcessRegressor(kernel=None,alpha=1e-10, n_restarts_optimizer=10)
+# m.fit(x, y)
+# figure()
+# plot(x[:,0], y,'.')
+# plot(x[:,0], m.predict(x),'.')
+#
+# #%%
+# from sklearn.kernel_ridge import KernelRidge
+# k = KernelRidge(kernel="rbf",alpha=1e-2, gamma=100)
+# k.fit(x, y)
+# k.predict(x)
+# figure()
+# plot(x[:,0], y,'.')
+# plot(x[:,0], k.predict(x),'.')
+#
+# #%%
+# figure()
+# plot(x[:,1], y,'.')
+# plot(x[:,1], nn.predict(x),'.')
+#
+# #%%
+# def cvserach(x, y, sw=None, test_size=0.1,epochs=200, batch_size=50,
+#              loss="mse", metrics="mae", optimizer=optimizers.Adam(lr=1e-3),
+#              cv=5, nhidden_grid=[5, 10, 20]):
+#
+#     import numpy as np
+#     x = np.random.uniform(-0.5, 0.5, (1000, 2))
+#     y = x[:, 0] + x[:, 1] * 0.5
+#
+#     if sw is None:
+#         sw = np.ones_like(y, dtype=float)
+#
+#     loss_values = np.zeros((len(nhidden_grid), cv))
+#
+#     kf = KFold(n_splits=cv, shuffle=True)
+#
+#     for i_split, (train_index, test_index) in enumerate(kf.split(x)):
+#         xtrain, xtest = x[train_index], x[test_index]
+#         ytrain, ytest = y[train_index], y[test_index]
+#         swtrain, swtest = sw[train_index], sw[test_index]
+#
+#         for i_nhidden, nhidden in enumerate(nhidden_grid):
+#             nn = NN(kind="nn", ninput=2, nhidden=nhidden, noutput=1)
+#             nn.train(xtrain, ytrain, ytrain*0+1, test_size=0.1,epochs=200, batch_size=50,
+#                      loss="mse", metrics=None, optimizer=optimizers.SGD(lr=1e-2))
+#             loss_values[i_nhidden, i_split] = nn.evaluate(xtest, ytest)
+#             print(loss_values)
+#
+#
+#
+#
+# #%%
+# # from keras.models import Sequential
+# # from keras.layers import Dense, LSTM, Activation
+# # from keras.optimizers import adam, rmsprop, adadelta
+# # import numpy as np
+# # import matplotlib.pyplot as plt
+# #construct model
+#
+# models = Sequential()
+# models.add(Dense(100, activation='relu' ,input_dim=1))
+# models.add(Dense(50, activation='relu'))
+# models.add(Dense(1,activation='tanh'))
+# models.compile(optimizer='rmsprop', loss='mse',metrics=["accuracy"] )
+#
+# #train data
+# dataX = np.linspace(-2 * np.pi,2 * np.pi, 1000)
+# dataX = np.reshape(dataX, [dataX.__len__(), 1])
+# noise = np.random.rand(dataX.__len__(), 1) * 0.1
+# dataY = np.sin(dataX) + noise
+#
+# models.fit(dataX, dataY, epochs=100, batch_size=10, shuffle=True, verbose = 1)
+# predictY = models.predict(dataX, batch_size=1)
+# score = models.evaluate(dataX, dataY, batch_size=10)
+#
+# print(score)
+# #plot
+# fig, ax = plt.subplots()
+# ax.plot(dataX, dataY, 'b-')
+# ax.plot(dataX, predictY, 'r.',)
+#
+# ax.set(xlabel="x", ylabel="y=f(x)", title="y = sin(x),red:predict data,bule:true data")
+# ax.grid(True)
+#
+# plt.show()
