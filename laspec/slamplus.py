@@ -1,7 +1,8 @@
 import numpy as np
 import tensorflow as tf
 from laspec.neural_network import NN
-from scipy.optimize import minimize
+from scipy.optimize import minimize, curve_fit
+import joblib
 
 
 def leaky_relu(x, alpha=0.01):
@@ -21,8 +22,8 @@ class SlamPlus:
         self.tr_label_max = np.max(self.tr_label, axis=0)
         self.tr_flux_min = np.min(self.tr_flux, axis=0)
         self.tr_flux_max = np.max(self.tr_flux, axis=0)
-        self.tr_flux_scaled = (self.tr_flux - self.tr_flux_min)/(self.tr_flux_max - self.tr_flux_min)
-        self.tr_label_scaled = (self.tr_label - self.tr_label_min) / (self.tr_label_max - self.tr_label_min)
+        self.tr_flux_scaled = (self.tr_flux - self.tr_flux_min)/(self.tr_flux_max - self.tr_flux_min) - 0.5
+        self.tr_label_scaled = (self.tr_label - self.tr_label_min) / (self.tr_label_max - self.tr_label_min) - 0.5
         self.history = None
         self.wave = wave
 
@@ -39,27 +40,16 @@ class SlamPlus:
             self.tr_weight = np.asarray(tr_weight, dtype=float)
         self.nnweights = []
 
+        # default parameters
         self.nlayer = 0
         self.activation = "leakyrelu"
         self.alpha = 0.
         self.w = 0
         self.b = 0
-
-    def get_gpu(self):
-        NN.get_gpu()
+        self.model = None
         return
 
-    def set_gpu(self, device=0):
-        NN.set_gpu(device=device)
-        return
-
-    def train(self, nhidden=(200, 200, 200), activation="leakyrelu", alpha=.01,  # NN parameters
-              test_size=0.1, random_state=0, epochs=1000, batch_size=100,  # training parameters
-              optimizer="adam", learning_rate=1e-4, loss="mae", metrics=['mse', "mae"],
-              patience_earlystopping=5, patience_reducelronplateau=3, factor_reducelronplateau=0.5, filepath="",
-              ):
-        """ train all pixels """
-        # record NN parameters
+    def initialize(self, nhidden=(100, 300,), activation="leakyrelu", alpha=0.01):
         from collections.abc import Iterable
         if isinstance(nhidden, Iterable):
             self.nlayer = len(nhidden)
@@ -69,49 +59,55 @@ class SlamPlus:
         self.activation = activation
         self.alpha = alpha
 
+        # initialize NN regressor
+        self.model = NN(kind="slam", ninput=self.ndim, nhidden=nhidden, noutput=self.npix,
+                        activation=activation, alpha=alpha)
+        self.model.summary()
+
+    @staticmethod
+    def get_gpu():
+        NN.get_gpu()
+        return
+
+    @staticmethod
+    def set_gpu(device=0):
+        NN.set_gpu(device=device)
+        return
+
+    def train(self, test_size=0.1, random_state=0, epochs=1000, batch_size=100,  # training parameters
+              optimizer="adam", learning_rate=1e-4, loss="mae", metrics=['mse', "mae"],
+              patience_earlystopping=5, patience_reducelronplateau=3, factor_reducelronplateau=0.5, filepath="",
+              ):
+        """ train all pixels """
         # set optimizer
         assert optimizer in ["adam", "sgd"]
         if optimizer == "adam":
             optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
         else:
             optimizer = tf.keras.optimizers.SGD(learning_rate=learning_rate)
-
-        # train pixels
-        # initialize NN regressor
-        model = NN(kind="slam", ninput=self.ndim, nhidden=nhidden, noutput=self.npix,
-                   activation=activation, alpha=alpha)
-        model.summary()
         # set callbacks
-        model.set_callbacks(monitor_earlystopping="val_loss",
-                            patience_earlystopping=patience_earlystopping,
-                            monitor_modelcheckpoint="val_loss",
-                            filepath=filepath,
-                            monitor_reducelronplateau="val_loss",
-                            patience_reducelronplateau=patience_reducelronplateau,
-                            factor_reducelronplateau=factor_reducelronplateau)
+        self.model.set_callbacks(monitor_earlystopping="val_loss",
+                                 patience_earlystopping=patience_earlystopping,
+                                 monitor_modelcheckpoint="val_loss",
+                                 filepath=filepath,
+                                 monitor_reducelronplateau="val_loss",
+                                 patience_reducelronplateau=patience_reducelronplateau,
+                                 factor_reducelronplateau=factor_reducelronplateau)
         # train pixels
-        self.history = model.train(self.tr_label_scaled, self.tr_flux_scaled, 
-                                   batch_size=batch_size, sw=self.tr_weight,
-                                   test_size=test_size, optimizer=optimizer, epochs=epochs,
-                                   loss=loss, metrics=metrics, random_state=random_state)
-        # ypred = model.predict(x).flatten()
+        self.history = self.model.train(self.tr_label_scaled, self.tr_flux_scaled,
+                                        batch_size=batch_size, sw=self.tr_weight,
+                                        test_size=test_size, optimizer=optimizer, epochs=epochs,
+                                        loss=loss, metrics=metrics, random_state=random_state)
+        # get best model
         if filepath not in ["", None]:
-            model = tf.keras.models.load_model(filepath)
-
-        self.model = model
-        new_weights = model.model.get_weights()
-
+            self.model.model = tf.keras.models.load_model(filepath)
+        # get weights
+        new_weights = self.model.model.get_weights()
         self.w = [new_weights[ilayer * 2].T for ilayer in range(self.nlayer + 1)]
         self.b = [new_weights[ilayer * 2 + 1].reshape(-1, 1) for ilayer in range(self.nlayer + 1)]
 
         return SlamPredictor(self.w, self.b, self.alpha, self.tr_label_min, self.tr_label_max,
                              self.tr_flux_min, self.tr_flux_max, self.wave)
-
-    # do not use this
-    # def predict(self, x):
-    #     for ilayer in range(self.nlayer):
-    #         x = leaky_relu(np.matmul(self.w[ilayer], x) + self.b[ilayer], self.alpha)
-    #     return np.matmul(self.w[self.nlayer], x) + self.b[self.nlayer].flatten()
 
 
 class SlamPredictor:
@@ -135,8 +131,8 @@ class SlamPredictor:
     def predict_one_spectrum(self, x):
         """ predict one spectrum """
         # scale label
-        xsT = ((np.asarray(x)-self.xmin)/(self.xmax-self.xmin)).reshape(-1, 1)
-        return nneval(xsT, self.w, self.b, self.alpha, self.nlayer).reshape(-1) * (self.ymax-self.ymin) + self.ymin
+        xsT = ((np.asarray(x)-self.xmin)/(self.xmax-self.xmin)).reshape(-1, 1) - 0.5
+        return (nneval(xsT, self.w, self.b, self.alpha, self.nlayer).reshape(-1) + 0.5) * (self.ymax-self.ymin) + self.ymin
 
     # def predict_multiple_spectra(self, x):
     #     # scale label
@@ -151,13 +147,33 @@ class SlamPredictor:
     def optimize(self, flux_obs, flux_err=None, pw=2, method="Nelder-Mead"):
         return minimize(cost, self.xmean, args=(self, flux_obs, flux_err, pw), method=method)
 
-    def get_gpu(self):
-        NN.get_gpu()
-        return
+    def curve_fit(self, flux_obs, flux_err=None, p0=None, method="lm", bounds=(-np.inf, np.inf), **kwargs):
+        if p0 is None:
+            p0 = self.xmean
+        return curve_fit(model_func, self, flux_obs, p0=p0, sigma=flux_err, absolute_sigma=True,
+                         method=method, bounds=bounds, **kwargs)
 
-    def set_gpu(self, device=0):
-        NN.set_gpu(device=device)
-        return
+    def curve_fit_multiple(self, flux_obs, flux_err=None, p0=None, method="lm", bounds=(-np.inf, np.inf),
+                           n_jobs=2, verbose=10, backend="loky", batch_size=10, **kwargs):
+        flux_obs = np.asarray(flux_obs)
+        nobs = flux_obs.shape[0]
+        if flux_err is None:
+            flux_err = [None for i in range(nobs)]
+        else:
+            flux_err = np.asarray(flux_err)
+        if p0 is None:
+            p0 = self.xmean
+        pool = joblib.Parallel(n_jobs=n_jobs, verbose=verbose, backend=backend, batch_size=batch_size)
+        res = pool(joblib.delayed(curve_fit)(
+            model_func, self, flux_obs[i], p0=p0, sigma=flux_err[i], absolute_sigma=True,
+            method=method, bounds=bounds, **kwargs) for i in range(nobs))
+        popt = np.array([res[i][0] for i in range(nobs)])
+        pcov = np.array([res[i][1] for i in range(nobs)])
+        return popt, pcov
+
+
+def model_func(sp, *args):
+    return sp.predict_one_spectrum(np.array(args))
 
 
 def nneval(xs, w, b, alpha, nlayer):
