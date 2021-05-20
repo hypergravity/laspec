@@ -27,7 +27,7 @@ class GA:
 
     bins = None
 
-    def __init__(self, x, bins, initial_guess="std", method="Powell", robust=False):
+    def __init__(self, x, bins, initial_guess="auto", method="Powell", robust=False):
         """ to evaluate the Gaussian parameters of the residuals *x* """
         # record x & bins
         self.x = np.array(x)
@@ -43,18 +43,18 @@ class GA:
         # initial guess for Gaussian parameters
         if initial_guess == "std":
             # start from a standard Gaussian function
-            x0 = np.array([len(x), 0., 1.])
+            self.p0 = np.array([len(x), 0., 1.])
         elif initial_guess == "auto":
             # start from mean & std
-            x0 = np.array([len(x), np.nanmedian(x), np.nanstd(x)])
+            self.p0 = np.array([len(x), np.nanmedian(x), np.nanstd(x)])
         else:
             raise ValueError("Invalid initial_guess parameter!")
         # search for Gaussian parameters
-        opt = minimize(costfun, x0=x0, args=(self.bc, self.H, self.robust), method=self.method)
+        self.opt = minimize(costfun, x0=self.p0, args=(self.bc, self.H, self.robust), method=self.method)
         if self.N > 0:
-            self.p = opt.x
+            self.p = self.opt.x
         else:
-            self.p = opt.x * np.nan
+            self.p = self.opt.x * np.nan
         # unpack parameters
         self.A, self.mu, self.sigma = self.p
 
