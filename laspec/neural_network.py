@@ -14,8 +14,52 @@ from collections import Iterable
 __all__ = ["NN", "optimizers"]
 
 
+def create_slam_regressor(ninput=4, nhidden=(500, 500, 500), noutput=1, activation="elu", alpha=0.05, **kwargs):
+    """ An easy way of creating DNN with 2 dense layers (1 hidden layer)
+
+    Parameters
+    ----------
+    ninput:
+        input shape
+    nhidden: tuple
+        number of neurons in dense layers
+    noutput:
+        output shape
+    activation:
+        elu relu leakyrelu. defaults to elu (1.0)
+    alpha:
+        parameter of RELU/ELU
+
+    Returns
+    -------
+
+    """
+    model = keras.Sequential()
+    model.add(keras.layers.Input(shape=(ninput,),))
+    if isinstance(nhidden, Iterable):
+        for i, _ in enumerate(nhidden):
+            model.add(keras.layers.Dense(_,))
+            if activation == "elu":
+                model.add(keras.layers.ELU(alpha=alpha))
+            elif activation == "leakyrelu":
+                model.add(keras.layers.LeakyReLU(alpha=alpha))
+            elif activation == "relu":
+                model.add(keras.layers.ReLU())
+            elif activation == "prelu":  # do not use it for SLAM
+                model.add(keras.layers.PReLU())
+            elif activation == "sin":  # do not use it
+                model.add(keras.layers.Activation(tf.sin))
+            else:
+                raise ValueError("Invalid activation {}!".format(activation))
+    else:
+        model.add(keras.layers.Dense(nhidden,))
+        model.add(keras.layers.LeakyReLU(alpha=alpha))
+    model.add(keras.layers.Dense(noutput,))
+    return model
+
+
 def create_nn_regressor(ninput=4, nhidden=10, noutput=1, 
-                        activation_hidden="sigmoid", activation_output=None):
+                        activation_hidden="relu", activation_output=None, **kwargs):
     """ An easy way of creating DNN with 2 dense layers (1 hidden layer)
 
     Parameters
@@ -40,9 +84,9 @@ def create_nn_regressor(ninput=4, nhidden=10, noutput=1,
     # model.add(Dropout(dropout_rate))
     # model.add(BatchNormalization())
     if isinstance(nhidden, Iterable):
-        assert len(nhidden) == len(activation_hidden)
+        # assert len(nhidden) == len(activation_hidden)
         for i, _ in enumerate(nhidden):
-            model.add(Dense(_, activation=activation_hidden[i]))
+            model.add(Dense(_, activation=activation_hidden))
             # model.add(BatchNormalization())
     else:
         model.add(Dense(nhidden, activation=activation_hidden))
@@ -134,15 +178,19 @@ class NN:
     swtest = None
 
     def __init__(self, kind="c3nn2", ninput=100, *args, **kwargs):
-        assert kind in ["nn", "c3nn2"]
-        if kind == "c3nn2":
+        assert kind in ["nnr", "c3nn2", "slam"]
+        if kind == "slam":
+            # a fast way of creating slam regressor
+            self.model = create_slam_regressor(ninput=ninput, *args, **kwargs)
+            print("@NN: generating slam regressor with ninput={}".format(ninput))
+        elif kind == "c3nn2":
             # a fast way of creating c3nn2 classifier
             self.model = create_c3nn2_classifier(ninput=ninput, *args, **kwargs)
             print("@NN: generating fast c3nn2 with ninput={}".format(ninput))
-        elif kind == "nn":
+        elif kind == "nnr":
             # a fast way of creating nn regressor
             self.model = create_nn_regressor(ninput=ninput, *args, **kwargs)
-            print("@NN: generating fast nn with ninput={}".format(ninput))
+            print("@NN: generating fast nnr with ninput={}".format(ninput))
         else:
             raise ValueError("Bad value for *kind*!")
 
