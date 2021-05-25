@@ -158,7 +158,7 @@ class MrsSpec:
                     bjdmid=self.bjdmid,
                     )
 
-    def __init__(self, wave=None, flux=None, ivar=None, mask=None, info={}, norm_type=None, **norm_kwargs):
+    def __init__(self, wave=None, flux=None, ivar=None, mask=None, info={}, norm_type="spline", **norm_kwargs):
         """ a general form of spectrum
         Parameters
         ----------
