@@ -104,7 +104,7 @@ def test_create_nn_regressor():
     print(model.weights)
 
 
-def create_c3nn2_classifier(ninput=100, nfilters=32, kernel_size=4, ndense=(128, 16), pool_size=2, dropout_rate=0.5,
+def create_c3nn2_classifier(ninput=100, nfilters=32, kernel_size=4, ndense=128, pool_size=2, dropout_rate=0.5,
                             noutput=1, activation_hidden="relu", activation_out="sigmoid"):
     """ An easy way of creating a CNN with 3 convolutional layers and 2 dense layers
 
@@ -148,18 +148,67 @@ def create_c3nn2_classifier(ninput=100, nfilters=32, kernel_size=4, ndense=(128,
     model.add(Conv1D(nfilters, kernel_size, padding="valid", activation=activation_hidden))
     model.add(MaxPooling1D(pool_size, padding="valid"))
     model.add(BatchNormalization())
+    # model.add(Dropout(dropout_rate))
+
+    model.add(Flatten())
+    model.add(Dense(ndense, activation=activation_hidden, ))  # input_shape=(4000,)
+    model.add(BatchNormalization())
+    model.add(Dropout(dropout_rate))
+
+    # model.add(Dense(ndense[1], activation=activation_hidden))
+    # model.add(BatchNormalization())
+    # model.add(Dropout(dropout_rate))
+
+    model.add(Dense(noutput, activation=activation_out))
+    return model
+
+
+def create_c3nn_classifier(ninput=100, nfilters=32, kernel_size=4, ndense=128, pool_size=2, dropout_rate=0.2,
+                           noutput=1):
+    """ An easy way of creating a CNN with 3 convolutional layers and 2 dense layers
+
+    Parameters
+    ----------
+    ninput:
+        input shape
+    nfilters:
+        number of filters
+    kernel_size:
+        kernel size
+    ndense: tuple
+        number of neurons in dense layers
+    pool_size:
+        pool size in MaxPooling
+    dropout_rate:
+        dropout rate
+    noutput:
+        output shape
+
+    Returns
+    -------
+
+    """
+    model = Sequential()
+    model.add(
+        Conv1D(filters=nfilters, kernel_size=kernel_size, strides=1, padding="valid", activation="relu",
+               input_shape=(ninput, 1))) # ,data_format="channels_last"
+    model.add(BatchNormalization())
+    model.add(MaxPooling1D(pool_size, padding="valid"))
+
+    model.add(Conv1D(nfilters/2, kernel_size, padding="valid", activation="relu"))
+    model.add(BatchNormalization())
+    model.add(MaxPooling1D(pool_size, padding="valid"))
+
+    model.add(Conv1D(nfilters/4, kernel_size, padding="valid", activation="relu"))
+    model.add(BatchNormalization())
+    model.add(MaxPooling1D(pool_size, padding="valid"))
     model.add(Dropout(dropout_rate))
 
     model.add(Flatten())
-    model.add(Dense(ndense[0], activation=activation_hidden, ))  # input_shape=(4000,)
-    model.add(BatchNormalization())
-    model.add(Dropout(dropout_rate))
-
-    model.add(Dense(ndense[1], activation=activation_hidden))
-    model.add(Dropout(dropout_rate))
+    model.add(Dense(ndense, activation="relu", ))  # input_shape=(4000,)
     model.add(BatchNormalization())
 
-    model.add(Dense(noutput, activation=activation_out))
+    model.add(Dense(noutput, activation="sigmoid"))
     return model
 
 
@@ -178,11 +227,15 @@ class NN:
     swtest = None
 
     def __init__(self, kind="c3nn2", ninput=100, *args, **kwargs):
-        assert kind in ["nnr", "c3nn2", "slam"]
+        assert kind in ["nnr", "c3nn2", "c3nn", "slam"]
         if kind == "slam":
             # a fast way of creating slam regressor
             self.model = create_slam_regressor(ninput=ninput, *args, **kwargs)
             print("@NN: generating slam regressor with ninput={}".format(ninput))
+        elif kind == "c3nn":
+            # a fast way of creating c3nn classifier
+            self.model = create_c3nn_classifier(ninput=ninput, *args, **kwargs)
+            print("@NN: generating fast c3nn with ninput={}".format(ninput))
         elif kind == "c3nn2":
             # a fast way of creating c3nn2 classifier
             self.model = create_c3nn2_classifier(ninput=ninput, *args, **kwargs)
