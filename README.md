@@ -7,10 +7,27 @@ A toolkit for LAMOST spectra.
 
 ## citation
 If you make use of this package in your research, please cite the paper below:
+- [Self-consistent Stellar Radial Velocities from LAMOST Medium-Resolution Survey (MRS) DR7](https://ui.adsabs.harvard.edu/abs/2021arXiv210511624Z/abstract)
 - [Deriving the Stellar Labels of LAMOST Spectra with the Stellar LAbel Machine (SLAM)](https://ui.adsabs.harvard.edu/abs/2020ApJS..246....9Z/abstract)
 
 bibtex:
 ```
+@ARTICLE{2021arXiv210511624Z,
+       author = {{Zhang}, Bo and {Li}, Jiao and {Yang}, Fan and {Xiong}, Jian-Ping and {Fu}, Jian-Ning and {Liu}, Chao and {Tian}, Hao and {Li}, Yin-Bi and {Wang}, Jia-Xin and {Liang}, Cai-Xia and {Zhou}, Yu-Tao and {Zong}, Wei-kai and {Yang}, Cheng-Qun and {Liu}, Nian and {Hou}, Yong-Hui},
+        title = "{Self-consistent Stellar Radial Velocities from LAMOST Medium-Resolution Survey (MRS) DR7}",
+      journal = {arXiv e-prints},
+     keywords = {Astrophysics - Solar and Stellar Astrophysics, Astrophysics - Astrophysics of Galaxies, Astrophysics - Instrumentation and Methods for Astrophysics},
+         year = 2021,
+        month = may,
+          eid = {arXiv:2105.11624},
+        pages = {arXiv:2105.11624},
+archivePrefix = {arXiv},
+       eprint = {2105.11624},
+ primaryClass = {astro-ph.SR},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2021arXiv210511624Z},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+
 @ARTICLE{2020ApJS..246....9Z,
        author = {{Zhang}, Bo and {Liu}, Chao and {Deng}, Li-Cai},
         title = "{Deriving the Stellar Labels of LAMOST Spectra with the Stellar LAbel Machine (SLAM)}",
