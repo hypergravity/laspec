@@ -741,7 +741,7 @@ class MrsFits(fits.HDUList):
             k = "{}-{}".format(band.strip(), lmjm)
         return MrsSpec.from_hdu(self[k])
 
-    def get_one_epoch(self, lmjm=84420148, norm_type=None, **norm_kwargs):
+    def get_one_epoch(self, lmjm=84420148, norm_type="spline", **norm_kwargs):
         """ get one epoch spec from fits """
         try:
             if isinstance(lmjm, str):
@@ -759,13 +759,13 @@ class MrsFits(fits.HDUList):
             kR = "R-{}".format(lmjm)
         # read B & R band spec
         if kB in self.hdunames:
-            msB = MrsSpec.from_hdu(self[kB], norm_type=None, **norm_kwargs)
+            msB = MrsSpec.from_hdu(self[kB], norm_type=norm_type, **norm_kwargs)
         else:
-            msB = MrsSpec(norm_type=None, **norm_kwargs)
+            msB = MrsSpec(norm_type=norm_type, **norm_kwargs)
         if kR in self.hdunames:
-            msR = MrsSpec.from_hdu(self[kR], norm_type=None, **norm_kwargs)
+            msR = MrsSpec.from_hdu(self[kR], norm_type=norm_type, **norm_kwargs)
         else:
-            msR = MrsSpec(norm_type=None, **norm_kwargs)
+            msR = MrsSpec(norm_type=norm_type, **norm_kwargs)
         # set epoch info
         me = MrsEpoch((msB, msR), specnames=("B", "R"), epoch=lmjm, norm_type=norm_type, **norm_kwargs)
         # set additional infomation
