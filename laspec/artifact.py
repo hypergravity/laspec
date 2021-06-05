@@ -42,7 +42,7 @@ def make_random_signal(xx, yy=None, lam=3, sigma_min=.1, sigma_scale=.5, peakmax
     if yy is None:
         return _signal + np.random.uniform(flat_min, flat_max)
     else:
-        yyn = yy + _signal
+        yyn = yy + _signal + np.random.uniform(flat_min, flat_max)
         yyn = make_random_mask(yyn, pct=pct, value=value)
         return yyn
 
