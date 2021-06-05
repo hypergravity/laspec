@@ -164,7 +164,7 @@ def create_c3nn2_classifier(ninput=100, nfilters=32, kernel_size=4, ndense=128, 
 
 
 def create_c3nn_classifier(ninput=100, nfilters=32, kernel_size=4, ndense=128, pool_size=2, dropout_rate=0.2,
-                           noutput=1):
+                           noutput=1, pooling=False):
     """ An easy way of creating a CNN with 3 convolutional layers and 2 dense layers
 
     Parameters
@@ -193,15 +193,18 @@ def create_c3nn_classifier(ninput=100, nfilters=32, kernel_size=4, ndense=128, p
         Conv1D(filters=nfilters, kernel_size=kernel_size, strides=1, padding="valid", activation="relu",
                input_shape=(ninput, 1))) # ,data_format="channels_last"
     model.add(BatchNormalization())
-    model.add(MaxPooling1D(pool_size, padding="valid"))
+    if pooling:
+        model.add(MaxPooling1D(pool_size, padding="valid"))
 
     model.add(Conv1D(nfilters/2, kernel_size, padding="valid", activation="relu"))
     model.add(BatchNormalization())
-    model.add(MaxPooling1D(pool_size, padding="valid"))
+    if pooling:
+        model.add(MaxPooling1D(pool_size, padding="valid"))
 
     model.add(Conv1D(nfilters/4, kernel_size, padding="valid", activation="relu"))
     model.add(BatchNormalization())
-    model.add(MaxPooling1D(pool_size, padding="valid"))
+    if pooling:
+        model.add(MaxPooling1D(pool_size, padding="valid"))
     model.add(Dropout(dropout_rate))
 
     model.add(Flatten())
