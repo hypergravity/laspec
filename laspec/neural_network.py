@@ -164,7 +164,7 @@ def create_c3nn2_classifier(ninput=100, nfilters=32, kernel_size=4, ndense=128, 
 
 
 def create_c3nn_classifier(ninput=100, nfilters=32, kernel_size=4, ndense=128, pool_size=2, dropout_rate=0.2,
-                           noutput=1, pooling=False):
+                           noutput=1, pooling=False, activation="sigmoid"):
     """ An easy way of creating a CNN with 3 convolutional layers and 2 dense layers
 
     Parameters
@@ -211,7 +211,7 @@ def create_c3nn_classifier(ninput=100, nfilters=32, kernel_size=4, ndense=128, p
     model.add(Dense(ndense, activation="relu", ))  # input_shape=(4000,)
     model.add(BatchNormalization())
 
-    model.add(Dense(noutput, activation="sigmoid"))
+    model.add(Dense(noutput, activation=activation))
     return model
 
 
