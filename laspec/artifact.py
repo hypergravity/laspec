@@ -52,7 +52,7 @@ def make_random_signal(xx, yy=None,
     # mask chunks
     nchunks = np.random.poisson(chunklam)
     chunkwidths = np.random.exponential(chunkwidth_scale, size=nchunks) + chunkwidth_min
-    chunkpos = np.random.uniform(xx[0], xx[-1], size=npeaks)
+    chunkpos = np.random.uniform(xx[0], xx[-1], size=nchunks)
     for ichunk in range(nchunks):
         yyn[(xx > chunkpos[ichunk]) & (xx < chunkpos[ichunk] + chunkwidths[ichunk])] = chunkvalue
     return yyn
