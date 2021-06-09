@@ -66,6 +66,27 @@ def wxcorr(x1, x2, w=None):
     return wcov(x1, x2, w) / np.sqrt(wcov(x1, x1, w) * wcov(x2, x2, w))
 
 
+def wxcorr_spec_fast(rv_grid, wave0, flux0, wave1, flux1, w_mod=None, w_obs=None):
+    """ vectorized for multiple model flux, but w_mod, w_obs are not considered! """
+    npix = len(wave0)
+    nmod = flux1.shape[0]
+    nrv = len(rv_grid)
+    flux1i = np.zeros((nmod, nrv, npix), dtype=float)
+    for imod in range(nmod):
+        for irv in range(nrv):
+            flux1i[imod, irv, :] = np.interp(wave0, wave1 * (1 + rv_grid[irv] / SOL_kms), flux1[imod])
+    mean0 = np.mean(flux0)
+    mean1 = np.mean(flux1i, axis=2)
+    res0 = flux0 - mean0
+    res1 = flux1i - mean1[:, :, None]
+    # underscore means it is not normalized
+    _cov00 = np.sum(res0 ** 2.)  # var(F, F) float
+    _cov11 = np.sum(res1 ** 2., axis=2)  # var(G, G)  (nmod, nrv)
+    _cov01 = np.sum(res0.reshape(1, 1, -1) * res1, axis=2)  # cov(F, G) (nmod, nrv)
+    ccf_grid = _cov01 / np.sqrt(_cov00) / np.sqrt(_cov11)
+    return ccf_grid
+
+
 def wxcorr_spec(rv, wave_obs, flux_obs, wave_mod, flux_mod, w_mod=None, w_obs=None):
     """ weighted cross correlation of two spectra"""
     if w_mod is None and w_obs is None:
@@ -368,8 +389,10 @@ class RVM:
         return RVM(self.pmod[ind, :], self.wave_mod, self.flux_mod[ind, :], npix_lv=self.npix_lv)
 
     def measure(self, wave_obs, flux_obs, flux_err=None, w_mod=None, w_obs=None, sinebell_idx=0.,
-                rv_grid=np.linspace(-600, 600, 100), flux_bounds=(0, 3.), nmc=100, method="BFGS"):
+                rv_grid=np.linspace(-600, 600, 100), flux_bounds=(0, 3.), nmc=100, method="BFGS",
+                vectorize=True, return_ccfgrid=False):
         """ measure RV """
+        # if vectorize is True, 100 x 200 (-1000 to 1000, a step of 10) x 3347 takes 450MB memory
         # clip extreme values
         ind3 = (flux_obs > flux_bounds[0]) & (flux_obs < flux_bounds[1])
         flux_obs = np.interp(wave_obs, wave_obs[ind3], flux_obs[ind3])
@@ -384,10 +407,14 @@ class RVM:
         elif w_mod == "lv":
             w_mod = self.weight_mod
         # CCF grid
-        ccf_grid = np.zeros((self.flux_mod.shape[0], rv_grid.shape[0]))
-        for imod in range(self.nmod):
-            ccf_grid[imod] = wxcorr_rvgrid(wave_obs, flux_obs, self.wave_mod, self.flux_mod[imod],
-                                           w_mod=w_mod[imod], w_obs=w_obs, rv_grid=rv_grid)[1]
+        if vectorize:
+            # vectorize data to accelerate
+            ccf_grid = wxcorr_spec_fast(rv_grid, wave_obs, flux_obs, self.wave_mod, self.flux_mod, w_mod=w_mod, w_obs=w_obs)
+        else:
+            ccf_grid = np.zeros((self.flux_mod.shape[0], rv_grid.shape[0]))
+            for imod in range(self.nmod):
+                ccf_grid[imod] = wxcorr_rvgrid(wave_obs, flux_obs, self.wave_mod, self.flux_mod[imod],
+                                               w_mod=w_mod[imod], w_obs=w_obs, rv_grid=rv_grid)[1]
         # CCF max
         ccf_max = np.max(ccf_grid)
         ind_best = np.where(ccf_max == ccf_grid)
@@ -418,6 +445,10 @@ class RVM:
                                method=method)
                 x_mc[i] = opt.x
             result["rv_pct"] = np.percentile(x_mc, [16, 50, 84])
+
+        if return_ccfgrid:
+            result["ccf_grid"] = ccf_grid
+
         return result
 
     def measure2(self, wave_obs, flux_obs, flux_err, wave_mod1, flux_mod1, wave_mod2, flux_mod2,
