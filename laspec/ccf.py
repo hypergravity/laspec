@@ -1,10 +1,16 @@
 # -*- coding: utf-8 -*-
+import os
+import warnings
+from collections import OrderedDict
+
 import joblib
 import numpy as np
 from astropy import constants
 from matplotlib import pyplot as plt
 from scipy.optimize import minimize
-from collections import OrderedDict
+from astropy.table import Table
+
+from laspec.mrs import MrsFits
 
 SOL_kms = constants.c.value / 1000
 
@@ -594,6 +600,62 @@ class RVM:
                     pmod=self.pmod[imod],
                     opt=opt)
 
+    def measure_binary_mrsbatch(self, fp, lmjm, snr_B=None, snr_R=None, snr_threshold=5, raise_error=False):
+        # read spectrum
+        mrv_kwargs = {"rv_grid": np.linspace(-1000, 1000, 201),
+                      "eta_init": 0.5,
+                      "eta_lim": (0.01, 3.0)}
+        mf = MrsFits(fp.strip())
+        try:
+            # blue arm
+            ms = mf.get_one_spec(lmjm=lmjm, band="B")
+            if snr_B is not None:
+                assert snr_B > snr_threshold
+            else:
+                assert ms.snr > snr_threshold
+            # cosmic ray removal
+            msr = ms.reduce(npix_cushion=70, norm_type="spline", niter=2)
+            rvr_B = self.measure_binary(msr.wave, msr.flux_norm,
+                                        flux_err=msr.flux_norm_err, nmc=50, **mrv_kwargs, suffix="B")
+        except Exception as e_:
+            if raise_error:
+                raise e_
+            rvr_B = {}
+
+        try:
+            # red arm
+            ms = mf.get_one_spec(lmjm=lmjm, band="R")
+            if snr_B is not None:
+                assert snr_R > snr_threshold
+            else:
+                assert ms.snr > snr_threshold
+            # cosmic ray removal
+            msr = ms.reduce(npix_cushion=70, norm_type="spline", niter=2)
+            # cut 6800+A
+            ind_use = msr.wave < 6800
+            rvr_R = self.measure_binary(msr.wave[ind_use], msr.flux_norm[ind_use],
+                                        flux_err=msr.flux_norm_err[ind_use], nmc=50, **mrv_kwargs, suffix="R")
+            ind_use = (msr.wave < 6800) & ((msr.wave < 6540) | (msr.wave > 6590))
+            rvr_Rm = self.measure_binary(msr.wave[ind_use], msr.flux_norm[ind_use],
+                                         flux_err=msr.flux_norm_err[ind_use], nmc=50, **mrv_kwargs, suffix="Rm")
+        except Exception as e_:
+            rvr_R = {}
+            rvr_Rm = {}
+
+        rvr_B.update(rvr_R)
+        rvr_B.update(rvr_Rm)
+        return rvr_B
+
+    def mrsbatch(self, fpout, fp_list, lmjm_list, snr_B_list, snr_R_list, snr_threshold=5):
+        if os.path.exists(fpout):
+            return
+        nspec = len(fp_list)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            rvr = [self.measure_binary_mrsbatch(fp_list[i], lmjm_list[i], snr_B_list[i], snr_R_list[i],
+                                                snr_threshold=snr_threshold) for i in range(nspec)]
+        return Table(rvr)
+
 
 # def test_rvm_v2():
 #     import joblib
@@ -676,7 +738,6 @@ def test_new_rvm():
         axs[1].plot(rv_grid, ccf_grid + i, "b")
 
     # %%time
-    from collections import OrderedDict
     rvr = []
 
     for i, me in enumerate(ms[:]):
