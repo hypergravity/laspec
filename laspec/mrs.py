@@ -193,8 +193,10 @@ class MrsSpec:
             self.ivar = ivar
         if mask is None:
             self.mask = np.zeros_like(self.flux, dtype=np.bool)
+            self.npix_bad = 0
         else:
             self.mask = mask
+            self.npix_bad = np.sum(self.mask > 0)
         # flux_err
         flux_err = self.ivar ** -0.5
         self.flux_err = np.where(np.isfinite(flux_err), flux_err, np.nan)
@@ -345,7 +347,7 @@ class MrsSpec:
         plt.plot(self.wave, self.flux_norm_err + shift)
 
     def reduce(self, wave_new=None, rv=0, npix_cushion=50, cr=True, nsigma=(4, 8), maxiter=5,
-               norm_type="spline", niter=3):
+               norm_type="spline", niter=2):
         """
 
         Parameters
@@ -405,6 +407,7 @@ class MrsSpec:
         msr.ivar = flux_err**-2
         msr.flux_err = flux_err
         msr.mask = mask
+        msr.npix_bad = self.npix_bad
         msr.indcr = indcr
         msr.name = self.name
         msr.isempty = self.isempty
