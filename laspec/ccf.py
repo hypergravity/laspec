@@ -364,9 +364,68 @@ class RVM:
         if npix_lv > 1:
             print("@RVM: calculating local variance ...")
             self.weight_mod = calculate_local_variance_multi(self.flux_mod, npix_lv=npix_lv, n_jobs=-1)
+        self.cache_names = []
 
     def __repr__(self):
         return "<RVM [nmod={}] [{:.1f}<lambda<{:.1f}]>".format(self.nmod, self.wave_mod[0], self.wave_mod[-1])
+
+    def make_cache(self, cache_name="B", wave_range=(5000, 5300), rv_grid=(-1000, 1000, 10)):
+        """ make cache for fast RV measurements
+
+        Parameters
+        ----------
+        cache_name:
+            suffix of cached data
+        wave_range:
+            wavelength bounds
+        rv_grid:
+            rv_start, rv_stop, rv_step
+
+        Returns
+        -------
+
+        """
+        print("@RVM: making cache ...")
+        ind_wave_cache = (self.wave_mod > wave_range[0]) & (self.wave_mod < wave_range[1])
+        # cache wavelength
+        wave_cache = self.wave_mod[ind_wave_cache]
+        # cache rv grid
+        rv_grid_cache = np.arange(rv_grid[0], rv_grid[1] + rv_grid[2], rv_grid[2])
+        # cache model flux
+        npix = len(wave_cache)
+        nmod = self.nmod
+        nrv = len(rv_grid_cache)
+        flux_mod_cache = np.zeros((nmod, nrv, npix), dtype=float)
+        for imod in range(nmod):
+            for irv in range(nrv):
+                flux_mod_cache[imod, irv, :] = np.interp(
+                    wave_cache, self.wave_mod * (1 + rv_grid_cache[irv] / SOL_kms), self.flux_mod[imod])
+        self.__setattr__("wave_mod_cache_{}".format(cache_name), wave_cache)
+        self.__setattr__("rv_grid_cache_{}".format(cache_name), rv_grid_cache)
+        self.__setattr__("flux_mod_cache_{}".format(cache_name), flux_mod_cache)
+        # statistics
+        _mean1 = np.mean(flux_mod_cache, axis=2)
+        _res1 = flux_mod_cache - _mean1[:, :, None]
+        _cov11 = np.sum(_res1 ** 2., axis=2)  # var(G, G)  (nmod, nrv)
+        self.__setattr__("_mean1_cache_{}".format(cache_name), _mean1)
+        self.__setattr__("_res1_cache_{}".format(cache_name), _res1)
+        self.__setattr__("_cov11_cache_{}".format(cache_name), _cov11)
+
+        # update cache names
+        self.cache_names.append(cache_name)
+        return
+
+    def delete_cache(self, cache_name="B"):
+        assert cache_name in self.cache_names
+        print("@RVM: deleting cache [cache_name={}]...".format(cache_name))
+        self.__delattr__("wave_mod_cache_{}".format(cache_name))
+        self.__delattr__("rv_grid_cache_{}".format(cache_name))
+        self.__delattr__("flux_mod_cache_{}".format(cache_name))
+        self.__delattr__("_mean1_cache_{}".format(cache_name))
+        self.__delattr__("_res1_cache_{}".format(cache_name))
+        self.__delattr__("_cov11_cache_{}".format(cache_name))
+        self.cache_names.remove(cache_name)
+        return
 
     def shrink(self, nmod=0.5, method="top"):
         # determine number of models
@@ -390,8 +449,43 @@ class RVM:
 
     def measure(self, wave_obs, flux_obs, flux_err=None, w_mod=None, w_obs=None, sinebell_idx=0.,
                 rv_grid=np.linspace(-600, 600, 100), flux_bounds=(0, 3.), nmc=100, method="BFGS",
-                vectorize=True, return_ccfgrid=False):
-        """ measure RV """
+                cache_name=None, return_ccfgrid=False):
+        """  measure RV
+
+        Parameters
+        ----------
+        wave_obs:
+            observed wavelength
+        flux_obs:
+            observed flux (normalized)
+        flux_err:
+            observed flux error
+        w_mod:
+            if cache, not used
+        w_obs:
+            if cache, not used
+        sinebell_idx
+            sin(flux)**sinebess_idx
+        rv_grid:
+            if cache, use the cached rv_grid
+            else, use this rv_grid
+        flux_bounds:
+            flux bounds
+        nmc:
+            number of MC repeats
+        method:
+            optimization method
+        cache_name:
+            cache name.
+            if None: no acceleration;
+            if "vector": partial acceleration.
+        return_ccfgrid:
+            if True, return ccfgrid
+
+        Returns
+        -------
+
+        """
         # if vectorize is True, 100 x 200 (-1000 to 1000, a step of 10) x 3347 takes 450MB memory
         # clip extreme values
         ind3 = (flux_obs > flux_bounds[0]) & (flux_obs < flux_bounds[1])
@@ -407,20 +501,38 @@ class RVM:
         elif w_mod == "lv":
             w_mod = self.weight_mod
         # CCF grid
-        if vectorize:
+        if cache_name in self.cache_names:
+            flux0 = np.interp(self.__getattribute__("wave_mod_cache_{}".format(cache_name)),
+                              wave_obs[ind3], flux_obs[ind3], left=1, right=1)
+            mean0 = np.mean(flux0)
+            res0 = flux0 - mean0
+            # underscore means it is not normalized
+            _cov00 = np.sum(res0 ** 2.)  # var(F, F) float
+            _cov01 = np.sum(res0.reshape(1, 1, -1) * self.__getattribute__("_res1_cache_{}".format(cache_name)), axis=2)  # cov(F, G) (nmod, nrv)
+            ccf_grid = _cov01 / np.sqrt(_cov00) / np.sqrt(self.__getattribute__("_cov11_cache_{}".format(cache_name)))
+
+        elif cache_name == "matrix":
             # vectorize data to accelerate
-            ccf_grid = wxcorr_spec_fast(rv_grid, wave_obs, flux_obs, self.wave_mod, self.flux_mod, w_mod=w_mod, w_obs=w_obs)
-        else:
+            ccf_grid = wxcorr_spec_fast(rv_grid, wave_obs, flux_obs, self.wave_mod, self.flux_mod,
+                                        w_mod=w_mod, w_obs=w_obs)
+        elif cache_name is None:
             ccf_grid = np.zeros((self.flux_mod.shape[0], rv_grid.shape[0]))
             for imod in range(self.nmod):
                 ccf_grid[imod] = wxcorr_rvgrid(wave_obs, flux_obs, self.wave_mod, self.flux_mod[imod],
                                                w_mod=w_mod[imod], w_obs=w_obs, rv_grid=rv_grid)[1]
+        else:
+            raise ValueError("@RVM: invalid cache_name: {}. valid options:{} or matrix".format(
+                cache_name, self.cache_names))
+
         # CCF max
         ccf_max = np.max(ccf_grid)
         ind_best = np.where(ccf_max == ccf_grid)
         imod = ind_best[0][0]
         irv_best = ind_best[1][0]
-        rv_best = rv_grid[irv_best]
+        if cache_name in self.cache_names:
+            rv_best = self.__getattribute__("rv_grid_cache_{}".format(cache_name))[irv_best]
+        else:
+            rv_best = rv_grid[irv_best]
         # CCF opt
         opt = minimize(wxcorr_spec_cost, x0=rv_best,
                        args=(wave_obs, flux_obs, self.wave_mod, self.flux_mod[imod],
@@ -485,7 +597,7 @@ class RVM:
                           eta * np.interp(self.wave_mod, self.wave_mod * (1 + (rv1 + drv) / SOL_kms), self.flux_mod[imod2])
         return flux_mod_interp / (1 + eta)
 
-    def measure_binary(self, wave_obs, flux_obs, flux_err=None, w_obs=None,
+    def measure_binary(self, wave_obs, flux_obs, flux_err=None, w_obs=None, cache_name="B",
                        rv_grid=np.linspace(-600, 600, 100), flux_bounds=(0, 3.), twin=True,
                        eta_init=0.3, eta_lim=(0.01, 3.0), drvmax=500, drvstep=5, method="Powell", nmc=100, suffix=""):
 
@@ -493,7 +605,8 @@ class RVM:
         ind3 = (flux_obs > flux_bounds[0]) & (flux_obs < flux_bounds[1])
         flux_obs = np.interp(wave_obs, wave_obs[ind3], flux_obs[ind3])
         # RV1
-        rvr1 = self.measure(wave_obs, flux_obs, flux_err=flux_err, w_obs=w_obs, rv_grid=rv_grid, nmc=nmc)
+        rvr1 = self.measure(wave_obs, flux_obs, flux_err=flux_err, w_obs=w_obs, rv_grid=rv_grid, nmc=nmc,
+                            cache_name=cache_name,)
 
         # determine the secondary template if necessary
         if twin:
