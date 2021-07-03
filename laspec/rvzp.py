@@ -5,13 +5,14 @@ from scipy.optimize import minimize
 
 
 def calibrate_rvzp(rvobs, rvobs_err, rvref, rvref_err, spid, lmjm, rvlabels=["B", "R", "Rm"], ncommon_min=5,
-                   rvobs_err_min=1.5, verbose=True):
+                   rvobs_err_min=1., verbose=True):
     """ A simplified version of Zhang et al. (2021)
 
     Parameters
     ----------
     rvobs:
-        observed RVs, (nobs,) or (nobs, nrv)
+        observed RVs, (nobs,) or (nobs, nrv), where nrv denotes the number of RV sources.
+        e.g., for RV from B R and Rm nrv=3.
     rvobs_err:
         error of observed RVs, (nobs,) or (nobs, nrv)
     rvref:
