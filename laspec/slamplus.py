@@ -131,8 +131,17 @@ class SlamPredictor:
     def predict_one_spectrum(self, x):
         """ predict one spectrum """
         # scale label
-        xsT = ((np.asarray(x)-self.xmin)/(self.xmax-self.xmin)).reshape(-1, 1) - 0.5
-        return (nneval(xsT, self.w, self.b, self.alpha, self.nlayer).reshape(-1) + 0.5) * (self.ymax-self.ymin) + self.ymin
+        xsT = ((np.asarray(x) - self.xmin) / (self.xmax - self.xmin)).reshape(-1, 1) - 0.5
+        return (nneval(xsT, self.w, self.b, self.alpha, self.nlayer).reshape(-1) + 0.5) * (
+                    self.ymax - self.ymin) + self.ymin
+
+    def predict_one_spectrum_rv(self, x, rv, left=1, right=1):
+        """ predict one spectrum, with rv """
+        # scale label
+        xsT = ((np.asarray(x) - self.xmin) / (self.xmax - self.xmin)).reshape(-1, 1) - 0.5
+        flux = (nneval(xsT, self.w, self.b, self.alpha, self.nlayer).reshape(-1) + 0.5) * (
+                    self.ymax - self.ymin) + self.ymin
+        return np.interp(self.wave, self.wave*(1+rv/299792.458), flux, left=left, right=right)
 
     # def predict_multiple_spectra(self, x):
     #     # scale label
