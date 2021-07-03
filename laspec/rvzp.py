@@ -94,7 +94,7 @@ def calibrate_rvzp(rvobs, rvobs_err, rvref, rvref_err, spid, lmjm, rvlabels=["B"
         else:
             print("", end="\n")
 
-    rvzp_list.append(this_rvzp)
+        rvzp_list.append(this_rvzp)
     trvzp = table.Table(rvzp_list)
     # append rvzp columns
     tseu = table.hstack([tseu, trvzp])
