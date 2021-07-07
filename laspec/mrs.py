@@ -234,10 +234,10 @@ class MrsSpec:
                 ivar = spec["IVAR"].data
                 mask = spec["ORMASK"].data  # use ormask for coadded spec
                 info = dict(
-                    name=hdu.header["EXTNAME"],
-                    # lmjmlist=hdu.header["LMJMLIST"],  # not universal
-                    snr=np.float(hdu.header["SNR"]),
-                    lamplist=hdu.header["LAMPLIST"],
+                    name=get_kwd_safe(hdu.header, "EXTNAME", ""),
+                    lmjm=np.int(get_kwd_safe(hdu.header, "LMJM", 0)),
+                    snr=np.float(get_kwd_safe(hdu.header, "SNR", 0.)),
+                    lamplist=get_kwd_safe(hdu.header, "LAMPLIST", "")
                 )
             elif hdu.name.startswith("B-") or hdu.name.startswith("R-"):
                 # it's epoch spec
@@ -246,11 +246,11 @@ class MrsSpec:
                 ivar = spec["IVAR"].data
                 mask = spec["PIXMASK"].data  # use pixmask for epoch spec
                 info = dict(
-                    name=hdu.header["EXTNAME"],
-                    lmjm=np.int(hdu.header["LMJM"]),
-                    exptime=np.float(hdu.header["EXPTIME"]),
-                    snr=np.float(hdu.header["SNR"]),
-                    lamplist=hdu.header["LAMPLIST"],
+                    name=get_kwd_safe(hdu.header, "EXTNAME", ""),
+                    lmjm=np.int(get_kwd_safe(hdu.header, "LMJM", 0)),
+                    exptime=np.float(get_kwd_safe(hdu.header, "EXPTIME", 0.)),
+                    snr=np.float(get_kwd_safe(hdu.header, "SNR", 0.)),
+                    lamplist=get_kwd_safe(hdu.header, "LAMPLIST", "")
                 )
             else:
                 raise ValueError("@MrsFits: error in reading epoch spec!")
@@ -925,6 +925,13 @@ class MrsSource(np.ndarray):
         for i, me in enumerate(self):
             plt.plot(me.wave, me.flux_norm+i*shift)
         return fig
+
+
+def get_kwd_safe(hdr, key, fallback=0.):
+    try:
+        return hdr[key]
+    except Exception:
+        return fallback
 
 
 def test_meta():
