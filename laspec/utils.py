@@ -14,3 +14,9 @@ def ezcount(fmt="", delta_t=3):
         time.sleep(delta_t)
     return
 
+
+def tianhao():
+    import datetime
+    from astropy.time import Time
+    print((Time("2032-02-11T08:00:00", format="isot") - Time(datetime.datetime.now())).value)
+
