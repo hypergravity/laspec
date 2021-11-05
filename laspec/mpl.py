@@ -21,6 +21,10 @@ def set_cham(fontsize=15, xminor=True, yminor=True, latex=True):
         rc('text', usetex=True)
         rcParams["mathtext.fontset"] = "cm"
         rcParams['text.latex.preamble'] = r"\usepackage{amsmath}"
+    else:
+        rc('text', usetex=False)
+        rcParams["mathtext.fontset"] = "dejavusans"
+        rcParams['text.latex.preamble'] = ""
 
     # font size
     rcParams["font.size"] = fontsize
