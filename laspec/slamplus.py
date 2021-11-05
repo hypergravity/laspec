@@ -1,7 +1,8 @@
 import numpy as np
 import tensorflow as tf
 from laspec.neural_network import NN
-from scipy.optimize import minimize, curve_fit
+from scipy.optimize import minimize, curve_fit, least_squares
+from astropy.table import Table
 import joblib
 
 
@@ -156,6 +157,24 @@ class SlamPredictor:
     def optimize(self, flux_obs, flux_err=None, pw=2, method="Nelder-Mead"):
         return minimize(cost, self.xmean, args=(self, flux_obs, flux_err, pw), method=method)
 
+    def least_squares(self, flux_obs, flux_err=None, p0=None, **kwargs):
+        return least_squares(cost4ls, self.xmean if p0 is None else p0, args=(self, flux_obs, flux_err), **kwargs)
+
+    def least_squares_multiple(self, flux_obs, flux_err=None, p0=None,
+                               n_jobs=2, verbose=10, backend="loky", batch_size=10, **kwargs):
+        flux_obs = np.asarray(flux_obs)
+        nobs = flux_obs.shape[0]
+        if flux_err is None:
+            flux_err = [None for i in range(nobs)]
+        else:
+            flux_err = np.asarray(flux_err)
+        if p0 is None:
+            p0 = self.xmean
+        pool = joblib.Parallel(n_jobs=n_jobs, verbose=verbose, backend=backend, batch_size=batch_size)
+        res = pool(joblib.delayed(least_squares)(
+            cost4ls, p0, args=(self, flux_obs[i], flux_err[i]), **kwargs) for i in range(nobs))
+        return Table(res)
+
     def curve_fit(self, flux_obs, flux_err=None, p0=None, method="lm", bounds=(-np.inf, np.inf), **kwargs):
         if p0 is None:
             p0 = self.xmean
@@ -201,6 +220,15 @@ def nneval(xs, w, b, alpha, nlayer):
         return np.matmul(w3, l2) + b3
     else:
         raise ValueError("Invalid nlayer={}".format(nlayer))
+
+
+def cost4ls(x, sp, flux_obs, flux_err=None):
+    flux_mod = sp.predict_one_spectrum(x)
+    if flux_err is None:
+        res = flux_mod - flux_obs
+    else:
+        res = (flux_mod - flux_obs) / flux_err
+    return np.where(np.isfinite(res), res, 0)
 
 
 def cost(x, sp, flux_obs, flux_err=None, pw=2):
