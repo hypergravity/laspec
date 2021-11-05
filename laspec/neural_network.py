@@ -306,7 +306,7 @@ class NN:
         return
 
     def train(self, x, y, sw, test_size=0.2, random_state=0, epochs=200, batch_size=256,
-              optimizer=optimizers.Adam(lr=1e-5), loss="binary_crossentropy", metrics=['accuracy'],
+              optimizer=optimizers.Adam(learning_rate=1e-5), loss="binary_crossentropy", metrics=['accuracy'],
               filepath=None):
         # a quick way to set filepath
         if filepath is not None:
