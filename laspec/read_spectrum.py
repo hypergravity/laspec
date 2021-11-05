@@ -13,8 +13,7 @@ from .spec import Spec
 def reconstruct_wcs_coord_from_fits_header(hdr, dim=1):
     """ reconstruct wcs coordinates (e.g., wavelength array) """
     # assert dim is not larger than limit
-    assert dim <= hdr['NAXIS']
-
+    # assert dim <= hdr['NAXIS'] # not useful for apogee spectra
     # get keywords
     crval = hdr['CRVAL%d' % dim]
     cdelt = hdr['CDELT%d' % dim]
