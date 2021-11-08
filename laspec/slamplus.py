@@ -4,6 +4,7 @@ from laspec.neural_network import NN
 from scipy.optimize import minimize, curve_fit, least_squares
 from astropy.table import Table
 import joblib
+from tempfile import NamedTemporaryFile
 
 
 def leaky_relu(x, alpha=0.01):
@@ -15,15 +16,19 @@ def elu(x, alpha=0.01):
 
 
 class SlamPlus:
-    def __init__(self, tr_flux, tr_label, tr_weight=None, wave=None):
+    def __init__(self, tr_flux, tr_label, tr_weight=None, wave=None, lscale=[100, .1, .1], robust=True):
         # set training set
         self.tr_flux = np.asarray(tr_flux, dtype=float)
         self.tr_label = np.asarray(tr_label, dtype=float)
-        self.tr_label_min = np.min(self.tr_label, axis=0)
-        self.tr_label_max = np.max(self.tr_label, axis=0)
-        self.tr_flux_min = np.min(self.tr_flux, axis=0)
-        self.tr_flux_max = np.max(self.tr_flux, axis=0)
-        self.tr_flux_scaled = (self.tr_flux - self.tr_flux_min)/(self.tr_flux_max - self.tr_flux_min) - 0.5
+        if robust:
+            self.tr_label_min, self.tr_label_max = np.percentile(self.tr_label, [10, 90], axis=0)
+            # self.tr_flux_min, self.tr_flux_max = np.percentile(self.tr_flux, [10, 90], axis=0)
+        else:
+            self.tr_label_min = np.min(self.tr_label, axis=0)
+            self.tr_label_max = np.max(self.tr_label, axis=0)
+            # self.tr_flux_min = np.min(self.tr_flux, axis=0)
+            # self.tr_flux_max = np.max(self.tr_flux, axis=0)
+        # self.tr_flux_scaled = (self.tr_flux - self.tr_flux_min)/(self.tr_flux_max - self.tr_flux_min) - 0.5
         self.tr_label_scaled = (self.tr_label - self.tr_label_min) / (self.tr_label_max - self.tr_label_min) - 0.5
         self.history = None
         self.wave = wave
@@ -37,8 +42,14 @@ class SlamPlus:
         # set weight
         if tr_weight is None:
             self.tr_weight = np.ones(self.nstar, dtype=float)
+        elif tr_weight == "sqrt":
+            lscale = np.asarray(lscale)
+            w = np.array([np.sum(np.exp(- 0.5 * np.sum(((self.tr_label - self.tr_label[i]) / lscale) ** 2, axis=1)))
+                          for i in range(self.nstar)])
+            self.tr_weight = 1/w
         else:
             self.tr_weight = np.asarray(tr_weight, dtype=float)
+
         self.nnweights = []
 
         # default parameters
@@ -86,6 +97,11 @@ class SlamPlus:
             optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
         else:
             optimizer = tf.keras.optimizers.SGD(learning_rate=learning_rate)
+        # make temp file
+        if filepath in ["", None]:
+            _tf = NamedTemporaryFile(delete=True)
+            filepath = _tf.name + ".h5"
+
         # set callbacks
         self.model.set_callbacks(monitor_earlystopping="val_loss",
                                  patience_earlystopping=patience_earlystopping,
@@ -95,32 +111,32 @@ class SlamPlus:
                                  patience_reducelronplateau=patience_reducelronplateau,
                                  factor_reducelronplateau=factor_reducelronplateau)
         # train pixels
-        self.history = self.model.train(self.tr_label_scaled, self.tr_flux_scaled,
+        self.history = self.model.train(self.tr_label_scaled, self.tr_flux,
                                         batch_size=batch_size, sw=self.tr_weight,
                                         test_size=test_size, optimizer=optimizer, epochs=epochs,
                                         loss=loss, metrics=metrics, random_state=random_state)
         # get best model
-        if filepath not in ["", None]:
-            self.model.model = tf.keras.models.load_model(filepath)
+        self.model.model = tf.keras.models.load_model(filepath)
+        _tf.close()
+
         # get weights
         new_weights = self.model.model.get_weights()
         self.w = [new_weights[ilayer * 2].T for ilayer in range(self.nlayer + 1)]
         self.b = [new_weights[ilayer * 2 + 1].reshape(-1, 1) for ilayer in range(self.nlayer + 1)]
 
-        return SlamPredictor(self.w, self.b, self.alpha, self.tr_label_min, self.tr_label_max,
-                             self.tr_flux_min, self.tr_flux_max, self.wave)
+        return SlamPredictor(self.w, self.b, self.alpha, self.tr_label_min, self.tr_label_max, self.wave)
 
 
 class SlamPredictor:
-    def __init__(self, w, b, alpha, xmin, xmax, ymin, ymax, wave=None):
+    def __init__(self, w, b, alpha, xmin, xmax, wave=None):
 
         self.alpha = alpha
         self.w = w
         self.b = b
         self.xmin = xmin
         self.xmax = xmax
-        self.ymin = ymin
-        self.ymax = ymax
+        # self.ymin = ymin
+        # self.ymax = ymax
         self.xmean = .5*(xmin+xmax)
         self.nlayer = len(w) - 1
         self.wave = wave
@@ -133,15 +149,13 @@ class SlamPredictor:
         """ predict one spectrum """
         # scale label
         xsT = ((np.asarray(x) - self.xmin) / (self.xmax - self.xmin)).reshape(-1, 1) - 0.5
-        return (nneval(xsT, self.w, self.b, self.alpha, self.nlayer).reshape(-1) + 0.5) * (
-                    self.ymax - self.ymin) + self.ymin
+        return nneval(xsT, self.w, self.b, self.alpha, self.nlayer).reshape(-1)
 
     def predict_one_spectrum_rv(self, x, rv, left=1, right=1):
         """ predict one spectrum, with rv """
         # scale label
         xsT = ((np.asarray(x) - self.xmin) / (self.xmax - self.xmin)).reshape(-1, 1) - 0.5
-        flux = (nneval(xsT, self.w, self.b, self.alpha, self.nlayer).reshape(-1) + 0.5) * (
-                    self.ymax - self.ymin) + self.ymin
+        flux = nneval(xsT, self.w, self.b, self.alpha, self.nlayer).reshape(-1)
         return np.interp(self.wave, self.wave*(1+rv/299792.458), flux, left=left, right=right)
 
     # def predict_multiple_spectra(self, x):
@@ -218,6 +232,14 @@ def nneval(xs, w, b, alpha, nlayer):
         l1 = leaky_relu(np.matmul(w1, l0) + b1, alpha)
         l2 = leaky_relu(np.matmul(w2, l1) + b2, alpha)
         return np.matmul(w3, l2) + b3
+    elif nlayer == 4:
+        w0, w1, w2, w3, w4 = w
+        b0, b1, b2, b3, b4 = b
+        l0 = leaky_relu(np.matmul(w0, xs) + b0, alpha)
+        l1 = leaky_relu(np.matmul(w1, l0) + b1, alpha)
+        l2 = leaky_relu(np.matmul(w2, l1) + b2, alpha)
+        l3 = leaky_relu(np.matmul(w3, l2) + b3, alpha)
+        return np.matmul(w4, l3) + b4
     else:
         raise ValueError("Invalid nlayer={}".format(nlayer))
 
