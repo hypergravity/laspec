@@ -58,6 +58,7 @@ def ads(lib_id="v89_ChWTSKOUFvCpxOm6Tg", token="6OEonb0MGO6EzpatpzomBSJrXXbJziai
     r = requests.post("https://api.adsabs.harvard.edu/v1/export/bibtex",
                       headers={"Authorization": "Bearer " + token, "Content-type": "application/json"},
                       data=json.dumps(payload))
+    print(r.json()["msg"])
     bibtex = r.json()["export"]
 
     if tofile is None:
