@@ -270,6 +270,7 @@ class MrsSpec:
         hl = fits.open(fp_lrs)
         hdr = hl[0].header
         flux, ivar, wave, andmask, ormask = hl[0].data
+        # info
         info = dict(name=hdr["OBSID"],
                     obsid=hdr["OBSID"],
                     ra=hdr["RA"],
@@ -283,8 +284,16 @@ class MrsSpec:
                     snrg=hdr["SNRG"],
                     snrr=hdr["SNRR"],
                     snri=hdr["SNRI"],
-                    snrz=hdr["SNRZ"])
-        return MrsSpec(wave, flux, ivar, ormask, info=info, norm_type=norm_type, **norm_kwargs)
+                    snrz=hdr["SNRZ"],
+                    )
+        ms = MrsSpec(wave, flux, ivar, ormask, info=info, norm_type=norm_type, **norm_kwargs)
+        # calculate bjd
+        ms.jdbeg = datetime2jd(hdr["DATE-BEG"], format="isot", tz_correction=8)
+        ms.jdend = datetime2jd(hdr["DATE-END"], format="isot", tz_correction=8)
+        ms.jdmid = (ms.jdbeg + ms.jdend) / 2.
+        ms.jdltt = eval_ltt(ms.info["ra"], ms.info["dec"], ms.jdmid)
+        ms.bjdmid = ms.jdmid + ms.jdltt
+        return ms
 
     def normalize(self, llim=0., norm_type=None, **norm_kwargs):
         """ normalize spectrum with (optional) new settings """
@@ -330,6 +339,21 @@ class MrsSpec:
         if rv is None:
             rv = self.rv
         return self.wave / (1 + rv / SOL_kms)
+
+    def interp(self, new_wave, rv=None):
+        """ interpolate to a new wavelength grid """
+        return np.interp(new_wave, self.wave_rv(rv), self.flux)
+
+    def interp_then_norm(self, new_wave, rv=None):
+        """ interpolate to a new wavelength grid """
+        flux_interp = np.interp(new_wave, self.wave_rv(rv), self.flux)
+        flux_norm, flux_cont = normalize_spectrum_general(new_wave, flux_interp, norm_type=self.norm_type, **self.norm_kwargs)
+        flux_norm_err = np.interp(new_wave, self.wave_rv(rv), self.flux_err) / flux_cont
+        return flux_norm, flux_norm_err
+
+    def interp_norm(self, new_wave, rv=None):
+        """ interpolate to a new wavelength grid """
+        return np.interp(new_wave, self.wave_rv(rv), self.flux_norm)
 
     def plot(self):
         plt.plot(self.wave, self.flux)
