@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='laspec',
-    version='2021.0619.0',
+    version='2021.1109.0',
     author='Bo Zhang',
     author_email='bozhang@nao.cas.cn',
     description='Modules for LAMOST spectra.',  # short description
@@ -23,7 +23,7 @@ setuptools.setup(
                  "Topic :: Scientific/Engineering :: Astronomy"],
     package_dir={'laspec': 'laspec'},
     include_package_data=False,
-    package_data={"": ["LICENSE"]},
+    package_data={"": ["LICENSE", "README.md"]},
         #  "laspec": ["data/*",
         #             "data/FERRESun/*",
         #             "data/KIC8098300/*/*",
