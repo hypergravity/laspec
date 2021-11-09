@@ -14,7 +14,7 @@ from collections import Iterable
 __all__ = ["NN", "optimizers"]
 
 
-def create_slam_regressor(ninput=4, nhidden=(500, 500, 500), noutput=1, activation="elu", alpha=0.05, **kwargs):
+def create_slam_regressor(ninput=4, nhidden=(500, 500, 500), noutput=1, activation="leakyrelu", alpha=0.05, dropout=0.1):
     """ An easy way of creating DNN with 2 dense layers (1 hidden layer)
 
     Parameters
@@ -45,15 +45,15 @@ def create_slam_regressor(ninput=4, nhidden=(500, 500, 500), noutput=1, activati
                 model.add(keras.layers.LeakyReLU(alpha=alpha))
             elif activation == "relu":
                 model.add(keras.layers.ReLU())
-            elif activation == "prelu":  # do not use it for SLAM
-                model.add(keras.layers.PReLU())
-            elif activation == "sin":  # do not use it
-                model.add(keras.layers.Activation(tf.sin))
             else:
                 raise ValueError("Invalid activation {}!".format(activation))
+            if dropout > 0:
+                model.add(keras.layers.Dropout(dropout))
     else:
         model.add(keras.layers.Dense(nhidden,))
         model.add(keras.layers.LeakyReLU(alpha=alpha))
+        if dropout > 0:
+            model.add(keras.layers.Dropout(dropout))
     model.add(keras.layers.Dense(noutput,))
     return model
 
