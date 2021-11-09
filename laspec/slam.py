@@ -69,6 +69,40 @@ class NNModel(torch.nn.Module):
 
     def fit(self, x, y, f_train=0.1, batch_size=100, device=None, lr=1e-4, n_epoch=20000, gain_loss=1e4,
             step_verbose=10, sd_init=None, clean_history=True, restore_best=False):
+        """
+
+        Parameters
+        ----------
+        x:
+            training labels
+        y:
+            training flux
+        f_train:
+            fraction for training, defaults to 0.9
+        batch_size:
+            batch size
+        device:
+            if you use GPUs, set device to 0, 1, etc.
+            if you use CPU, set to None.
+        lr:
+            learning rate
+        n_epoch:
+            number of epochs
+        gain_loss:
+            defaults to 1e4
+        step_verbose:
+            validate model every *step_verbose* epochs
+        sd_init:
+            if not None, set state_dict to the sd_init
+        clean_history:
+            if True, clean history
+        restore_best:
+            if True, restore model with lowest loss
+
+        Returns
+        -------
+        None
+        """
         # make datasets
         dl_train, dl_test = self.make_dataset(x, y, f_train=f_train, batch_size=batch_size, device=device)
 
@@ -145,10 +179,12 @@ class NNModel(torch.nn.Module):
         return
 
     def predict_spectrum(self, x_test):
+        """ predict a spectrum """
         x_test = (x_test - self.xmin) / (self.xmax - self.xmin) - 0.5
         return self(x_test).detach().numpy()
 
     def to_sp(self):
+        """ transform to SlamPredictor instance """
         w = [self.state_dict_best[k].cpu().numpy() for k in self.state_dict_best.keys() if "weight" in k]
         b = [self.state_dict_best[k].cpu().numpy()[:, None] for k in self.state_dict_best.keys() if "bias" in k]
         alpha = 0.01
@@ -157,6 +193,7 @@ class NNModel(torch.nn.Module):
         return SlamPredictor(w, b, alpha, xmin, xmax, wave=self.wave)
 
     def plot_history(self):
+        """ plot training history """
         if self.history is not None:
             fig, ax = plt.subplots(1, 1, figsize=(6, 5))
             for k in self.history.keys():
