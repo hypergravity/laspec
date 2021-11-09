@@ -515,7 +515,7 @@ class RVM:
             # vectorize data to accelerate
             ccf_grid = wxcorr_spec_fast(rv_grid, wave_obs, flux_obs, self.wave_mod, self.flux_mod,
                                         w_mod=w_mod, w_obs=w_obs)
-        elif cache_name is None:
+        elif cache_name is None or cache_name is False:
             ccf_grid = np.zeros((self.flux_mod.shape[0], rv_grid.shape[0]))
             for imod in range(self.nmod):
                 ccf_grid[imod] = wxcorr_rvgrid(wave_obs, flux_obs, self.wave_mod, self.flux_mod[imod],
