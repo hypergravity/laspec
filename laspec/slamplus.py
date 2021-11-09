@@ -44,9 +44,10 @@ class SlamPlus:
             self.tr_weight = np.ones(self.nstar, dtype=float)
         elif tr_weight == "sqrt":
             lscale = np.asarray(lscale)
-            w = np.array([np.sum(np.exp(- 0.5 * np.sum(((self.tr_label - self.tr_label[i]) / lscale) ** 2, axis=1)))
-                          for i in range(self.nstar)])
-            self.tr_weight = 1/w
+            neq = np.array([np.sum(np.exp(- 0.5 * np.sum(((self.tr_label - self.tr_label[i]) / lscale) ** 2, axis=1)))
+                            for i in range(self.nstar)])
+            self.tr_weight = 1/neq
+            self.tr_weight /= np.mean(self.tr_weight)
         else:
             self.tr_weight = np.asarray(tr_weight, dtype=float)
 
@@ -61,7 +62,7 @@ class SlamPlus:
         self.model = None
         return
 
-    def initialize(self, nhidden=(100, 300,), activation="leakyrelu", alpha=0.01):
+    def initialize(self, nhidden=(100, 300,), activation="leakyrelu", alpha=0.01, dropout=.1):
         from collections.abc import Iterable
         if isinstance(nhidden, Iterable):
             self.nlayer = len(nhidden)
@@ -73,7 +74,7 @@ class SlamPlus:
 
         # initialize NN regressor
         self.model = NN(kind="slam", ninput=self.ndim, nhidden=nhidden, noutput=self.npix,
-                        activation=activation, alpha=alpha)
+                        activation=activation, alpha=alpha, dropout=dropout)
         self.model.summary()
 
     @staticmethod
@@ -145,6 +146,11 @@ class SlamPredictor:
     def get_coef_dict(self):
         return dict(w=self.w, b=self.b, alpha=self.alpha)
 
+    def predict_one_spectrum_standard(self, x):
+        """ predict one spectrum """
+        # scale label
+        return nneval(np.asarray(x).reshape(-1, 1), self.w, self.b, self.alpha, self.nlayer).reshape(-1)
+
     def predict_one_spectrum(self, x):
         """ predict one spectrum """
         # scale label
@@ -172,7 +178,8 @@ class SlamPredictor:
         return minimize(cost, self.xmean, args=(self, flux_obs, flux_err, pw), method=method)
 
     def least_squares(self, flux_obs, flux_err=None, p0=None, **kwargs):
-        return least_squares(cost4ls, self.xmean if p0 is None else p0, args=(self, flux_obs, flux_err), **kwargs)
+        return least_squares(cost4ls, np.zeros_like(self.xmean, dtype=float) if p0 is None else self.scale_x(p0),
+                             args=(self, flux_obs, flux_err), **kwargs)
 
     def least_squares_multiple(self, flux_obs, flux_err=None, p0=None,
                                n_jobs=2, verbose=10, backend="loky", batch_size=10, **kwargs):
@@ -183,11 +190,17 @@ class SlamPredictor:
         else:
             flux_err = np.asarray(flux_err)
         if p0 is None:
-            p0 = self.xmean
+            p0 = np.zeros((nobs, len(self.xmean)), dtype=float)
+        else:
+            p0 = np.asarray(p0, dtype=float)
+            p0 = self.scale_x(p0)
+            if p0.ndim == 1:
+                p0 = np.repeat(p0.reshape(1, -1), nobs, axis=0)
         pool = joblib.Parallel(n_jobs=n_jobs, verbose=verbose, backend=backend, batch_size=batch_size)
         res = pool(joblib.delayed(least_squares)(
-            cost4ls, p0, args=(self, flux_obs[i], flux_err[i]), **kwargs) for i in range(nobs))
-        return Table(res)
+            cost4ls, p0 if p0 is None else p0[i], args=(self, flux_obs[i], flux_err[i]), **kwargs) for i in range(nobs))
+        res = np.asarray([_["x"] for _ in res])
+        return self.scale_x_back(res)
 
     def curve_fit(self, flux_obs, flux_err=None, p0=None, method="lm", bounds=(-np.inf, np.inf), **kwargs):
         if p0 is None:
@@ -212,6 +225,20 @@ class SlamPredictor:
         popt = np.array([res[i][0] for i in range(nobs)])
         pcov = np.array([res[i][1] for i in range(nobs)])
         return popt, pcov
+
+    def scale_x_back(self, x_scaled):
+        x_scaled = np.asarray(x_scaled)
+        if x_scaled.ndim == 1:
+            return (x_scaled + .5) * (self.xmax - self.xmin) + self.xmin
+        else:
+            return (x_scaled + .5) * (self.xmax[None, :] - self.xmin[None, :]) + self.xmin[None, :]
+
+    def scale_x(self, x):
+        x = np.asarray(x)
+        if x.ndim == 1:
+            return (x - self.xmin) / (self.xmax - self.xmin) - 0.5
+        else:
+            return (x - self.xmin[None, :]) / (self.xmax[None, :] - self.xmin[None, :]) - 0.5
 
 
 def model_func(sp, *args):
@@ -245,7 +272,7 @@ def nneval(xs, w, b, alpha, nlayer):
 
 
 def cost4ls(x, sp, flux_obs, flux_err=None):
-    flux_mod = sp.predict_one_spectrum(x)
+    flux_mod = sp.predict_one_spectrum_standard(x)
     if flux_err is None:
         res = flux_mod - flux_obs
     else:
