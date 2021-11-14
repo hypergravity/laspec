@@ -129,15 +129,13 @@ class SlamPlus:
 
 
 class SlamPredictor:
-    def __init__(self, w, b, alpha, xmin, xmax, wave=None):
-
+    def __init__(self, w, b, alpha, xmin, xmax, wave=None, yscale=1.):
         self.alpha = alpha
         self.w = w
         self.b = b
         self.xmin = xmin
         self.xmax = xmax
-        # self.ymin = ymin
-        # self.ymax = ymax
+        self.yscale = yscale
         self.xmean = .5*(xmin+xmax)
         self.nlayer = len(w) - 1
         self.wave = wave
@@ -146,8 +144,31 @@ class SlamPredictor:
     def get_coef_dict(self):
         return dict(w=self.w, b=self.b, alpha=self.alpha)
 
-    def predict_one_spectrum_standard(self, x):
+    def predict(self, x):
+        """ general """
+        x = np.asarray(x)
+        if x.ndim == 1:  # single entry
+            # scale x
+            xsT = ((x - self.xmin) / (self.xmax - self.xmin)).reshape(-1, 1) - 0.5
+            # eval y
+            y = nneval(xsT, self.w, self.b, self.alpha, self.nlayer).flatten() * self.yscale
+            return y
+        elif x.ndim == 2:  # multiple entries
+            # scale x
+            xsT = (x.T - self.xmin[:, None]) / (self.xmax[:, None] - self.xmin[:, None]) - 0.5
+            # eval y
+            y = nneval(xsT, self.w, self.b, self.alpha, self.nlayer).T * self.yscale[None, :]
+            return y
+        else:
+            raise ValueError()
+
+    def predict_one_spectrum_standard2(self, x):
         """ predict one spectrum """
+        # scale label
+        return nneval(np.asarray(x).reshape(-1, 1), self.w, self.b, self.alpha, self.nlayer).reshape(-1)
+
+    def predict_one_spectrum_standard(self, x):
+        """ predict one spectrum, x is in standard space """
         # scale label
         return nneval(np.asarray(x).reshape(-1, 1), self.w, self.b, self.alpha, self.nlayer).reshape(-1)
 
@@ -157,12 +178,30 @@ class SlamPredictor:
         xsT = ((np.asarray(x) - self.xmin) / (self.xmax - self.xmin)).reshape(-1, 1) - 0.5
         return nneval(xsT, self.w, self.b, self.alpha, self.nlayer).reshape(-1)
 
-    def predict_one_spectrum_rv(self, x, rv, left=1, right=1):
+    def predict_one_spectrum_and_scale_y_back(self, x):
+        """ predict one spectrum and scale y """
+        # scale label
+        xsT = ((np.asarray(x) - self.xmin) / (self.xmax - self.xmin)).reshape(-1, 1) - 0.5
+        y_standard = nneval(xsT, self.w, self.b, self.alpha, self.nlayer).reshape(-1)
+        y = y_standard * self.yscale
+        return y
+
+    def predict_one_spectrum_and_scale_y_back_rv(self, x, rv, left=None, right=None):
+        """ predict one spectrum and scale y """
+        # scale label
+        xsT = ((np.asarray(x) - self.xmin) / (self.xmax - self.xmin)).reshape(-1, 1) - 0.5
+        y_standard = nneval(xsT, self.w, self.b, self.alpha, self.nlayer).reshape(-1)
+        y = y_standard * self.yscale
+        y_rv = np.interp(self.wave, self.wave*(1+rv/299792.458), y_standard, left=left, right=right)
+        return y_rv
+
+    def predict_one_spectrum_rv(self, x, rv, left=None, right=None):
         """ predict one spectrum, with rv """
         # scale label
         xsT = ((np.asarray(x) - self.xmin) / (self.xmax - self.xmin)).reshape(-1, 1) - 0.5
-        flux = nneval(xsT, self.w, self.b, self.alpha, self.nlayer).reshape(-1)
-        return np.interp(self.wave, self.wave*(1+rv/299792.458), flux, left=left, right=right)
+        y_standard = nneval(xsT, self.w, self.b, self.alpha, self.nlayer).reshape(-1)
+        y_standard_rv = np.interp(self.wave, self.wave*(1+rv/299792.458), y_standard, left=left, right=right)
+        return y_standard_rv
 
     # def predict_multiple_spectra(self, x):
     #     # scale label
@@ -245,7 +284,7 @@ def model_func(sp, *args):
     return sp.predict_one_spectrum(np.array(args))
 
 
-def nneval(xs, w, b, alpha, nlayer):
+def nneval(xs, w, b, alpha, nlayer=None):
     if nlayer == 2:
         w0, w1, w2 = w
         b0, b1, b2 = b
@@ -268,7 +307,10 @@ def nneval(xs, w, b, alpha, nlayer):
         l3 = leaky_relu(np.matmul(w3, l2) + b3, alpha)
         return np.matmul(w4, l3) + b4
     else:
-        raise ValueError("Invalid nlayer={}".format(nlayer))
+        nlayer = len(w) - 1
+        for i in range(nlayer):
+            xs = leaky_relu(np.matmul(w[i], xs) + b[i], alpha)
+        return np.matmul(w[-1], xs) + b[-1]
 
 
 def cost4ls(x, sp, flux_obs, flux_err=None):
