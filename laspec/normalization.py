@@ -127,7 +127,7 @@ def normalize_spectrum(wave, flux, norm_range, dwave,
     return flux_norm, flux_smoothed2
 
 
-def normalize_spectrum_spline(wave, flux, p=1E-6, q=0.5, lu=(-1, 3), binwidth=30, niter=3):
+def normalize_spectrum_spline(wave, flux, p=1E-6, q=0.5, lu=(-1, 3), binwidth=30, niter=2):
     """ A double smooth normalization of a spectrum
 
     Converted from Chao Liu's normSpectrum.m
@@ -293,10 +293,10 @@ def normalize_spectra_block(wave, flux_block, norm_range, dwave,
 
 
 def normalize_spectrum_general(wave, flux, norm_type="spline",
-                               deg=4, lu=(-1, 4), q=0.5, binwidth=100., niter=3, pw=1., p=1e-6):
+                               deg=4, lu=(-1, 4), q=0.5, binwidth=100., niter=2, pw=1., p=1e-6):
     """ poly / spline normalization
-    spline --> normalize_spectrum_spline: dict(p=1e-6, q=0.5, lu=(-2, 3), binwidth=100., niter=3)
-    poly   --> normalize_spectrum_poly: (deg=4, lu=(-2, 3), q=0.5, binwidth=100., niter=3, pw=1.)
+    spline --> normalize_spectrum_spline: dict(p=1e-6, q=0.5, lu=(-2, 3), binwidth=100., niter=2)
+    poly   --> normalize_spectrum_poly: (deg=4, lu=(-2, 3), q=0.5, binwidth=100., niter=2, pw=1.)
 
     Parameters
     ----------
@@ -333,7 +333,7 @@ def normalize_spectrum_general(wave, flux, norm_type="spline",
     return flux_norm, flux_cont
 
 
-def normalize_spectrum_poly(wave, flux, deg=10, pw=1., lu=(-1, 4), q=0.5, binwidth=100., niter=3):
+def normalize_spectrum_poly(wave, flux, deg=10, pw=1., lu=(-1, 4), q=0.5, binwidth=100., niter=2):
     """ normalize spectrum using polynomial """
     if np.sum(np.logical_and(np.isfinite(flux), flux > 0)) <= 10:
         return normalize_spectrum_null(wave)
