@@ -5,11 +5,10 @@ from scipy.optimize import minimize, curve_fit, least_squares
 from astropy.table import Table
 import joblib
 from tempfile import NamedTemporaryFile
-from numba import jit
-from numba.typed import List
+# from numba import jit
+# from numba.typed import List
 
 
-@jit(nopython=True)
 def leaky_relu(x, alpha=0.01):
     return x * (x > 0) + alpha * x * (x < 0)
 
@@ -134,8 +133,8 @@ class SlamPlus:
 class SlamPredictor:
     def __init__(self, w, b, alpha, xmin, xmax, wave=None, yscale=1.):
         self.alpha = np.float32(alpha)
-        self.w = List([_.astype(np.float32) for _ in w])
-        self.b = List([_.astype(np.float32) for _ in b])
+        self.w = [_.astype(np.float32) for _ in w]
+        self.b = [_.astype(np.float32) for _ in b]
         self.xmin = xmin.astype(np.float32)
         self.xmax = xmax.astype(np.float32)
         self.yscale = np.asarray(yscale, np.float32)
@@ -287,7 +286,6 @@ def model_func(sp, *args):
     return sp.predict_one_spectrum(np.array(args))
 
 
-@jit(nopython=True)
 def nneval(xs, w, b, alpha, nlayer=None):
     if nlayer == 2:
         w0, w1, w2 = w
