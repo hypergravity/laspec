@@ -132,12 +132,20 @@ class SlamPlus:
 
 class SlamPredictor:
     def __init__(self, w, b, alpha, xmin, xmax, wave=None, yscale=1.):
-        self.alpha = np.float32(alpha)
-        self.w = [_.astype(np.float32) for _ in w]
-        self.b = [_.astype(np.float32) for _ in b]
-        self.xmin = xmin.astype(np.float32)
-        self.xmax = xmax.astype(np.float32)
-        self.yscale = np.asarray(yscale, np.float32)
+        # self.alpha = np.float64(alpha)
+        # self.w = [_.astype(np.float64) for _ in w]
+        # self.b = [_.astype(np.float64) for _ in b]
+        # self.xmin = xmin.astype(np.float64)
+        # self.xmax = xmax.astype(np.float64)
+        # self.yscale = np.asarray(yscale, np.float64)
+
+        self.alpha = alpha
+        self.w = [np.asarray(_) for _ in w]
+        self.b = [np.asarray(_) for _ in b]
+        self.xmin = np.asarray(xmin)
+        self.xmax = np.asarray(xmax)
+        self.yscale = np.asarray(yscale)
+
         self.xmean = .5 * (self.xmin + self.xmax)
         self.nlayer = len(w) - 1
         self.wave = wave
@@ -148,7 +156,7 @@ class SlamPredictor:
 
     def predict(self, x):
         """ general """
-        x = np.asarray(x, dtype=np.float32)
+        x = np.asarray(x, dtype=np.float64)
         if x.ndim == 1:  # single entry
             # scale x
             xsT = ((x - self.xmin) / (self.xmax - self.xmin)).reshape(-1, 1) - 0.5
@@ -164,26 +172,21 @@ class SlamPredictor:
         else:
             raise ValueError()
 
-    def predict_one_spectrum_standard2(self, x):
-        """ predict one spectrum """
-        # scale label
-        return nneval(np.asarray(x, dtype=np.float32).reshape(-1, 1), self.w, self.b, self.alpha, self.nlayer).reshape(-1)
-
     def predict_one_spectrum_standard(self, x):
         """ predict one spectrum, x is in standard space """
         # scale label
-        return nneval(np.asarray(x, dtype=np.float32).reshape(-1, 1), self.w, self.b, self.alpha, self.nlayer).reshape(-1)
+        return nneval(np.asarray(x, dtype=np.float64).reshape(-1, 1), self.w, self.b, self.alpha, self.nlayer).reshape(-1)
 
     def predict_one_spectrum(self, x):
         """ predict one spectrum """
         # scale label
-        xsT = ((np.asarray(x, dtype=np.float32) - self.xmin) / (self.xmax - self.xmin)).reshape(-1, 1) - 0.5
+        xsT = ((np.asarray(x, dtype=np.float64) - self.xmin) / (self.xmax - self.xmin)).reshape(-1, 1) - 0.5
         return nneval(xsT, self.w, self.b, self.alpha, self.nlayer).reshape(-1)
 
     def predict_one_spectrum_and_scale_y_back(self, x):
         """ predict one spectrum and scale y """
         # scale label
-        xsT = ((np.asarray(x, dtype=np.float32) - self.xmin) / (self.xmax - self.xmin)).reshape(-1, 1) - 0.5
+        xsT = ((np.asarray(x, dtype=np.float64) - self.xmin) / (self.xmax - self.xmin)).reshape(-1, 1) - 0.5
         y_standard = nneval(xsT, self.w, self.b, self.alpha, self.nlayer).reshape(-1)
         y = y_standard * self.yscale
         return y
@@ -191,7 +194,7 @@ class SlamPredictor:
     def predict_one_spectrum_and_scale_y_back_rv(self, x, rv, left=None, right=None):
         """ predict one spectrum and scale y """
         # scale label
-        xsT = ((np.asarray(x, dtype=np.float32) - self.xmin) / (self.xmax - self.xmin)).reshape(-1, 1) - 0.5
+        xsT = ((np.asarray(x, dtype=np.float64) - self.xmin) / (self.xmax - self.xmin)).reshape(-1, 1) - 0.5
         y_standard = nneval(xsT, self.w, self.b, self.alpha, self.nlayer).reshape(-1)
         y = y_standard * self.yscale
         y_rv = np.interp(self.wave, self.wave*(1+rv/299792.458), y_standard, left=left, right=right)
@@ -200,7 +203,7 @@ class SlamPredictor:
     def predict_one_spectrum_rv(self, x, rv, left=None, right=None):
         """ predict one spectrum, with rv """
         # scale label
-        xsT = ((np.asarray(x, dtype=np.float32) - self.xmin) / (self.xmax - self.xmin)).reshape(-1, 1) - 0.5
+        xsT = ((np.asarray(x, dtype=np.float64) - self.xmin) / (self.xmax - self.xmin)).reshape(-1, 1) - 0.5
         y_standard = nneval(xsT, self.w, self.b, self.alpha, self.nlayer).reshape(-1)
         y_standard_rv = np.interp(self.wave, self.wave*(1+rv/299792.458), y_standard, left=left, right=right)
         return y_standard_rv
@@ -268,14 +271,14 @@ class SlamPredictor:
         return popt, pcov
 
     def scale_x_back(self, x_scaled):
-        x_scaled = np.asarray(x_scaled, dtype=np.float32)
+        x_scaled = np.asarray(x_scaled, dtype=np.float64)
         if x_scaled.ndim == 1:
             return (x_scaled + .5) * (self.xmax - self.xmin) + self.xmin
         else:
             return (x_scaled + .5) * (self.xmax[None, :] - self.xmin[None, :]) + self.xmin[None, :]
 
     def scale_x(self, x):
-        x = np.asarray(x, dtype=np.float32)
+        x = np.asarray(x, dtype=np.float64)
         if x.ndim == 1:
             return (x - self.xmin) / (self.xmax - self.xmin) - 0.5
         else:
@@ -321,6 +324,7 @@ def cost4ls(x, sp, flux_obs, flux_err=None):
         res = flux_mod - flux_obs
     else:
         res = (flux_mod - flux_obs) / flux_err
+    # print(np.sum(res**2), x, flux_mod, flux_obs, res)
     return np.where(np.isfinite(res), res, 0)
 
 
@@ -331,7 +335,7 @@ def cost(x, sp, flux_obs, flux_err=None, pw=2):
     else:
         return .5 * np.sum((np.abs(flux_mod-flux_obs)/flux_err)**pw)
 
-            
+
 # deprecated
 # def train_one_pixel(x, y, sw, nhidden=(200, 200, 200), activation="leakyrelu", alpha=.01,  # NN parameters
 #                     test_size=0.2, random_state=0, epochs=1000, batch_size=256,  # training parameters
