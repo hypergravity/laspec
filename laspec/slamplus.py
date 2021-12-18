@@ -131,6 +131,7 @@ class SlamPlus:
 
 
 class SlamPredictor:
+    """ moved to slam.py """
     def __init__(self, w, b, alpha, xmin, xmax, wave=None, yscale=1.):
         # self.alpha = np.float64(alpha)
         # self.w = [_.astype(np.float64) for _ in w]
@@ -138,6 +139,9 @@ class SlamPredictor:
         # self.xmin = xmin.astype(np.float64)
         # self.xmax = xmax.astype(np.float64)
         # self.yscale = np.asarray(yscale, np.float64)
+
+        print("this SlamPredictor is deprecated")
+        print("please use laspec.slam.SlamPredictor")
 
         self.alpha = alpha
         self.w = [np.asarray(_) for _ in w]
@@ -149,6 +153,8 @@ class SlamPredictor:
         self.xmean = .5 * (self.xmin + self.xmax)
         self.nlayer = len(w) - 1
         self.wave = wave
+
+        self.flux_rep = None
 
     @property
     def get_coef_dict(self):
