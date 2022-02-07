@@ -12,19 +12,22 @@ If you make use of this package in your research, please cite the paper below:
 
 bibtex:
 ```
-@ARTICLE{2021arXiv210511624Z,
-       author = {{Zhang}, Bo and {Li}, Jiao and {Yang}, Fan and {Xiong}, Jian-Ping and {Fu}, Jian-Ning and {Liu}, Chao and {Tian}, Hao and {Li}, Yin-Bi and {Wang}, Jia-Xin and {Liang}, Cai-Xia and {Zhou}, Yu-Tao and {Zong}, Wei-kai and {Yang}, Cheng-Qun and {Liu}, Nian and {Hou}, Yong-Hui},
-        title = "{Self-consistent Stellar Radial Velocities from LAMOST Medium-Resolution Survey (MRS) DR7}",
-      journal = {arXiv e-prints},
-     keywords = {Astrophysics - Solar and Stellar Astrophysics, Astrophysics - Astrophysics of Galaxies, Astrophysics - Instrumentation and Methods for Astrophysics},
+@ARTICLE{2021ApJS..256...14Z,
+       author = {{Zhang}, Bo and {Li}, Jiao and {Yang}, Fan and {Xiong}, Jian-Ping and {Fu}, Jian-Ning and {Liu}, Chao and {Tian}, Hao and {Li}, Yin-Bi and {Wang}, Jia-Xin and {Liang}, Cai-Xia and {Zhou}, Yu-Tao and {Zong}, Weikai and {Yang}, Cheng-Qun and {Liu}, Nian and {Hou}, Yong-Hui},
+        title = "{Self-consistent Stellar Radial Velocities from LAMOST Medium-resolution Survey DR7}",
+      journal = {\apjs},
+     keywords = {Radial velocity, Surveys, Astronomy data analysis, Astronomy data reduction, Spectroscopic binary stars, Radio spectroscopy, Spectroscopy, Catalogs, Sky surveys, Astrostatistics, Robust regression, 1332, 1671, 1858, 1861, 1557, 1359, 1558, 205, 1464, 1882, 1949, Astrophysics - Solar and Stellar Astrophysics, Astrophysics - Astrophysics of Galaxies, Astrophysics - Instrumentation and Methods for Astrophysics},
          year = 2021,
-        month = may,
-          eid = {arXiv:2105.11624},
-        pages = {arXiv:2105.11624},
+        month = sep,
+       volume = {256},
+       number = {1},
+          eid = {14},
+        pages = {14},
+          doi = {10.3847/1538-4365/ac0834},
 archivePrefix = {arXiv},
        eprint = {2105.11624},
  primaryClass = {astro-ph.SR},
-       adsurl = {https://ui.adsabs.harvard.edu/abs/2021arXiv210511624Z},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2021ApJS..256...14Z},
       adsnote = {Provided by the SAO/NASA Astrophysics Data System}
 }
 
