@@ -7,7 +7,7 @@ A toolkit for LAMOST spectra.
 
 ## citation
 If you make use of this package in your research, please cite the paper below:
-- [Self-consistent Stellar Radial Velocities from LAMOST Medium-Resolution Survey (MRS) DR7](https://ui.adsabs.harvard.edu/abs/2021arXiv210511624Z/abstract)
+- [Self-consistent Stellar Radial Velocities from LAMOST Medium-Resolution Survey (MRS) DR7](https://ui.adsabs.harvard.edu/abs/2021ApJS..256...14Z/abstract)
 - [Deriving the Stellar Labels of LAMOST Spectra with the Stellar LAbel Machine (SLAM)](https://ui.adsabs.harvard.edu/abs/2020ApJS..246....9Z/abstract)
 
 bibtex:
@@ -55,8 +55,8 @@ archivePrefix = {arXiv},
 Bo Zhang, [bozhang@nao.cas.cn](mailto:bozhang@nao.cas.cn)
 
 ## home page
-- [https://github.com/hypergravity/laspec](https://github.com/hypergravity/laspec)
-- [https://pypi.org/project/laspec/](https://pypi.org/project/laspec/)
+- github: [https://github.com/hypergravity/laspec](https://github.com/hypergravity/laspec)
+- PYPI: [https://pypi.org/project/laspec/](https://pypi.org/project/laspec/)
 
 ## install
 - for the latest **stable** version: `pip install -U laspec`
