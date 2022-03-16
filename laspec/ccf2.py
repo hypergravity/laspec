@@ -584,7 +584,7 @@ class RVM:
                            args=(wave_obs, flux_obs, self.wave_mod, self.flux_mod[imod_selected]),
                            method=method)  # Powell
             # store single star result
-            this_res = dict()
+            this_res = dict(n_spec=n_spec)
             this_res["rv_opt_{}".format(cache_name)] = np.float(opt.x)
             this_res["rv_err_{}".format(cache_name)] = np.float(opt.hess_inv) if method == "BFGS" else np.nan
             this_res["rv_best_{}".format(cache_name)] = rv_best_grid
