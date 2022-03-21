@@ -349,7 +349,8 @@ class RVM:
         self.cache_names.append(cache_name)
         return
 
-    def delete_cache(self, cache_name="B"):
+    def delete_cache(self, cache_name):
+        """ delete cache """
         assert cache_name in self.cache_names
         print("@RVM: deleting cache [cache_name={}]...".format(cache_name))
         self.__delattr__("wave_mod_cache_{}".format(cache_name))
