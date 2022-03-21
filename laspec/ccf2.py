@@ -725,7 +725,7 @@ class RVM:
             rvr["status1{}".format(suffix)] = rvr1["status"]
             rvr["status2{}".format(suffix)] = rvr2["status"]
             if return_ccfgrid:
-                rvr["ccf_grid{}".format(suffix)] = rvr2["ccf_grid"]
+                rvr["ccf_grid{}".format(suffix)] = rvr1["ccf_grid"]
         else:
             rvr = OrderedDict()
             rvr["rv1{}".format(suffix)] = rvr1["rv_opt"]
@@ -753,7 +753,7 @@ class RVM:
             # rvr["b_rv2_err{}".format(suffix)] = rvr2["x_pct"][1]
             # rvr["b_eta_err{}".format(suffix)] = rvr2["x_pct"][2]
             if return_ccfgrid:
-                rvr["ccf_grid{}".format(suffix)] = rvr2["ccf_grid"]
+                rvr["ccf_grid{}".format(suffix)] = rvr1["ccf_grid"]
 
         # if method is "BFGS":
         #     rvr["hess_inv"] = rvr2["hess_inv"]
