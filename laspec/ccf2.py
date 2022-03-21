@@ -840,14 +840,16 @@ class RVM:
             rvr_R = self.measure_binary(msr.wave[ind_use], msr.flux_norm[ind_use],
                                         flux_err=msr.flux_norm_err[ind_use], nmc=50, **mrv_kwargs, suffix="R")
             ind_use = (msr.wave < 6800) & ((msr.wave < 6540) | (msr.wave > 6590))
-            rvr_Rm = self.measure_binary(msr.wave[ind_use], msr.flux_norm[ind_use],
-                                         flux_err=msr.flux_norm_err[ind_use], nmc=50, **mrv_kwargs, suffix="Rm")
+            # rvr_Rm = self.measure_binary(msr.wave[ind_use], msr.flux_norm[ind_use],
+            #                              flux_err=msr.flux_norm_err[ind_use], nmc=50, **mrv_kwargs, suffix="Rm")
         except Exception as e_:
+            if raise_error:
+                raise e_
             rvr_R = {}
-            rvr_Rm = {}
+            # rvr_Rm = {}
 
         rvr_B.update(rvr_R)
-        rvr_B.update(rvr_Rm)
+        # rvr_B.update(rvr_Rm)
         return rvr_B
 
     def mrsbatch(self, fpout, fp_list, lmjm_list, snr_B_list, snr_R_list, snr_threshold=5):
