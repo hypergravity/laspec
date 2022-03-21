@@ -669,7 +669,7 @@ class RVM:
     def measure_binary(self, wave_obs, flux_obs, flux_err=None, cache_name="B",
                        rv_grid=(-600, 600, 10), flux_bounds=(0, 3.), twin=True,
                        eta_init=0.3, eta_lim=(0.01, 3.0), drvmax=500, drvstep=5, method="Powell", nmc=100, suffix="",
-                       return_ccfgrid=False):
+                       return_ccfgrid=False, return_spec=False):
 
         # clip extreme values
         ind3 = (flux_obs > flux_bounds[0]) & (flux_obs < flux_bounds[1])
@@ -724,8 +724,6 @@ class RVM:
             rvr["rv1_rv2_eta{}".format(suffix)] = rvr2["x"]
             rvr["status1{}".format(suffix)] = rvr1["status"]
             rvr["status2{}".format(suffix)] = rvr2["status"]
-            if return_ccfgrid:
-                rvr["ccf_grid{}".format(suffix)] = rvr1["ccf_grid"]
         else:
             rvr = OrderedDict()
             rvr["rv1{}".format(suffix)] = rvr1["rv_opt"]
@@ -752,8 +750,10 @@ class RVM:
             # rvr["b_rv1_err{}".format(suffix)] = rvr2["x_pct"][0]
             # rvr["b_rv2_err{}".format(suffix)] = rvr2["x_pct"][1]
             # rvr["b_eta_err{}".format(suffix)] = rvr2["x_pct"][2]
-            if return_ccfgrid:
-                rvr["ccf_grid{}".format(suffix)] = rvr1["ccf_grid"]
+        if return_ccfgrid:
+            rvr["ccf_grid{}".format(suffix)] = rvr1["ccf_grid"]
+        if return_spec:
+            rvr["spec{}".format(suffix)] = wave_obs, flux_obs
 
         # if method is "BFGS":
         #     rvr["hess_inv"] = rvr2["hess_inv"]
