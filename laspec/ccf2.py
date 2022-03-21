@@ -823,8 +823,9 @@ class RVM:
                 assert ms.snr > snr_threshold
             # cosmic ray removal
             msr = ms.reduce(npix_cushion=70, norm_type="spline", niter=2)
-            rvr_B = self.measure_binary(msr.wave, msr.flux_norm,
-                                        flux_err=msr.flux_norm_err, nmc=50, **mrv_kwargs, suffix="B")
+            rvr_B = self.measure_binary(
+                msr.wave, msr.flux_norm, flux_err=msr.flux_norm_err,
+                cache_name="B", nmc=50, **mrv_kwargs, suffix="B")
         except Exception as e_:
             if raise_error:
                 raise e_
@@ -841,8 +842,9 @@ class RVM:
             msr = ms.reduce(npix_cushion=70, norm_type="spline", niter=2)
             # cut 6800+A
             ind_use = msr.wave < 6800
-            rvr_R = self.measure_binary(msr.wave[ind_use], msr.flux_norm[ind_use],
-                                        flux_err=msr.flux_norm_err[ind_use], nmc=50, **mrv_kwargs, suffix="R")
+            rvr_R = self.measure_binary(
+                msr.wave[ind_use], msr.flux_norm[ind_use], flux_err=msr.flux_norm_err[ind_use],
+                cache_name="R", nmc=50, **mrv_kwargs, suffix="R")
             # ind_use = (msr.wave < 6800) & ((msr.wave < 6540) | (msr.wave > 6590))
             # rvr_Rm = self.measure_binary(msr.wave[ind_use], msr.flux_norm[ind_use],
             #                              flux_err=msr.flux_norm_err[ind_use], nmc=50, **mrv_kwargs, suffix="Rm")
