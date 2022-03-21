@@ -443,9 +443,7 @@ class RVM:
 
         # CCF max
         ccf_max = np.max(ccf_grid)
-        ind_best = np.where(ccf_max == ccf_grid)
-        imod = ind_best[0][0]
-        irv_best = ind_best[1][0]
+        imod, irv_best = np.unravel_index(np.argmax(ccf_grid), ccf_grid.shape)
         if cache_name in self.cache_names:
             rv_best = self.__getattribute__("rv_grid_cache_{}".format(cache_name))[irv_best]
         else:
@@ -839,7 +837,7 @@ class RVM:
             ind_use = msr.wave < 6800
             rvr_R = self.measure_binary(msr.wave[ind_use], msr.flux_norm[ind_use],
                                         flux_err=msr.flux_norm_err[ind_use], nmc=50, **mrv_kwargs, suffix="R")
-            ind_use = (msr.wave < 6800) & ((msr.wave < 6540) | (msr.wave > 6590))
+            # ind_use = (msr.wave < 6800) & ((msr.wave < 6540) | (msr.wave > 6590))
             # rvr_Rm = self.measure_binary(msr.wave[ind_use], msr.flux_norm[ind_use],
             #                              flux_err=msr.flux_norm_err[ind_use], nmc=50, **mrv_kwargs, suffix="Rm")
         except Exception as e_:
