@@ -255,7 +255,16 @@ class MrsSpec:
             else:
                 raise ValueError("@MrsFits: error in reading epoch spec!")
             # initiate MrsSpec
-            return MrsSpec(wave, flux, ivar, mask, info=info, norm_type=norm_type, **norm_kwargs)
+            ms = MrsSpec(wave, flux, ivar, mask, info=info, norm_type=norm_type, **norm_kwargs)
+
+            # calculate bjdmid
+            ms.jdbeg = datetime2jd(hdu.header["DATE-BEG"], format="isot", tz_correction=8)
+            ms.jdend = datetime2jd(hdu.header["DATE-END"], format="isot", tz_correction=8)
+            ms.jdmid = (ms.jdbeg + ms.jdend) / 2.
+            ms.jdltt = eval_ltt(ms.ra, ms.dec, ms.jdmid)
+            ms.bjdmid = ms.jdmid + ms.jdltt
+
+            return ms
 
     @staticmethod
     def from_mrs(fp_mrs, hduname="COADD_B", norm_type=None, **norm_kwargs):
