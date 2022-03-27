@@ -5,7 +5,7 @@ from scipy.optimize import minimize
 
 
 def calibrate_rvzp(rvobs, rvobs_err, rvref, rvref_err, spid, lmjm, rvlabels=["B", "R", "Rm"], ncommon_min=5,
-                   rvobs_err_min=1., verbose=True):
+                   rvobs_err_min=1., verbose=True, debug=False):
     """ A simplified version of Zhang et al. (2021)
 
     Parameters
@@ -50,6 +50,9 @@ def calibrate_rvzp(rvobs, rvobs_err, rvref, rvref_err, spid, lmjm, rvlabels=["B"
     # construct SEU table
     tseu = table.Table(data=[u_spid_lmjm, c_spid_lmjm, u_spid_lmjm[:, 0], u_spid_lmjm[:, 1]],
                        names=["u_spid_lmjm", "c_spid_lmjm", "u_spid", "u_lmjm"])
+    if debug:
+        return tseu
+
     nseu = len(tseu)
     # evaluate RVZP, loop over SEUs
     rvzp_list = []
