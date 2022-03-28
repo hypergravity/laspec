@@ -31,9 +31,24 @@ def calibrate_rvzp(rvobs, rvobs_err, rvref, rvref_err, spid, lmjm, rvlabels=["B"
         a noise floor due to wavelength calibration and instrumentation defects. defaults to 1. in unit of km/s
     verbose:
         if True, print details
+    debug : bool
+        if True, return tseu and exit
 
     Returns
     -------
+    tseu, ind_map
+
+    Notes
+    -----
+    make sure that the input arrays are not masked
+
+    Examples
+    --------
+    >>> tseu, ind_map = calibrate_rvzp(
+    >>>     np.array(t["rv1_B", "rv1_R"].to_pandas()), np.array(t["rv1_err_B", "rv1_err_R", ].to_pandas()),
+    >>>     np.where(m9["dr2_radial_velocity_gedr3"].mask, np.nan,m9["dr2_radial_velocity_gedr3"].data),
+    >>>     np.where(m9["dr2_radial_velocity_error_gedr3"].mask, np.nan,m9["dr2_radial_velocity_error_gedr3"].data),
+    >>>     m9["spid"], m9["lmjm"], rvlabels=["B", "R"], ncommon_min=5, rvobs_err_min=1., verbose=True, debug=False)
 
     """
     if rvobs.ndim == 2:
@@ -106,6 +121,7 @@ def calibrate_rvzp(rvobs, rvobs_err, rvref, rvref_err, spid, lmjm, rvlabels=["B"
     print("@RVZP: reconstruct mapping index from original catalog to tseu ...")
     ind_map = np.zeros(len(rvobs), dtype=int)
     for iseu in range(len(tseu)):
+        print("@RVZP: processing SEU [{}/{}] ...".format(iseu, len(tseu)))
         ind_map[(spid == tseu["u_spid"][iseu]) & (lmjm == tseu["u_lmjm"][iseu])] = iseu
     return tseu, ind_map
 
