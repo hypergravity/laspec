@@ -489,7 +489,7 @@ class RVM:
 
     def measure_multiepoch(self, wave_obs_list, flux_obs_list, flux_err_obs_list,
                            cache_name="BR", flux_bounds=(0, 3), method="BFGS",
-                           eta_init=0.4, eta_lim=(0.1, 2), drvmax=500, drvstep=10, nmc=100):
+                           eta_init=0.4, eta_lim=(0.1, 2), drvmax=500, drvstep=10, nmc=100, verbose=False):
         """ determine the RVs of multi-epoch spectra
         For best performance, all input spectra are assumed to have the same wavelength coverage.
         Those with only one good arm
@@ -514,7 +514,8 @@ class RVM:
         -------
 
         """
-        print(datetime.datetime.now(), "starting")
+        if verbose:
+            print(datetime.datetime.now(), "starting")
 
         # cache algorithm needed
         assert cache_name in self.cache_names
@@ -527,7 +528,8 @@ class RVM:
         ccf_max_grid = np.zeros(n_spec, int)
         imod_best_grid = np.zeros(n_spec, int)
         irv_best_grid = np.zeros(n_spec, int)
-        print(datetime.datetime.now(), "cache grid for best template")
+        if verbose:
+            print(datetime.datetime.now(), "cache grid for best template")
         # loop spectra
         for i_spec in range(n_spec):
             # get current spectrum
@@ -557,8 +559,8 @@ class RVM:
         # initialize ccf arrays
         ccf_max_grid = np.zeros(n_spec, float)
         irv_best_grid = np.zeros(n_spec, int)
-
-        print(datetime.datetime.now(), "template selected, calculating rv ...")
+        if verbose:
+            print(datetime.datetime.now(), "template selected, calculating rv ...")
         res_list = []
         # loop spectra
         for i_spec in range(n_spec):
@@ -641,8 +643,8 @@ class RVM:
             this_res["rv1_rv2_eta_err_{}".format(cache_name)] = (rvr2["x_pct"][2] - rvr2["x_pct"][0]) / 2
             this_res["success_2_{}".format(cache_name)] = rvr2["success"]
             this_res["status2_{}".format(cache_name)] = rvr2["status"]
-
-            print(datetime.datetime.now(), "finished")
+            if verbose:
+                print(datetime.datetime.now(), "finished")
             res_list.append(this_res)
 
         return res_list
