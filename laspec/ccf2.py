@@ -630,7 +630,7 @@ class RVM:
                                             drvmax=drvmax, drvstep=drvstep, method=method, nmc=nmc)
 
             this_res["rv1_{}".format(cache_name)], this_res["rv2_{}".format(cache_name)], this_res["eta_{}".format(cache_name)] = rvr2["x"]
-            this_res["dccfmax_{}".format(cache_name)] = this_res["ccfmax2"] - this_res["ccfmax1"]
+            this_res["dccfmax_{}".format(cache_name)] = rvr2["ccfmax2"] - this_res["ccfmax1_{}".format(cache_name)]
             this_res["ccfmax2_{}".format(cache_name)] = rvr2["ccfmax2"]
 
             this_res["rv1_rv2_eta0_{}".format(cache_name)] = rvr2["x0"]
