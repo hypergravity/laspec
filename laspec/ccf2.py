@@ -625,7 +625,8 @@ class RVM:
             rvr2 = xcorr_spec_binary_rvgrid(wave_obs, flux_obs,
                                             self.wave_mod, self.flux_mod[imod_selected],
                                             self.wave_mod, self.flux_mod[imod_selected], flux_err=flux_err_obs,
-                                            rv1_init=this_res["rv_opt"], eta_init=eta_init, eta_lim=eta_lim,
+                                            rv1_init=this_res["rv_opt_{}".format(cache_name)],
+                                            eta_init=eta_init, eta_lim=eta_lim,
                                             drvmax=drvmax, drvstep=drvstep, method=method, nmc=nmc)
 
             this_res["rv1_{}".format(cache_name)], this_res["rv2_{}".format(cache_name)], this_res["eta_{}".format(cache_name)] = rvr2["x"]
