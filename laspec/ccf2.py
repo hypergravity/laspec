@@ -315,15 +315,12 @@ class RVM:
         rv_grid:
             rv_start, rv_stop, rv_step
 
-        Returns
-        -------
-
         """
         print("@RVM: making cache ...")
 
         if isinstance(wave_range, list):
             # multiple ranges
-            ind_wave_cache = np.zeros_like(self.wave, dtype=bool)
+            ind_wave_cache = np.zeros_like(self.wave_mod, dtype=bool)
             for _wave_range in wave_range:
                 ind_wave_cache |= (self.wave_mod > _wave_range[0]) & (self.wave_mod < _wave_range[1])
         else:
