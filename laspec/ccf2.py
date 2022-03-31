@@ -322,10 +322,14 @@ class RVM:
             # multiple ranges
             ind_wave_cache = np.zeros_like(self.wave_mod, dtype=bool)
             for _wave_range in wave_range:
-                ind_wave_cache |= (self.wave_mod > _wave_range[0]) & (self.wave_mod < _wave_range[1])
+                this_ind = (self.wave_mod > _wave_range[0]) & (self.wave_mod < _wave_range[1])
+                print("@RVM: adding {} pixels in range [{}, {}]".format(np.sum(this_ind), *_wave_range))
+                ind_wave_cache |= this_ind
+
         else:
             # single range
             ind_wave_cache = (self.wave_mod > wave_range[0]) & (self.wave_mod < wave_range[1])
+            print("@RVM: adding {} pixels in range [{}, {}]".format(np.sum(ind_wave_cache), *wave_range))
 
         # cache wavelength
         wave_cache = self.wave_mod[ind_wave_cache]
@@ -585,7 +589,7 @@ class RVM:
             rv_best_grid = self.__getattribute__("rv_grid_cache_{}".format(cache_name))[irv_best_grid[i_spec]]
 
             # CCF opt
-            opt = minimize(xcorr_spec_cost, x0=self.__getattribute__("rv_grid_cache_".format(cache_name))[irv_best_grid[i_spec]],
+            opt = minimize(xcorr_spec_cost, x0=self.__getattribute__("rv_grid_cache_{}".format(cache_name))[irv_best_grid[i_spec]],
                            args=(wave_obs, flux_obs, self.wave_mod, self.flux_mod[imod_selected]),
                            method=method)  # Powell
             # store single star result
