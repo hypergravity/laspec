@@ -320,7 +320,16 @@ class RVM:
 
         """
         print("@RVM: making cache ...")
-        ind_wave_cache = (self.wave_mod > wave_range[0]) & (self.wave_mod < wave_range[1])
+
+        if isinstance(wave_range, list):
+            # multiple ranges
+            ind_wave_cache = np.zeros_like(self.wave, dtype=bool)
+            for _wave_range in wave_range:
+                ind_wave_cache |= (self.wave_mod > _wave_range[0]) & (self.wave_mod < _wave_range[1])
+        else:
+            # single range
+            ind_wave_cache = (self.wave_mod > wave_range[0]) & (self.wave_mod < wave_range[1])
+
         # cache wavelength
         wave_cache = self.wave_mod[ind_wave_cache]
         # cache rv_grid
