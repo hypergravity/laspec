@@ -594,14 +594,13 @@ class RVM:
                            method=method)  # Powell
             # store single star result
             this_res = dict(n_spec=n_spec)
-            this_res["rv_opt_{}".format(cache_name)] = np.float(opt.x)
-            this_res["rv_err_{}".format(cache_name)] = np.float(opt.hess_inv) if method == "BFGS" else np.nan
-            this_res["rv_best_{}".format(cache_name)] = rv_best_grid
+            this_res["rv1_opt_{}".format(cache_name)] = np.float(opt.x)
+            this_res["rv1_best_{}".format(cache_name)] = rv_best_grid
             this_res["ccfmax1_{}".format(cache_name)] = -opt["fun"]
             this_res["imod_{}".format(cache_name)] = imod_selected
             this_res["pmod_{}".format(cache_name)] = self.pmod[imod_selected]
             this_res["status1_{}".format(cache_name)] = opt["status"]
-            this_res["success_{}".format(cache_name)] = opt.success
+            this_res["success1_{}".format(cache_name)] = opt.success
 
             # Monte Carlo for error
             if flux_err_obs_list is not None:
@@ -616,16 +615,19 @@ class RVM:
                         args=(wave_obs, flux_mc, self.wave_mod, self.flux_mod[imod_selected]),
                         method=method)
                     x_mc[i] = opt.x
-                this_res["rv_pct_{}".format(cache_name)] = np.percentile(x_mc, [16, 50, 84])
+                this_res["rv1_pct_{}".format(cache_name)] = np.percentile(x_mc, [16, 50, 84])
+                this_res["rv1_err_{}".format(cache_name)] = np.float(opt.hess_inv) \
+                    if method == "BFGS" else np.mean(np.diff(this_res["rv1_pct_{}".format(cache_name)]))
             else:
                 flux_err_obs = None
+                this_res["rv1_err_{}".format(cache_name)] = np.float(opt.hess_inv) if method == "BFGS" else np.nan
 
             # measure double components
             """ given a template, optimize (rv1, drv, eta) """
             rvr2 = xcorr_spec_binary_rvgrid(wave_obs, flux_obs,
                                             self.wave_mod, self.flux_mod[imod_selected],
                                             self.wave_mod, self.flux_mod[imod_selected], flux_err=flux_err_obs,
-                                            rv1_init=this_res["rv_opt_{}".format(cache_name)],
+                                            rv1_init=this_res["rv1_opt_{}".format(cache_name)],
                                             eta_init=eta_init, eta_lim=eta_lim,
                                             drvmax=drvmax, drvstep=drvstep, method=method, nmc=nmc)
 
