@@ -223,35 +223,63 @@ class MrsSpec:
         if hdu is None or hdu.header["EXTNAME"] == "Information":
             return MrsSpec()
         else:
+            # convert to Table
             spec = Table(hdu.data)
-            if hdu.data is None:
-                return MrsSpec()
-            spec.sort("LOGLAM")
-            if "COADD" in hdu.name:
-                # it's coadded spec
-                wave = 10 ** spec["LOGLAM"].data
-                flux = spec["FLUX"].data
-                ivar = spec["IVAR"].data
-                mask = spec["ORMASK"].data  # use ormask for coadded spec
-                info = dict(
-                    name=get_kwd_safe(hdu.header, "EXTNAME", ""),
-                    lmjm=np.int(get_kwd_safe(hdu.header, "LMJM", 0)),
-                    snr=np.float(get_kwd_safe(hdu.header, "SNR", 0.)),
-                    lamplist=get_kwd_safe(hdu.header, "LAMPLIST", "")
-                )
-            elif hdu.name.startswith("B-") or hdu.name.startswith("R-"):
-                # it's epoch spec
-                wave = 10 ** spec["LOGLAM"].data
-                flux = spec["FLUX"].data
-                ivar = spec["IVAR"].data
-                mask = spec["PIXMASK"].data  # use pixmask for epoch spec
-                info = dict(
-                    name=get_kwd_safe(hdu.header, "EXTNAME", ""),
-                    lmjm=np.int(get_kwd_safe(hdu.header, "LMJM", 0)),
-                    exptime=np.float(get_kwd_safe(hdu.header, "EXPTIME", 0.)),
-                    snr=np.float(get_kwd_safe(hdu.header, "SNR", 0.)),
-                    lamplist=get_kwd_safe(hdu.header, "LAMPLIST", "")
-                )
+            if "LOGLAM" in spec.colnames:
+                # this is old format, until DR9 v0
+                spec.sort("LOGLAM")
+                if "COADD" in hdu.name:
+                    # it's coadded spec
+                    wave = 10 ** spec["LOGLAM"].data
+                    flux = spec["FLUX"].data
+                    ivar = spec["IVAR"].data
+                    mask = spec["ORMASK"].data  # use ormask for coadded spec
+                    info = dict(
+                        name=get_kwd_safe(hdu.header, "EXTNAME", ""),
+                        lmjm=np.int(get_kwd_safe(hdu.header, "LMJM", 0)),
+                        snr=np.float(get_kwd_safe(hdu.header, "SNR", 0.)),
+                        lamplist=get_kwd_safe(hdu.header, "LAMPLIST", "")
+                    )
+                elif hdu.name.startswith("B-") or hdu.name.startswith("R-"):
+                    # it's epoch spec
+                    wave = 10 ** spec["LOGLAM"].data
+                    flux = spec["FLUX"].data
+                    ivar = spec["IVAR"].data
+                    mask = spec["PIXMASK"].data  # use pixmask for epoch spec
+                    info = dict(
+                        name=get_kwd_safe(hdu.header, "EXTNAME", ""),
+                        lmjm=np.int(get_kwd_safe(hdu.header, "LMJM", 0)),
+                        exptime=np.float(get_kwd_safe(hdu.header, "EXPTIME", 0.)),
+                        snr=np.float(get_kwd_safe(hdu.header, "SNR", 0.)),
+                        lamplist=get_kwd_safe(hdu.header, "LAMPLIST", "")
+                    )
+            elif "WAVELENGTH" in spec.colnames:
+                # new format, since DR9 v1
+                if "COADD" in hdu.name:
+                    # it's coadded spec
+                    wave = spec["WAVELENGTH"][0]
+                    flux = spec["FLUX"][0]
+                    ivar = spec["IVAR"][0]
+                    mask = spec["ORMASK"][0]  # use ormask for coadded spec
+                    info = dict(
+                        name=get_kwd_safe(hdu.header, "EXTNAME", ""),
+                        lmjm=np.int(get_kwd_safe(hdu.header, "LMJM", 0)),
+                        snr=np.float(get_kwd_safe(hdu.header, "SNR", 0.)),
+                        lamplist=get_kwd_safe(hdu.header, "LAMPLIST", "")
+                    )
+                elif hdu.name.startswith("B-") or hdu.name.startswith("R-"):
+                    # it's epoch spec
+                    wave = spec["WAVELENGTH"][0]
+                    flux = spec["FLUX"][0]
+                    ivar = spec["IVAR"][0]
+                    mask = spec["PIXMASK"][0]  # use pixmask for epoch spec
+                    info = dict(
+                        name=get_kwd_safe(hdu.header, "EXTNAME", ""),
+                        lmjm=np.int(get_kwd_safe(hdu.header, "LMJM", 0)),
+                        exptime=np.float(get_kwd_safe(hdu.header, "EXPTIME", 0.)),
+                        snr=np.float(get_kwd_safe(hdu.header, "SNR", 0.)),
+                        lamplist=get_kwd_safe(hdu.header, "LAMPLIST", "")
+                    )
             else:
                 raise ValueError("@MrsFits: error in reading epoch spec!")
             # initiate MrsSpec
@@ -380,7 +408,7 @@ class MrsSpec:
         plt.plot(self.wave, self.flux_norm_err + shift)
 
     def reduce(self, wave_new=None, rv=0, npix_cushion=50, cr=True, nsigma=(4, 8), maxiter=5,
-               norm_type="spline", niter=2):
+               norm_type="spline", niter=2, flux_bounds=(0, 3)):
         """
 
         Parameters
@@ -417,7 +445,7 @@ class MrsSpec:
         # cut spectrum
         wave_obs = self.wave[npix0:npix1]
         flux_err = self.flux_err[npix0:npix1]
-        mask = self.mask[npix0:npix1] > 0
+        mask = self.mask[npix0:npix1] > 0  # positive for bad pixels
         # remove cosmic rays if cr is True
         if cr:
             flux_obs = debad(self.wave, self.flux, nsigma=nsigma, maxiter=maxiter)[npix0:npix1]
