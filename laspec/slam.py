@@ -11,7 +11,7 @@ from scipy.optimize import least_squares, minimize
 class NNModel(torch.nn.Module):
     """ SLAM based on pytorch """
 
-    def __init__(self, n_label=3, n_pixel=1900, n_hidden=300, n_layer=3, drop_rate=0, wave=None):
+    def __init__(self, n_label=3, n_pixel=1900, n_hidden=300, n_layer=3, drop_rate=0, wave=None, lastrelu=False):
         super(NNModel, self).__init__()
         self.layers = torch.nn.ModuleList()
         self.layers.append(torch.nn.Linear(n_label, n_hidden))
@@ -24,6 +24,8 @@ class NNModel(torch.nn.Module):
             if drop_rate > 0:
                 self.layers.append(torch.nn.Dropout(p=drop_rate))
         self.layers.append(torch.nn.Linear(n_hidden, n_pixel))
+        if lastrelu:
+            self.layers.append(torch.nn.ReLU())
 
         self.xmin = 0
         self.xmax = 0
