@@ -51,6 +51,7 @@ class NNModel(torch.nn.Module):
         self.scale_y = False
         self.dl_train = None
         self.dl_test = None
+        self.activation = activation
 
     def forward(self, x):
         for i, l in enumerate(self.layers):
@@ -251,10 +252,10 @@ class NNModel(torch.nn.Module):
         """ transform to SlamPredictor instance """
         w = [self.state_dict_best[k].cpu().numpy() for k in self.state_dict_best.keys() if "weight" in k]
         b = [self.state_dict_best[k].cpu().numpy()[:, None] for k in self.state_dict_best.keys() if "bias" in k]
-        alpha = 0.01
+        alpha = 0.01 if self.activation == "relu" else 1.0
         xmin = self.xmin
         xmax = self.xmax
-        return SlamPredictor(w, b, alpha, xmin, xmax, wave=self.wave, yscale=self.yscale)
+        return SlamPredictor(w, b, alpha, xmin, xmax, wave=self.wave, yscale=self.yscale, activation=self.activation)
 
     def plot_history(self):
         """ plot training history """
@@ -303,7 +304,7 @@ class SlamBCELoss(torch.nn.Module):
 
 
 class SlamPredictor:
-    def __init__(self, w, b, alpha, xmin, xmax, wave=None, yscale=1.):
+    def __init__(self, w, b, alpha, xmin, xmax, wave=None, yscale=1., activation="relu"):
         # self.alpha = np.float64(alpha)
         # self.w = [_.astype(np.float64) for _ in w]
         # self.b = [_.astype(np.float64) for _ in b]
@@ -324,6 +325,8 @@ class SlamPredictor:
 
         self.flux_rep = None
 
+        self.activation = activation
+
     @property
     def get_coef_dict(self):
         return dict(w=self.w, b=self.b, alpha=self.alpha)
@@ -335,13 +338,13 @@ class SlamPredictor:
             # scale x
             xsT = ((x - self.xmin) / (self.xmax - self.xmin)).reshape(-1, 1) - 0.5
             # eval y
-            y = nneval(xsT, self.w, self.b, self.alpha, self.nlayer).flatten() * self.yscale
+            y = nneval(xsT, self.w, self.b, self.alpha, self.nlayer, self.activation).flatten() * self.yscale
             return y
         elif x.ndim == 2:  # multiple entries
             # scale x
             xsT = (x.T - self.xmin[:, None]) / (self.xmax[:, None] - self.xmin[:, None]) - 0.5
             # eval y
-            y = nneval(xsT, self.w, self.b, self.alpha, self.nlayer).T * self.yscale[None, :]
+            y = nneval(xsT, self.w, self.b, self.alpha, self.nlayer, self.activation).T * self.yscale[None, :]
             return y
         else:
             raise ValueError()
@@ -350,19 +353,19 @@ class SlamPredictor:
         """ predict one spectrum, x is in standard space """
         # scale label
         return nneval(np.asarray(x, dtype=np.float64).reshape(-1, 1), self.w, self.b, self.alpha,
-                      self.nlayer).reshape(-1)
+                      self.nlayer, self.activation).reshape(-1)
 
     def predict_one_spectrum(self, x):
         """ predict one spectrum """
         # scale label
         xsT = ((np.asarray(x, dtype=np.float64) - self.xmin) / (self.xmax - self.xmin)).reshape(-1, 1) - 0.5
-        return nneval(xsT, self.w, self.b, self.alpha, self.nlayer).reshape(-1)
+        return nneval(xsT, self.w, self.b, self.alpha, self.nlayer, self.activation).reshape(-1)
 
     def predict_one_spectrum_and_scale_y_back(self, x):
         """ predict one spectrum and scale y """
         # scale label
         xsT = ((np.asarray(x, dtype=np.float64) - self.xmin) / (self.xmax - self.xmin)).reshape(-1, 1) - 0.5
-        y_standard = nneval(xsT, self.w, self.b, self.alpha, self.nlayer).reshape(-1)
+        y_standard = nneval(xsT, self.w, self.b, self.alpha, self.nlayer, self.activation).reshape(-1)
         y = y_standard * self.yscale
         return y
 
@@ -370,7 +373,7 @@ class SlamPredictor:
         """ predict one spectrum and scale y """
         # scale label
         xsT = ((np.asarray(x, dtype=np.float64) - self.xmin) / (self.xmax - self.xmin)).reshape(-1, 1) - 0.5
-        y_standard = nneval(xsT, self.w, self.b, self.alpha, self.nlayer).reshape(-1)
+        y_standard = nneval(xsT, self.w, self.b, self.alpha, self.nlayer, self.activation).reshape(-1)
         y = y_standard * self.yscale
         y_rv = np.interp(self.wave, self.wave * (1 + rv / 299792.458), y_standard, left=left, right=right)
         return y_rv
@@ -379,7 +382,7 @@ class SlamPredictor:
         """ predict one spectrum, with rv """
         # scale label
         xsT = ((np.asarray(x, dtype=np.float64) - self.xmin) / (self.xmax - self.xmin)).reshape(-1, 1) - 0.5
-        y_standard = nneval(xsT, self.w, self.b, self.alpha, self.nlayer).reshape(-1)
+        y_standard = nneval(xsT, self.w, self.b, self.alpha, self.nlayer, self.activation).reshape(-1)
         y_standard_rv = np.interp(self.wave, self.wave * (1 + rv / 299792.458), y_standard, left=left, right=right)
         return y_standard_rv
 
@@ -473,40 +476,52 @@ class SlamPredictor:
 # functions for SlamPredictor
 # ###################################
 
+def elu(x, alpha=1.):
+    """ Exponential LU function """
+    return np.where(x >= 0, x, alpha * (np.exp(x) - 1.))
+
+
 def leaky_relu(x, alpha=0.01):
-    return x * (x > 0) + alpha * x * (x < 0)
+    """ Leaky ReLU function """
+    return np.where(x >= 0, x, alpha * x)
 
 
 def model_func(sp, *args):
     return sp.predict_one_spectrum(np.array(args))
 
 
-def nneval(xs, w, b, alpha, nlayer=None):
+def nneval(xs, w, b, alpha=1., nlayer=None, activation="relu"):
+    assert activation in ("relu", "elu")
+    if activation == "relu":
+        func = leaky_relu
+    elif activation == "elu":
+        func = elu
+
     if nlayer == 2:
         w0, w1, w2 = w
         b0, b1, b2 = b
-        l0 = leaky_relu(w0 @ xs + b0, alpha)
-        l1 = leaky_relu(w1 @ l0 + b1, alpha)
+        l0 = func(w0 @ xs + b0, alpha)
+        l1 = func(w1 @ l0 + b1, alpha)
         return w2 @ l1 + b2
     elif nlayer == 3:
         w0, w1, w2, w3 = w
         b0, b1, b2, b3 = b
-        l0 = leaky_relu(w0 @ xs + b0, alpha)
-        l1 = leaky_relu(w1 @ l0 + b1, alpha)
-        l2 = leaky_relu(w2 @ l1 + b2, alpha)
+        l0 = func(w0 @ xs + b0, alpha)
+        l1 = func(w1 @ l0 + b1, alpha)
+        l2 = func(w2 @ l1 + b2, alpha)
         return w3 @ l2 + b3
     elif nlayer == 4:
         w0, w1, w2, w3, w4 = w
         b0, b1, b2, b3, b4 = b
-        l0 = leaky_relu(w0 @ xs + b0, alpha)
-        l1 = leaky_relu(w1 @ l0 + b1, alpha)
-        l2 = leaky_relu(w2 @ l1 + b2, alpha)
-        l3 = leaky_relu(w3 @ l2 + b3, alpha)
+        l0 = func(w0 @ xs + b0, alpha)
+        l1 = func(w1 @ l0 + b1, alpha)
+        l2 = func(w2 @ l1 + b2, alpha)
+        l3 = func(w3 @ l2 + b3, alpha)
         return w4 @ l3 + b4
     else:
         nlayer = len(w) - 1
         for i in range(nlayer):
-            xs = leaky_relu(w[i] @ xs + b[i], alpha)
+            xs = func(w[i] @ xs + b[i], alpha)
         return w[-1] @ xs + b[-1]
 
 
