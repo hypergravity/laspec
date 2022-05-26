@@ -234,25 +234,12 @@ class MrsSpec:
                     flux = spec["FLUX"].data
                     ivar = spec["IVAR"].data
                     mask = spec["ORMASK"].data  # use ormask for coadded spec
-                    info = dict(
-                        name=get_kwd_safe(hdu.header, "EXTNAME", ""),
-                        lmjm=np.int(get_kwd_safe(hdu.header, "LMJM", 0)),
-                        snr=np.float(get_kwd_safe(hdu.header, "SNR", 0.)),
-                        lamplist=get_kwd_safe(hdu.header, "LAMPLIST", "")
-                    )
                 elif hdu.name.startswith("B-") or hdu.name.startswith("R-"):
                     # it's epoch spec
                     wave = 10 ** spec["LOGLAM"].data
                     flux = spec["FLUX"].data
                     ivar = spec["IVAR"].data
                     mask = spec["PIXMASK"].data  # use pixmask for epoch spec
-                    info = dict(
-                        name=get_kwd_safe(hdu.header, "EXTNAME", ""),
-                        lmjm=np.int(get_kwd_safe(hdu.header, "LMJM", 0)),
-                        exptime=np.float(get_kwd_safe(hdu.header, "EXPTIME", 0.)),
-                        snr=np.float(get_kwd_safe(hdu.header, "SNR", 0.)),
-                        lamplist=get_kwd_safe(hdu.header, "LAMPLIST", "")
-                    )
             elif "WAVELENGTH" in spec.colnames:
                 # new format, since DR9 v1
                 if "COADD" in hdu.name:
@@ -261,27 +248,24 @@ class MrsSpec:
                     flux = spec["FLUX"][0]
                     ivar = spec["IVAR"][0]
                     mask = spec["ORMASK"][0]  # use ormask for coadded spec
-                    info = dict(
-                        name=get_kwd_safe(hdu.header, "EXTNAME", ""),
-                        lmjm=np.int(get_kwd_safe(hdu.header, "LMJM", 0)),
-                        snr=np.float(get_kwd_safe(hdu.header, "SNR", 0.)),
-                        lamplist=get_kwd_safe(hdu.header, "LAMPLIST", "")
-                    )
                 elif hdu.name.startswith("B-") or hdu.name.startswith("R-"):
                     # it's epoch spec
                     wave = spec["WAVELENGTH"][0]
                     flux = spec["FLUX"][0]
                     ivar = spec["IVAR"][0]
                     mask = spec["PIXMASK"][0]  # use pixmask for epoch spec
-                    info = dict(
-                        name=get_kwd_safe(hdu.header, "EXTNAME", ""),
-                        lmjm=np.int(get_kwd_safe(hdu.header, "LMJM", 0)),
-                        exptime=np.float(get_kwd_safe(hdu.header, "EXPTIME", 0.)),
-                        snr=np.float(get_kwd_safe(hdu.header, "SNR", 0.)),
-                        lamplist=get_kwd_safe(hdu.header, "LAMPLIST", "")
-                    )
             else:
                 raise ValueError("@MrsFits: error in reading epoch spec!")
+
+            # get meta info
+            info = dict(
+                name=get_kwd_safe(hdu.header, "EXTNAME", ""),
+                lmjm=np.int(get_kwd_safe(hdu.header, "LMJM", 0)),
+                exptime=np.float(get_kwd_safe(hdu.header, "EXPTIME", 0.)),
+                snr=np.float(get_kwd_safe(hdu.header, "SNR", 0.)),
+                lamplist=get_kwd_safe(hdu.header, "LAMPLIST", "")
+            )
+
             # initiate MrsSpec
             ms = MrsSpec(wave, flux, ivar, mask, info=info, norm_type=norm_type, **norm_kwargs)
 
@@ -446,21 +430,28 @@ class MrsSpec:
         wave_obs = self.wave[npix0:npix1]
         flux_err = self.flux_err[npix0:npix1]
         mask = self.mask[npix0:npix1] > 0  # positive for bad pixels
-        # remove cosmic rays if cr is True
+        # remove cosmic rays if cr is True, also fill the negative pixels with 0.
         if cr:
-            flux_obs = debad(self.wave, self.flux, nsigma=nsigma, maxiter=maxiter)[npix0:npix1]
+            flux_obs = np.where(self.flux > 0, self.flux, 0.)
+            flux_obs = debad(self.wave, flux_obs, nsigma=nsigma, maxiter=maxiter)[npix0:npix1]
             indcr = (np.abs(flux_obs - self.flux[npix0:npix1]) > 1e-5) * 1
         else:
             flux_obs = self.flux[npix0:npix1]
+            flux_obs = np.where(flux_obs > 0, flux_obs, 0.)
             indcr = np.zeros(flux_obs.shape, dtype=int)
 
         # use new wavelength grid if wave_new is specified
         wave_obsz0 = wave_obs / (1 + rv / SOL_kms)
         if wave_new is None:
-            wave_new = wave_obs
+            wave_new = wave_obsz0
+        elif len(wave_new) == 2:
+            # this indicates the new wavelength limits
+            wave_new = wave_obsz0[(wave_obsz0 > wave_new[0]) & (wave_obsz0 < wave_new[1])]
+        # else: wave_new is specified
+
         flux_obs = np.interp(wave_new, wave_obsz0, flux_obs)
         flux_err = np.interp(wave_new, wave_obsz0, flux_err)
-        mask = 1 * (np.interp(wave_new, wave_obsz0, mask) > 0)
+        mask = 1 * (np.interp(wave_new, wave_obsz0, mask|indcr) > 0)
 
         msr = MrsSpec()
         msr.wave = wave_new
