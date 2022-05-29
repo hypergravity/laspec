@@ -882,7 +882,7 @@ class RVM:
             warnings.simplefilter("ignore")
             rvr = [self.measure_binary_mrsbatch(fp_list[i], lmjm_list[i], snr_B_list[i], snr_R_list[i],
                                                 snr_threshold=snr_threshold) for i in range(nspec)]
-        return Table(rvr)
+        return rvr
 
 
 def construct_rv_grid(rv_grid=(-600, 600, 10)):
