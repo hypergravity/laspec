@@ -2,6 +2,9 @@ import datetime
 import time
 import glob
 from copy import deepcopy
+import datetime
+from astropy.time import Time
+import warnings
 
 
 def ezcount(fmt="", delta_t=3):
@@ -15,10 +18,29 @@ def ezcount(fmt="", delta_t=3):
     return
 
 
+def YQ():
+    warnings.filterwarnings("ignore")
+    t0 = Time("2022-02-24T22:49:00", format="isot")
+    t1 = Time(datetime.datetime.now())
+    dt = t1 - t0
+    print("{:.7f} days since YQ.".format(dt.value))
+
+
+def run5km():
+    warnings.filterwarnings("ignore")
+    t0 = Time("2022-08-30T12:00:00", format="isot")
+    t1 = Time(datetime.datetime.now())
+    dt = t0 - t1
+    print("{:.7f} days .".format(dt.value))
+
+
 def tianhao():
-    import datetime
-    from astropy.time import Time
-    print((Time("2032-02-11T08:00:00", format="isot") - Time(datetime.datetime.now())).value)
+    """ time away from H. Tian's first house """
+    warnings.filterwarnings("ignore")
+    t0 = Time(datetime.datetime.now())
+    t1 = Time("2032-02-11T08:00:00", format="isot")
+    dt = t1 - t0
+    print("{:.5f} days away from H. Tian's first big house. ".format(dt.value))
 
 
 def ads(lib_id="v89_ChWTSKOUFvCpxOm6Tg", token="6OEonb0MGO6EzpatpzomBSJrXXbJziaiz6qzPTQn", tofile=None, rows=500,
