@@ -290,7 +290,16 @@ class MrsSpec:
         """ read from LRS fits file """
         hl = fits.open(fp_lrs)
         hdr = hl[0].header
-        flux, ivar, wave, andmask, ormask = hl[0].data
+        try:
+            flux, ivar, wave, andmask, ormask = hl[0].data
+        except:
+            # dr9
+            flux = hl[1].data["FLUX"][0]
+            ivar = hl[1].data["IVAR"][0]
+            wave = hl[1].data["WAVELENGTH"][0]
+            # andmask = hl[1].data["ANDMASK"][0]
+            ormask = hl[1].data["ORMASK"][0]
+
         # info
         info = dict(name=hdr["OBSID"],
                     obsid=hdr["OBSID"],
