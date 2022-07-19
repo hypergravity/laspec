@@ -254,7 +254,7 @@ def xcorr_spec_rvgrid(wave_obs, flux_obs, wave_mod, flux_mod, rv_grid=(-500, 500
     flux_mod = np.asarray(flux_mod)
 
     # RV grid --> CCF grid
-    rv_grid = np.arange(rv_grid[0], rv_grid[1]+rv_grid[2], rv_grid[2])
+    rv_grid = np.asarray(rv_grid)
     # nz = len(z_grid)
     ccf_grid = np.ones_like(rv_grid, np.float)
 
@@ -440,9 +440,11 @@ class RVM:
         elif cache_name == "matrix":
             # vectorize data to accelerate
             # e.g., 100 templates x 200 rv values (-1000 to 1000, a step of 10) x 3347 pixels takes 450MB memory
+            assert len(rv_grid) == 3
             rv_grid = construct_rv_grid(rv_grid)
             ccf_grid = xcorr_spec_vectorized(rv_grid, wave_obs, flux_obs, self.wave_mod, self.flux_mod)
         elif cache_name is None or cache_name is False:
+            assert len(rv_grid) == 3
             rv_grid = construct_rv_grid(rv_grid)
             ccf_grid = np.zeros((self.flux_mod.shape[0], rv_grid.shape[0]))
             for imod in range(self.nmod):

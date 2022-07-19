@@ -10,7 +10,7 @@ from matplotlib import pyplot as plt
 from scipy.optimize import minimize
 from astropy.table import Table
 
-from laspec.mrs import MrsFits
+from .mrs import MrsFits
 
 SOL_kms = constants.c.value / 1000
 
@@ -190,8 +190,7 @@ def respw_rvgrid(wave_obs, flux_obs, wave_mod, flux_mod, pw=1, rv_grid=np.arange
     return respw_grid
 
 
-def wxcorr_rvgrid(wave_obs, flux_obs, wave_mod, flux_mod, rv_grid=np.arange(-500, 510, 10),
-                  w_mod=None, w_obs=None):
+def wxcorr_rvgrid(wave_obs, flux_obs, wave_mod, flux_mod, rv_grid, w_mod=None, w_obs=None):
     """ weighted cross-correlation method
     Interpolate a model spectrum with different RV and cross-correlate with
     the observed spectrum, return the CCF on the RV grid.
@@ -448,7 +447,7 @@ class RVM:
         return RVM(self.pmod[ind, :], self.wave_mod, self.flux_mod[ind, :], npix_lv=self.npix_lv)
 
     def measure(self, wave_obs, flux_obs, flux_err=None, w_mod=None, w_obs=None, sinebell_idx=0.,
-                rv_grid=np.linspace(-600, 600, 100), flux_bounds=(0, 3.), nmc=100, method="BFGS",
+                rv_grid=(-600, 600, 10), flux_bounds=(0, 3.), nmc=100, method="BFGS",
                 cache_name=None, return_ccfgrid=False):
         """  measure RV
 
@@ -490,6 +489,10 @@ class RVM:
         # clip extreme values
         ind3 = (flux_obs > flux_bounds[0]) & (flux_obs < flux_bounds[1])
         flux_obs = np.interp(wave_obs, wave_obs[ind3], flux_obs[ind3])
+
+        assert len(rv_grid) == 3
+        rv_grid = np.arange(rv_grid[0], rv_grid[1] + rv_grid[2], rv_grid[2])
+
         # w_obs
         if w_obs is None:
             w_obs = sinebell_like(flux_obs, index=sinebell_idx)
@@ -500,6 +503,7 @@ class RVM:
             w_mod = np.ones_like(self.flux_mod, dtype=float)
         elif w_mod == "lv":
             w_mod = self.weight_mod
+
         # CCF grid
         if cache_name in self.cache_names:
             flux0 = np.interp(self.__getattribute__("wave_mod_cache_{}".format(cache_name)),
@@ -850,7 +854,6 @@ def test_lmfit():
 
 def test_new_rvm():
     import joblib
-    from laspec.ccf import RVM
     rvm = RVM(joblib.load("/Users/cham/PycharmProjects/laspec/laspec/data/rvm/v8_rvm_pmod.dump"),
               joblib.load("/Users/cham/PycharmProjects/laspec/laspec/data/rvm/v8_rvm_wave_mod.dump"),
               joblib.load("/Users/cham/PycharmProjects/laspec/laspec/data/rvm/v8_rvm_flux_mod.dump"))
