@@ -20,7 +20,6 @@ class MrsKit:
         """ read multiple spectra, interpolate to a wavelength grid """
         n_spec = len(lmjm_list)
 
-        wave_obs_list = []
         flux_obs_list = []
         flux_err_obs_list = []
         mask_list = []
@@ -39,12 +38,8 @@ class MrsKit:
             flux_obs_list.append(this_flux)
             flux_err_obs_list.append(this_flux_err)
             mask_list.append(this_mask)
-
-        # if interpolated to a wavelength grid, return a regular ndarray
-        if wave_interp is None:
-            return wave_obs_list, flux_obs_list, flux_err_obs_list
-        else:
-            return np.array(flux_obs_list), np.array(flux_err_obs_list), np.array(mask_list)
+        # return a regular ndarray
+        return np.array(flux_obs_list), np.array(flux_err_obs_list), np.array(mask_list)
 
     @staticmethod
     def read_single_epoch(this_fp, this_lmjm, this_rvzp_B=0., this_rvzp_R=0., wave_interp=None):
