@@ -1,1 +1,3 @@
-__all__ = ["bh", "binning", "ccf"]
+import os
+
+PACKAGE_PATH = os.path.dirname(__file__)
