@@ -29,9 +29,11 @@ class MrsKit:
             print("reading spectrum [{}/{}] ...".format(i_spec, n_spec))
             this_fp = fp_list[i_spec]
             this_lmjm = lmjm_list[i_spec]
+            this_rvzp_B = rvzp_B_list[i_spec]
+            this_rvzp_R = rvzp_R_list[i_spec]
             # read this epoch
             this_flux, this_flux_err, this_mask = MrsKit.read_single_epoch(
-                this_fp, this_lmjm, rvzp_B_list, rvzp_R_list,
+                this_fp, this_lmjm, this_rvzp_B, this_rvzp_R,
                 wave_interp=wave_interp if wave_interp is not None else MrsKit.load_wave())
             # append data
             flux_obs_list.append(this_flux)
