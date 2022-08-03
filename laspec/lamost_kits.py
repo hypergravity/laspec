@@ -5,6 +5,8 @@ This module aims to integrate some useful kits to cope with LAMOST data.
 
 import numpy as np
 import joblib
+from astropy import table
+from copy import deepcopy
 
 from .mrs import MrsFits
 from . import PACKAGE_PATH
@@ -17,7 +19,26 @@ class MrsKit:
 
     @staticmethod
     def read_multi_spec(fp_list, lmjm_list, rvzp_B_list, rvzp_R_list, wave_interp=None):
-        """ read multiple spectra, interpolate to a wavelength grid """
+        """  read multiple spectra, interpolate to a wavelength grid
+
+        Parameters
+        ----------
+        fp_list:
+            file path list
+        lmjm_list:
+            lmjm list
+        rvzp_B_list:
+            rvzp (blue arm) list
+        rvzp_R_list:
+            rvzp (red arm) list
+        wave_interp:
+            the target wavelength grid
+
+        Returns
+        -------
+        flux_norm, flux_norm_err, mask
+
+        """
         n_spec = len(lmjm_list)
 
         flux_obs_list = []
@@ -84,3 +105,189 @@ class MrsKit:
         a_scattered = [a[chunksize * i_chunk:np.min((chunksize * (i_chunk + 1), n_el))] for i_chunk in range(n_chunks)]
         return a_scattered
 
+
+class PubKit:
+    """ toolkit for publishing data """
+
+    @staticmethod
+    def auto_compress(col, eps=1e-3, reserved=False):
+        """
+        auto compress int and float type data
+
+        Parameters
+        ----------
+        col : astropy.table.Column or astropy.table.MaskedColumn
+            the target column
+        eps : float
+            the precision loss tolerance
+        reserved : bool
+            the reserved columns (without modification)
+
+        Returns
+        -------
+        auto compressed column
+        """
+
+        if reserved:
+            print("  reserved column : *{}* ".format(col.name))
+            return col
+
+        if col.dtype.kind == "i":
+            alm = col.dtype.alignment
+            original_dtype = "i{}".format(alm)
+            while alm > 1:
+                this_dtype = "i{}".format(alm)
+                next_dtype = "i{}".format(alm // 2)
+                if not np.all(col.astype(next_dtype) == col):
+                    break
+                alm //= 2
+        elif col.dtype.kind == "f":
+            alm = col.dtype.alignment
+            original_dtype = "f{}".format(alm)
+            while alm > 1:
+                this_dtype = "f{}".format(alm)
+                next_dtype = "f{}".format(alm // 2)
+                if np.max(col.astype(next_dtype) - col) > eps:
+                    break
+                alm //= 2
+        else:
+            return col
+
+        ccol = col.astype(this_dtype)
+        print("compressed column : *{}* from {} to {}".format(col.name, original_dtype, this_dtype))
+        return ccol
+
+    @staticmethod
+    def modify_column(tbl, colname, name=None, description=None, remove_mask=False, fill_value=None,
+                      remove_directly=True, eps=1e-3, reserved=False):
+        """ modify column
+
+        Parameters
+        ----------
+        tbl: astropy.table.Table
+            table
+        colname: str
+            column name
+        name: str
+            target name, if None, keep unchanged
+        description:
+            description of the column
+        remove_mask:
+            if True, remove mask and fill values
+        fill_value:
+            if None, use default fill_value
+        remove_directly:
+            if True, remove mask directly and keep data unchanged
+        eps: float
+            the tolerance of precision
+        reserved: bool
+            if True, reserve column
+
+        Returns
+        -------
+        replace columns in-place
+        """
+
+        col = tbl[colname]
+
+        if name is None:
+            # change name if necessary
+            name = col.name
+
+        if description is None:
+            # change description if necessary
+            description = col.description
+
+        if remove_directly:
+            # remove mask directly
+            data = col.data.data
+            mcol = table.Column(data, name=name, description=description)
+
+        elif isinstance(col, table.column.MaskedColumn):
+            # for masked column
+            data = col.data.data
+            mask = col.data.mask
+
+            # change dtype if necessary
+            if fill_value is None:
+                fill_value = col.data.fill_value
+            data[mask] = fill_value
+
+            if remove_mask:
+                # remove mask
+                mcol = table.Column(data, name=name, description=description)
+            else:
+                # keep masked
+                mcol = table.MaskedColumn(data, mask=mask, name=name, fill_value=fill_value, description=description)
+        else:
+            # for normal Column
+            data = col.data
+            mcol = table.Column(data, name=name, description=description)
+
+        # auto compress
+        mcol = PubKit.auto_compress(mcol, eps=eps, reserved=reserved)
+        # replace the column
+        tbl.replace_column(colname, mcol)
+        return
+
+    @staticmethod
+    def compress_table(tbl, tbl_name="tbl", reserved=("bjd", "ra", "dec")):
+        """ compress table
+
+        Parameters
+        ----------
+        tbl: astropy.table.Table
+            table object
+        tbl_name:
+            table name
+        reserved:
+            reserved column names
+
+        Returns
+        -------
+        code to compress table
+        """
+
+        infolist = []
+        for colname in tbl.colnames:
+            infodict = dict()
+            infodict["colname"] = colname
+            infodict["reserved"] = any([_name in colname.lower() for _name in reserved])
+            infodict["dtype"] = tbl[colname].dtype.str
+            infodict["description"] = tbl[colname].description
+
+            # masked
+            ismasked = isinstance(tbl[colname], table.column.MaskedColumn)
+            if ismasked:
+                infodict["masked"] = ismasked
+                infodict["n_masked"] = np.sum(tbl[colname].mask)
+                infodict["fill_value"] = tbl[colname].fill_value
+            else:
+                infodict["masked"] = ismasked
+                infodict["n_masked"] = 0
+                infodict["fill_value"] = None
+
+            infolist.append(infodict)
+        tinfo = table.Table(infolist)
+        print(tinfo)
+        print()
+
+        code = ""
+        for i in range(len(tinfo)):
+            code += "PubKit.modify_column({}, ".format(tbl_name)
+            code += "colname=\"{}\", ".format(tinfo[i]["colname"])
+            code += "name=\"{}\", ".format(tinfo[i]["colname"])
+            code += "description=\"\", ".format()
+            # code += "dtype=\"{}\", ".format(tinfo[i]["dtype"])
+            this_kwargs = dict(
+                remove_mask=False,
+                fill_value=None,
+                remove_directly=False,
+                reserved=tinfo[i]["reserved"],
+            )
+            for k, v in this_kwargs.items():
+                code += "{}={}, ".format(k, v)
+            code += ")\n"
+        print(code)
+
+        return code
