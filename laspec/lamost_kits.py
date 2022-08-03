@@ -107,7 +107,13 @@ class MrsKit:
 
 
 class PubKit:
-    """ toolkit for publishing data """
+    """ toolkit for publishing data
+
+    Examples
+    --------
+    PubKit.compress_table(m9, tbl_name="m9", reserved=("bjd", "ra", "dec"))
+
+    """
 
     @staticmethod
     def auto_compress(col, eps=1e-3, reserved=False):
@@ -242,10 +248,6 @@ class PubKit:
             table name
         reserved:
             reserved column names
-
-        Returns
-        -------
-        code to compress table
         """
 
         infolist = []
@@ -290,4 +292,4 @@ class PubKit:
             code += ")\n"
         print(code)
 
-        return code
+        return
