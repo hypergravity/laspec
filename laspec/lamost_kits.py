@@ -13,6 +13,16 @@ from . import PACKAGE_PATH
 
 
 PATH_M9WAVEBR = PACKAGE_PATH + "/data/lamost/m9waveBR.dump"
+PATH_L9WAVEBR = PACKAGE_PATH + "/data/lamost/l9waveBR.dump"
+
+
+class LrsKit:
+    """ a set of LAMOST MRS processing functions """
+
+    @staticmethod
+    def load_wave():
+        """ load MRS wavelength (BR) """
+        return joblib.load(PATH_L9WAVEBR)
 
 
 class MrsKit:
@@ -285,7 +295,7 @@ class PubKit:
             this_kwargs = dict(
                 remove_mask=False,
                 fill_value=None,
-                remove_directly=False,
+                remove_directly=tinfo[i]["n_masked"] == 0,
                 reserved=tinfo[i]["reserved"],
             )
             for k, v in this_kwargs.items():
