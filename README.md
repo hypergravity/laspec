@@ -59,8 +59,11 @@ Bo Zhang, [bozhang@nao.cas.cn](mailto:bozhang@nao.cas.cn)
 - PYPI: [https://pypi.org/project/laspec/](https://pypi.org/project/laspec/)
 
 ## install
-- for the latest **stable** version: `pip install -U laspec`
-- for the latest **github** version: `pip install -U git+git://github.com/hypergravity/laspec`
+```bash
+git clone https://github.com/hypergravity/laspec.git
+cd laspec
+sh install.sh
+```
 
 ## doumentation
 

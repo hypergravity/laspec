@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='laspec',
-    version='2022.0802.0',
+    version='2022.0804.0',
     author='Bo Zhang',
     author_email='bozhang@nao.cas.cn',
     description='Modules for LAMOST spectra.',  # short description
@@ -24,7 +24,7 @@ setuptools.setup(
     package_dir={'laspec': 'laspec'},
     include_package_data=False,
     package_data={"": ["LICENSE", "README.md"],
-                  "laspec": ["data/lamost/m9waveBR.dump"],
+                  "laspec": ["data/lamost/*.dump"],
                   },
         #  "laspec": ["data/*",
         #             "data/FERRESun/*",
