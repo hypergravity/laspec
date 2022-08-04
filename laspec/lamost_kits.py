@@ -294,7 +294,7 @@ class PubKit:
             code += "colname=\"{}\", ".format(tinfo[i]["colname"])
             code += "name=\"{}\", ".format(tinfo[i]["colname"])
             code += "description=\"\", ".format()
-            code += "eps=\"{}\", ".format(eps)
+            code += "eps={}, ".format(eps)
             this_kwargs = dict(
                 remove_mask=False,
                 fill_value=None if tinfo[i]["dtype_kind"] != "f" else np.nan,
