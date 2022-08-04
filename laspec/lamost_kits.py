@@ -8,7 +8,7 @@ import joblib
 from astropy import table
 from copy import deepcopy
 
-from .mrs import MrsFits
+from .mrs import MrsFits, MrsSpec
 from . import PACKAGE_PATH
 
 
@@ -21,8 +21,64 @@ class LrsKit:
 
     @staticmethod
     def load_wave():
-        """ load MRS wavelength (BR) """
+        """ load MRS wavelength (BR)
+
+        Notes
+        -----
+        >>> wave_B = np.arange(3900, 5800, 1.1)
+        >>> wave_R = np.arange(6200, 8800, 1.5)
+        """
         return joblib.load(PATH_L9WAVEBR)
+
+    @staticmethod
+    def read_whole_spec(this_fp, rv_B=0., rv_R=0., wave_BR=None):
+        """ read one whole LAMOST LRS spectrum
+
+        Parameters
+        ----------
+        this_fp:
+            file path
+        rv_B:
+            rv of blue arm
+        rv_R:
+            rv of red arm
+        wave_BR:
+            wavelength grid for interpolation
+
+        Returns
+        -------
+        flux_norm, flux_norm_err
+
+        """
+
+        if wave_BR is None:
+            wave_BR = LrsKit.load_wave()
+        wave_B = wave_BR[wave_BR < 6000.]
+        wave_R = wave_BR[wave_BR > 6000.]
+
+        try:
+            # read spectrum
+            this_spec = MrsSpec.from_lrs(this_fp, norm_type="spline", niter=2)
+
+            # measure RV
+            this_flux_norm_B, this_flux_norm_err_B = this_spec.interp_then_norm(wave_B, rv=rv_B)
+            this_flux_norm_R, this_flux_norm_err_R = this_spec.interp_then_norm(wave_R, rv=rv_R)
+
+            return np.hstack((this_flux_norm_B, this_flux_norm_R)), \
+                np.hstack((this_flux_norm_err_B, this_flux_norm_err_R))
+        except Exception as ae:
+            # raise ae
+            return np.zeros(len(wave_BR), float) * np.nan, np.zeros(len(wave_BR), float) * np.nan
+
+    @staticmethod
+    def generate_filepath(lmjd, planid, spid, fiberid, obsdate=None, dirspec=None):
+        """ generate spectral file path """
+        if dirspec is None:
+            return "spec-{}-{}_sp{:02d}-{:03d}.fits.gz".format(
+                lmjd, planid, spid, fiberid)
+        else:
+            return "{}/{}/{}/spec-{}-{}_sp{:02d}-{:03d}.fits.gz".format(
+                dirspec, obsdate.replace("-", ""), planid, lmjd, planid, spid, fiberid)
 
 
 class MrsKit:
@@ -287,7 +343,8 @@ class PubKit:
         tinfo = table.Table(infolist)
         print(tinfo)
         print()
-        print(" >>> Please copy & paste the code below to your editor/console, and execute.")
+        print(" >>> Please copy & paste the code below to your editor/console and execute.")
+        print(" >>> Modify the parameters for columns when necessary")
         print()
 
         code = ""
