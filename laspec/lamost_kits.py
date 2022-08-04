@@ -267,6 +267,7 @@ class PubKit:
             infodict["colname"] = colname
             infodict["reserved"] = any([_name in colname.lower() for _name in reserved])
             infodict["dtype"] = tbl[colname].dtype.str
+            infodict["dtype_kind"] = tbl[colname].dtype.kind
             infodict["description"] = tbl[colname].description
 
             # masked
@@ -294,7 +295,7 @@ class PubKit:
             # code += "dtype=\"{}\", ".format(tinfo[i]["dtype"])
             this_kwargs = dict(
                 remove_mask=False,
-                fill_value=None,
+                fill_value=None if tinfo[i]["kind"] != "f" else np.nan,
                 remove_directly=tinfo[i]["n_masked"] == 0,
                 reserved=tinfo[i]["reserved"],
             )
