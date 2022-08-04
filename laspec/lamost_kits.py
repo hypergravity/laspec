@@ -295,7 +295,7 @@ class PubKit:
             # code += "dtype=\"{}\", ".format(tinfo[i]["dtype"])
             this_kwargs = dict(
                 remove_mask=False,
-                fill_value=None if tinfo[i]["kind"] != "f" else np.nan,
+                fill_value=None if tinfo[i]["dtype_kind"] != "f" else np.nan,
                 remove_directly=tinfo[i]["n_masked"] == 0,
                 reserved=tinfo[i]["reserved"],
             )
