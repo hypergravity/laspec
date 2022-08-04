@@ -287,6 +287,8 @@ class PubKit:
         tinfo = table.Table(infolist)
         print(tinfo)
         print()
+        print(" >>> Please copy & paste the code below to your editor/console, and execute.")
+        print()
 
         code = ""
         for i in range(len(tinfo)):
