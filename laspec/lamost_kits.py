@@ -16,7 +16,7 @@ PATH_M9WAVEBR = PACKAGE_PATH + "/data/lamost/m9waveBR.dump"
 
 
 class MrsKit:
-
+    """ a set of LAMOST MRS processing functions """
     @staticmethod
     def read_multi_spec(fp_list, lmjm_list, rvzp_B_list, rvzp_R_list, wave_interp=None):
         """  read multiple spectra, interpolate to a wavelength grid
@@ -111,8 +111,9 @@ class PubKit:
 
     Examples
     --------
-    PubKit.compress_table(m9, tbl_name="m9", reserved=("bjd", "ra", "dec"))
-
+    >>> from laspec.lamost_kits import PubKit
+    >>> PubKit.compress_table(tbl, tbl_name="m9", reserved=("bjd", "ra", "dec"))
+    >>> # then copy the printed code and execute
     """
 
     @staticmethod
