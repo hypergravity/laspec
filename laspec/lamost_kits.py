@@ -176,7 +176,7 @@ class PubKit:
 
     @staticmethod
     def modify_column(tbl, colname, name=None, description=None, remove_mask=False, fill_value=None,
-                      remove_directly=True, eps=1e-3, reserved=False):
+                      remove_directly=True, eps=2e-3, reserved=False):
         """ modify column
 
         Parameters
@@ -248,16 +248,18 @@ class PubKit:
         return
 
     @staticmethod
-    def compress_table(tbl, tbl_name="tbl", reserved=("bjd", "ra", "dec")):
+    def compress_table(tbl, tbl_name="tbl", eps=2e-3, reserved=("bjd", "ra", "dec")):
         """ compress table
 
         Parameters
         ----------
         tbl: astropy.table.Table
             table object
-        tbl_name:
+        tbl_name: str
             table name
-        reserved:
+        eps: float
+            precision tolerance
+        reserved: tuple or list
             reserved column names
         """
 
@@ -292,7 +294,7 @@ class PubKit:
             code += "colname=\"{}\", ".format(tinfo[i]["colname"])
             code += "name=\"{}\", ".format(tinfo[i]["colname"])
             code += "description=\"\", ".format()
-            # code += "dtype=\"{}\", ".format(tinfo[i]["dtype"])
+            code += "eps=\"{}\", ".format(eps)
             this_kwargs = dict(
                 remove_mask=False,
                 fill_value=None if tinfo[i]["dtype_kind"] != "f" else np.nan,
