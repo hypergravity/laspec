@@ -152,7 +152,7 @@ class PubKit:
         if col.dtype.kind == "i":
             alm = col.dtype.alignment
             original_dtype = "i{}".format(alm)
-            while alm > 1:
+            while alm > 2:
                 this_dtype = "i{}".format(alm)
                 next_dtype = "i{}".format(alm // 2)
                 if not np.all(col.astype(next_dtype) == col):
@@ -161,7 +161,7 @@ class PubKit:
         elif col.dtype.kind == "f":
             alm = col.dtype.alignment
             original_dtype = "f{}".format(alm)
-            while alm > 1:
+            while alm > 2:
                 this_dtype = "f{}".format(alm)
                 next_dtype = "f{}".format(alm // 2)
                 if np.max(col.astype(next_dtype) - col) > eps:
