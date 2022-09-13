@@ -2,6 +2,7 @@
 This module aims to integrate some useful kits to cope with LAMOST data.
 
 """
+import os.path
 
 import numpy as np
 import joblib
@@ -55,6 +56,9 @@ class LrsKit:
             wave_BR = LrsKit.load_wave()
         wave_B = wave_BR[wave_BR < 6000.]
         wave_R = wave_BR[wave_BR > 6000.]
+
+        if not os.path.exists(this_fp):
+            raise FileNotFoundError("{} not found!")
 
         try:
             # read spectrum
@@ -159,6 +163,9 @@ class MrsKit:
         """ load MRS wavelength (BR) """
         return joblib.load(PATH_M9WAVEBR)
 
+
+class CodeKit:
+
     @staticmethod
     def ezscatter(a, chunksize=1000, n_jobs=None):
         """ scatter array a to several jobs """
@@ -205,6 +212,7 @@ class PubKit:
             print("  reserved column : *{}* ".format(col.name))
             return col
 
+        # auto-compress int and float type data
         if col.dtype.kind == "i":
             alm = col.dtype.alignment
             original_dtype = "i{}".format(alm)
