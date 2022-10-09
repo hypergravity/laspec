@@ -51,7 +51,7 @@ Installation
    :maxdepth: 3
    :caption: API
 
-   modules
+   api
 
 Indices and tables
 ==================

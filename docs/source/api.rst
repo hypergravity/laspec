@@ -1,8 +1,5 @@
-laspec package
-==============
-
-Submodules
-----------
+laspec API
+==========
 
 laspec.bh module
 ----------------
@@ -140,13 +137,6 @@ laspec.read\_spectrum module
    :undoc-members:
    :show-inheritance:
 
-laspec.rvc module
------------------
-
-.. automodule:: laspec.rvc
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 laspec.snstat module
 --------------------
@@ -176,14 +166,6 @@ laspec.wavelength module
 ------------------------
 
 .. automodule:: laspec.wavelength
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: laspec
    :members:
    :undoc-members:
    :show-inheritance:

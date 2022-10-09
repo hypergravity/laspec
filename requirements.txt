@@ -11,3 +11,4 @@ scikit-learn
 lmfit
 tensorflow
 sphinx_rtd_theme
+lmfit

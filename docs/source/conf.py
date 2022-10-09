@@ -15,7 +15,7 @@ import sys
 from pkg_resources import DistributionNotFound, get_distribution
 
 
-sys.path.insert(0, os.path.abspath('../laspec'))
+# sys.path.insert(0, os.path.abspath('../laspec'))
 
 
 # -- Project information -----------------------------------------------------
