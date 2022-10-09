@@ -41,14 +41,6 @@ laspec.core module
    :undoc-members:
    :show-inheritance:
 
-laspec.fof module
------------------
-
-.. automodule:: laspec.fof
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 laspec.helper module
 --------------------
 
