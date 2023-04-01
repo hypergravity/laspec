@@ -1,24 +1,23 @@
-import glob
-import os
+import warnings
 
-import matplotlib.pyplot as plt
 import numpy as np
 from astropy import constants
-from astropy import units as u
-from astropy.coordinates import SkyCoord
 from astropy import coordinates as coord
-from astropy.time import Time, TimeDelta
+from astropy import units as u
 from astropy.io import fits
 from astropy.table import Table
+from astropy.time import Time
 from scipy.signal import medfilt, gaussian
 
 from .normalization import normalize_spectrum_general
 
 SOL_kms = constants.c.value / 1000
 
+warnings.filterwarnings("ignore")
+
 
 def datetime2jd(datetime='2018-10-24T05:07:06.0', format="isot", tz_correction=8):
-    jd = Time(datetime, format=format).jd - tz_correction/24.
+    jd = Time(datetime, format=format).jd - tz_correction / 24.
     return jd
 
 
@@ -33,7 +32,7 @@ def eval_ltt(ra=180., dec=40., jd=2456326.4583333, site=None):
     # time
     times = Time(jd, format='jd', scale='utc', location=site)
     # evaluate ltt
-    ltt_helio = times.light_travel_time(ip_peg,)
+    ltt_helio = times.light_travel_time(ip_peg, )
     return ltt_helio.jd
 
 
@@ -377,7 +376,8 @@ class MrsSpec:
     def interp_then_norm(self, new_wave, rv=None):
         """ interpolate to a new wavelength grid """
         flux_interp = np.interp(new_wave, self.wave_rv(rv), self.flux)
-        flux_norm, flux_cont = normalize_spectrum_general(new_wave, flux_interp, norm_type=self.norm_type, **self.norm_kwargs)
+        flux_norm, flux_cont = normalize_spectrum_general(
+            new_wave, flux_interp, norm_type=self.norm_type, **self.norm_kwargs)
         flux_norm_err = np.interp(new_wave, self.wave_rv(rv), self.flux_err) / flux_cont
         return flux_norm, flux_norm_err
 
@@ -460,12 +460,12 @@ class MrsSpec:
 
         flux_obs = np.interp(wave_new, wave_obsz0, flux_obs)
         flux_err = np.interp(wave_new, wave_obsz0, flux_err)
-        mask = 1 * (np.interp(wave_new, wave_obsz0, mask|indcr) > 0)
+        mask = 1 * (np.interp(wave_new, wave_obsz0, mask | indcr) > 0)
 
         msr = MrsSpec()
         msr.wave = wave_new
         msr.flux = flux_obs
-        msr.ivar = flux_err**-2
+        msr.ivar = flux_err ** -2
         msr.flux_err = flux_err
         msr.mask = mask
         msr.npix_bad = self.npix_bad
@@ -699,8 +699,9 @@ class MrsEpoch:
                            specnames=self.specnames, norm_type=norm_type, niter=niter)
         else:
             assert len(wave_new_list) == self.nspec
-            mer = MrsEpoch([self.speclist[i].reduce(wave_new=wave_new_list[i], **rdc_kwargs) for i in range(self.nspec)],
-                           specnames=self.specnames, norm_type=norm_type, niter=niter)
+            mer = MrsEpoch(
+                [self.speclist[i].reduce(wave_new=wave_new_list[i], **rdc_kwargs) for i in range(self.nspec)],
+                specnames=self.specnames, norm_type=norm_type, niter=niter)
         # header info
         mer.epoch = self.epoch
         mer.lmjm = self.lmjm
@@ -838,8 +839,8 @@ class MrsFits(fits.HDUList):
         me.seeing = self[0].header["SEEING"]
         me.ra = self[0].header["RA"]
         me.dec = self[0].header["DEC"]
-        me.fibertype = self[0].header["FIBERTYP"]
-        me.fibermask = self[0].header["FIBERMAS"]
+        me.fibertype = self[0].header["FIBERTYP"] if "FIBERTYP" in self[0].header.keys() else None
+        me.fibermask = self[0].header["FIBERMAS"] if "FIBERMAS" in self[0].header.keys() else None
 
         try:
             if kB in self.hdunames and kR not in self.hdunames:
@@ -984,7 +985,7 @@ class MrsSource(np.ndarray):
     def shiftplot(self, shift=1.):
         fig = plt.figure()
         for i, me in enumerate(self):
-            plt.plot(me.wave, me.flux_norm+i*shift)
+            plt.plot(me.wave, me.flux_norm + i * shift)
         return fig
 
 
@@ -1004,13 +1005,16 @@ def test_meta():
 
 if __name__ == "__main__":
     import os
+
     os.chdir("/Users/cham/PycharmProjects/laspec/laspec/")
     fp_lrs = "./data/KIC8098300/DR6_low/spec-57287-KP193637N444141V03_sp10-161.fits.gz"
     fp_mrs = "./data/KIC8098300/DR7_medium/med-58625-TD192102N424113K01_sp12-076.fits.gz"
     import glob
+
     fps = glob.glob("./data/KIC8098300/DR7_medium/*.fits.gz")
     # read fits
     from laspec.mrs import MrsFits, MrsSpec, MrsEpoch, MrsSource
+
     mf = MrsFits(fp_mrs)
 
     # print info
@@ -1043,6 +1047,7 @@ if __name__ == "__main__":
     msrc1 = MrsSource.read(fps)
 
     import matplotlib.pyplot as plt
+
     fig = plt.figure()
     me.plot_norm()
     me.plot_norm_reduce()
