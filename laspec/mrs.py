@@ -1,5 +1,8 @@
-import warnings
+import glob
 import os
+import warnings
+
+import matplotlib.pyplot as plt
 import numpy as np
 from astropy import constants
 from astropy import coordinates as coord
@@ -1004,17 +1007,12 @@ def test_meta():
 
 
 if __name__ == "__main__":
-    import os
-
     os.chdir("/Users/cham/PycharmProjects/laspec/laspec/")
     fp_lrs = "./data/KIC8098300/DR6_low/spec-57287-KP193637N444141V03_sp10-161.fits.gz"
     fp_mrs = "./data/KIC8098300/DR7_medium/med-58625-TD192102N424113K01_sp12-076.fits.gz"
-    import glob
 
     fps = glob.glob("./data/KIC8098300/DR7_medium/*.fits.gz")
     # read fits
-    from laspec.mrs import MrsFits, MrsSpec, MrsEpoch, MrsSource
-
     mf = MrsFits(fp_mrs)
 
     # print info
@@ -1045,8 +1043,6 @@ if __name__ == "__main__":
 
     msrc = MrsSource(mes)
     msrc1 = MrsSource.read(fps)
-
-    import matplotlib.pyplot as plt
 
     fig = plt.figure()
     me.plot_norm()
