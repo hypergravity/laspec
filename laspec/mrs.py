@@ -95,18 +95,18 @@ class MrsSpec:
     """ MRS spectrum """
     name = ""
     # original quantities
-    wave = np.array([], dtype=np.float)
-    flux = np.array([], dtype=np.float)
-    ivar = np.array([], dtype=np.float)
-    mask = np.array([], dtype=np.bool)  # True for problematic
-    flux_err = np.array([], dtype=np.float)
-    indcr = np.array([], dtype=np.float)  # cosmic ray index
+    wave = np.array([], dtype=float)
+    flux = np.array([], dtype=float)
+    ivar = np.array([], dtype=float)
+    mask = np.array([], dtype=bool)  # True for problematic
+    flux_err = np.array([], dtype=float)
+    indcr = np.array([], dtype=float)  # cosmic ray index
 
     # normalized quantities
-    flux_norm = np.array([], dtype=np.float)
-    flux_cont = np.array([], dtype=np.float)
-    ivar_norm = np.array([], dtype=np.float)
-    flux_norm_err = np.array([], dtype=np.float)
+    flux_norm = np.array([], dtype=float)
+    flux_cont = np.array([], dtype=float)
+    ivar_norm = np.array([], dtype=float)
+    flux_norm_err = np.array([], dtype=float)
 
     # other information (optional)
     info = {}
@@ -185,16 +185,16 @@ class MrsSpec:
             self.isempty = False
         else:
             # a null spec
-            self.wave = np.array([], dtype=np.float)
-            self.flux = np.array([], dtype=np.float)
+            self.wave = np.array([], dtype=float)
+            self.flux = np.array([], dtype=float)
             self.isempty = True
         # ivar and mask is optional for spec
         if ivar is None:
-            self.ivar = np.ones_like(self.flux, dtype=np.float)
+            self.ivar = np.ones_like(self.flux, dtype=float)
         else:
             self.ivar = ivar
         if mask is None:
-            self.mask = np.zeros_like(self.flux, dtype=np.bool)
+            self.mask = np.zeros_like(self.flux, dtype=bool)
             self.npix_bad = 0
         else:
             self.mask = mask
@@ -262,9 +262,9 @@ class MrsSpec:
             # get meta info
             info = dict(
                 name=get_kwd_safe(hdu.header, "EXTNAME", ""),
-                lmjm=np.int(get_kwd_safe(hdu.header, "LMJM", 0)),
-                exptime=np.float(get_kwd_safe(hdu.header, "EXPTIME", 0.)),
-                snr=np.float(get_kwd_safe(hdu.header, "SNR", 0.)),
+                lmjm=int(get_kwd_safe(hdu.header, "LMJM", 0)),
+                exptime=float(get_kwd_safe(hdu.header, "EXPTIME", 0.)),
+                snr=float(get_kwd_safe(hdu.header, "SNR", 0.)),
                 lamplist=get_kwd_safe(hdu.header, "LAMPLIST", "")
             )
 
@@ -343,20 +343,20 @@ class MrsSpec:
                 self.norm_type = norm_type
                 self.norm_kwargs.update(norm_kwargs)
                 # normalize spectrum
-                self.flux_norm = np.array([], dtype=np.float)
-                self.flux_cont = np.array([], dtype=np.float)
-                self.ivar_norm = np.array([], dtype=np.float)
-                self.flux_norm_err = np.array([], dtype=np.float)
+                self.flux_norm = np.array([], dtype=float)
+                self.flux_cont = np.array([], dtype=float)
+                self.ivar_norm = np.array([], dtype=float)
+                self.flux_norm_err = np.array([], dtype=float)
 
         else:
             # for empty spec
             # update norm kwargs
             self.norm_kwargs.update(norm_kwargs)
             # normalize spectrum
-            self.flux_norm = np.array([], dtype=np.float)
-            self.flux_cont = np.array([], dtype=np.float)
-            self.ivar_norm = np.array([], dtype=np.float)
-            self.flux_norm_err = np.array([], dtype=np.float)
+            self.flux_norm = np.array([], dtype=float)
+            self.flux_cont = np.array([], dtype=float)
+            self.ivar_norm = np.array([], dtype=float)
+            self.flux_norm_err = np.array([], dtype=float)
             return
 
     def wave_rv(self, rv=None):
@@ -532,16 +532,16 @@ class MrsEpoch:
     jdmid_delta = 0.
     bjdmid = 0.
 
-    wave = np.array([], dtype=np.float)
-    flux = np.array([], dtype=np.float)
-    ivar = np.array([], dtype=np.float)
-    mask = np.array([], dtype=np.int)
-    flux_err = np.array([], dtype=np.float)
+    wave = np.array([], dtype=float)
+    flux = np.array([], dtype=float)
+    ivar = np.array([], dtype=float)
+    mask = np.array([], dtype=int)
+    flux_err = np.array([], dtype=float)
 
-    flux_norm = np.array([], dtype=np.float)
-    ivar_norm = np.array([], dtype=np.float)
-    flux_cont = np.array([], dtype=np.float)
-    flux_norm_err = np.array([], dtype=np.float)
+    flux_norm = np.array([], dtype=float)
+    ivar_norm = np.array([], dtype=float)
+    flux_cont = np.array([], dtype=float)
+    flux_norm_err = np.array([], dtype=float)
 
     # # default settings for normalize_spectrum_iter/poly
     norm_kwargs = {}
@@ -610,16 +610,16 @@ class MrsEpoch:
             self.__setattr__("flux_norm_err_{}".format(self.specnames[i_spec]), self.speclist[i_spec].flux_norm_err)
 
         # combined attributes
-        self.wave = np.array([], dtype=np.float)
-        self.flux = np.array([], dtype=np.float)
-        self.ivar = np.array([], dtype=np.float)
-        self.mask = np.array([], dtype=np.int)
-        self.flux_err = np.array([], dtype=np.float)
+        self.wave = np.array([], dtype=float)
+        self.flux = np.array([], dtype=float)
+        self.ivar = np.array([], dtype=float)
+        self.mask = np.array([], dtype=int)
+        self.flux_err = np.array([], dtype=float)
 
-        self.flux_norm = np.array([], dtype=np.float)
-        self.ivar_norm = np.array([], dtype=np.float)
-        self.flux_cont = np.array([], dtype=np.float)
-        self.flux_norm_err = np.array([], dtype=np.float)
+        self.flux_norm = np.array([], dtype=float)
+        self.ivar_norm = np.array([], dtype=float)
+        self.flux_cont = np.array([], dtype=float)
+        self.flux_norm_err = np.array([], dtype=float)
 
         # concatenate into one epoch spec
         for i_spec in range(self.nspec):
@@ -756,20 +756,20 @@ class MrsFits(fits.HDUList):
         self.hdunames = [hdu.name for hdu in self]
         self.ulmjm = []
 
-        self.isB = np.zeros(self.nhdu, dtype=np.bool)
-        self.isR = np.zeros(self.nhdu, dtype=np.bool)
-        self.isEpoch = np.zeros(self.nhdu, dtype=np.bool)
-        self.isCoadd = np.zeros(self.nhdu, dtype=np.bool)
-        self.lmjm = np.zeros(self.nhdu, dtype=np.int)
+        self.isB = np.zeros(self.nhdu, dtype=bool)
+        self.isR = np.zeros(self.nhdu, dtype=bool)
+        self.isEpoch = np.zeros(self.nhdu, dtype=bool)
+        self.isCoadd = np.zeros(self.nhdu, dtype=bool)
+        self.lmjm = np.zeros(self.nhdu, dtype=int)
         for i in range(self.nhdu):
             if self.hdunames[i].startswith("B-"):
                 self.isB[i] = True
                 self.isEpoch[i] = True
-                self.lmjm[i] = np.int(self.hdunames[i][2:])
+                self.lmjm[i] = int(self.hdunames[i][2:])
             elif self.hdunames[i].startswith("R-"):
                 self.isR[i] = True
                 self.isEpoch[i] = True
-                self.lmjm[i] = np.int(self.hdunames[i][2:])
+                self.lmjm[i] = int(self.hdunames[i][2:])
             elif self.hdunames[i] == "COADD_B":
                 self.isB[i] = True
                 self.isCoadd[i] = True
@@ -814,7 +814,7 @@ class MrsFits(fits.HDUList):
         try:
             if isinstance(lmjm, str):
                 assert lmjm == "COADD"
-            if isinstance(lmjm, np.int):
+            if isinstance(lmjm, int):
                 assert lmjm in self.lmjm
         except AssertionError:
             raise AssertionError("@MrsFits: lmjm={} is not found in this file!".format(lmjm))
@@ -902,7 +902,7 @@ class MrsFits(fits.HDUList):
 
     @property
     def snr(self):
-        _snr = np.zeros((self.nhdu,), dtype=np.float)
+        _snr = np.zeros((self.nhdu,), dtype=float)
         for i in range(self.nhdu):
             if "SNR" in self[i].header.keys():
                 _snr[i] = self[i].header["SNR"]
@@ -916,11 +916,11 @@ class MrsSource(np.ndarray):
 
     @property
     def snr(self):
-        return np.array([_.snr for _ in self], dtype=np.float)
+        return np.array([_.snr for _ in self], dtype=float)
 
     @property
     def epoch(self):
-        return np.array([_.epoch for _ in self], dtype=np.float)
+        return np.array([_.epoch for _ in self], dtype=float)
 
     @property
     def nepoch(self):
@@ -928,7 +928,7 @@ class MrsSource(np.ndarray):
 
     @property
     def rv(self):
-        return np.array([_.rv for _ in self], dtype=np.float)
+        return np.array([_.rv for _ in self], dtype=float)
 
     def __new__(cls, data, name="", norm_type=None, **norm_kwargs):
         # prepare

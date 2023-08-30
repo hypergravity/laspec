@@ -17,6 +17,12 @@ def res_gauss2(p, x, y):
     return y - model_gauss1(p1, x) - model_gauss1(p2, x)
 
 
+def res_gauss2_eqsigma(p, x, y):
+    p1 = p[:3]
+    p2 = p[[3, 4, 2]]
+    return y - model_gauss1(p1, x) - model_gauss1(p2, x)
+
+
 class GaussianFitter:
     def __init__(self):
         pass
@@ -24,6 +30,15 @@ class GaussianFitter:
     def fit1(self, x, y, pmin=(1e-6, -500, 1), pmax=(np.inf, 500, 500), p1_init=(1, 0, 5)):
         p1_opt = least_squares(res_gauss1, p1_init, args=(x, y), bounds=(pmin, pmax))
         return p1_opt
+
+    def fit2_eqsigma(self, x, y, p2min=(1e-3, -500, 5, 1e-3, -500),
+                     p2max=(np.inf, 500, 100, np.inf, 500),
+                     p2init=(1, -50, 20, 1, 50, 20)):
+        # random initialization for p2
+        p2init = np.max([p2min, p2init], axis=0)
+        p2init = np.min([p2max, p2init], axis=0)
+        p2opt = least_squares(res_gauss2_eqsigma, p2init, args=(x, y), bounds=(p2min, p2max))
+        return p2opt
 
     def fit2(self, x, y, pmin=(1e-6, -500, 1), pmax=(np.inf, 500, 500), p1_init=(1, 0, 5), nmc=0, dposmax=500):
         p1_opt = self.fit1(x, y, pmin, pmax, p1_init=p1_init)
@@ -39,7 +54,7 @@ class GaussianFitter:
             return p2_opt
         else:
             # random initialization for p2 + Monte Carlo
-            p2_mc = np.zeros((nmc, 6))
+            p2_mc = np.zeros((nmc, 5))
             cost_mc = np.zeros((nmc))
             p2_min = tuple([*pmin, *pmin])
             p2_max = tuple([*pmax, *pmax])

@@ -72,7 +72,7 @@ def _generate_wave_array_R_fixed(wave_start, wave_stop, R=2000.,
     # determine wave_step_min
     wave_step_min = wave_start / R_
     # wave guess
-    wave_step_guess = np.zeros(np.int((wave_stop-wave_start)/wave_step_min))
+    wave_step_guess = np.zeros(int((wave_stop-wave_start)/wave_step_min))
     wave_guess = np.zeros_like(wave_step_guess)
     wave_step_guess[0] = wave_step_min
     wave_guess[0] = wave_start
@@ -92,14 +92,12 @@ def _generate_wave_array_R_func(wave_start, wave_stop, R=(lambda x: x),
     R_test = over_sample * R(wave_test)
     wave_step_min = np.min(wave_test / R_test)
     # wave guess
-    wave_guess = np.zeros(np.int(np.ceil((wave_stop-wave_start)/wave_step_min)))
+    wave_guess = np.zeros(int(np.ceil((wave_stop-wave_start)/wave_step_min)))
     wave_guess[0] = wave_start
     # iterate for real # single side R !!!
     for i in np.arange(1, len(wave_guess)):
-        wave_guess[i] = wave_guess[i-1] + \
-                        wave_guess[i-1] / (over_sample * R(wave_guess[i-1]))
-    return wave_guess[
-        np.logical_and(wave_guess >= wave_start, wave_guess <= wave_stop)]
+        wave_guess[i] = wave_guess[i-1] + wave_guess[i-1] / (over_sample * R(wave_guess[i-1]))
+    return wave_guess[np.logical_and(wave_guess >= wave_start, wave_guess <= wave_stop)]
 
 
 def generate_wave_array_R(wave_start, wave_stop, R=2000.,

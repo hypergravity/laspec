@@ -78,7 +78,7 @@ def normalize_spectrum(wave, flux, norm_range, dwave,
     assert 0. < q < 1.
 
     # n_iter = len(p)
-    n_bin = np.int(np.fix(np.diff(norm_range) / dwave) + 1)
+    n_bin = int(np.fix(np.diff(norm_range) / dwave) + 1)
     wave1 = norm_range[0]
 
     # SMOOTH 1
@@ -181,7 +181,7 @@ def normalize_spectrum_spline(wave, flux, p=1E-6, q=0.5, lu=(-1, 3), binwidth=30
     # check q region
     # assert 0. <= q <= 1.
 
-    nbins = np.int(np.ceil((wave[-1] - wave[0]) / binwidth) + 1)
+    nbins = int(np.ceil((wave[-1] - wave[0]) / binwidth) + 1)
     bincenters = np.linspace(wave[0], wave[-1], nbins)
 
     # iteratively smoothing
@@ -341,7 +341,7 @@ def normalize_spectrum_poly(wave, flux, deg=10, pw=1., lu=(-1, 4), q=0.5, binwid
     # check q region
     assert 0. <= q <= 1.
 
-    nbins = np.int(np.ceil((wave[-1] - wave[0]) / binwidth) + 1)
+    nbins = int(np.ceil((wave[-1] - wave[0]) / binwidth) + 1)
     bincenters = np.linspace(wave[0], wave[-1], nbins)
 
     # iteratively smoothing

@@ -173,8 +173,8 @@ class CodeKit:
             a = np.arange(a, dtype=int)
         n_el = len(a)
         if n_jobs is not None:
-            chunksize = np.int(np.ceil(n_el / n_jobs))
-        n_chunks = np.int(np.ceil(n_el / chunksize))
+            chunksize = int(np.ceil(n_el / n_jobs))
+        n_chunks = int(np.ceil(n_el / chunksize))
         a_scattered = [a[chunksize * i_chunk:np.min((chunksize * (i_chunk + 1), n_el))] for i_chunk in range(n_chunks)]
         return a_scattered
 
