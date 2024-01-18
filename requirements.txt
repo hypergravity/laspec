@@ -9,6 +9,6 @@ tqdm
 matplotlib
 scikit-learn
 lmfit
-tensorflow
+#tensorflow
 sphinx_rtd_theme
 lmfit
