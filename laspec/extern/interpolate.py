@@ -13,9 +13,18 @@ from scipy.interpolate import BPoly, interp1d
 from . import polynomial as pl
 
 __all__ = [
-    'PPform', 'savitzky_golay', 'savitzky_golay_piecewise', 'sgolay2d',
-    'SmoothSpline', 'pchip_slopes', 'slopes', 'stineman_interp', 'Pchip',
-    'StinemanInterp', 'CubicHermiteSpline']
+    "PPform",
+    "savitzky_golay",
+    "savitzky_golay_piecewise",
+    "sgolay2d",
+    "SmoothSpline",
+    "pchip_slopes",
+    "slopes",
+    "stineman_interp",
+    "Pchip",
+    "StinemanInterp",
+    "CubicHermiteSpline",
+]
 
 
 def savitzky_golay(y, window_size, order, deriv=0):
@@ -79,8 +88,8 @@ def savitzky_golay(y, window_size, order, deriv=0):
        Cambridge University Press ISBN-13: 9780521880688
     """
     try:
-        window_size = np.abs(np.int(window_size))
-        order = np.abs(np.int(order))
+        window_size = np.abs(int(window_size))
+        order = np.abs(int(order))
     except ValueError:
         raise ValueError("window_size and order have to be of type int")
     if window_size % 2 != 1 or window_size < 1:
@@ -90,19 +99,20 @@ def savitzky_golay(y, window_size, order, deriv=0):
     order_range = range(order + 1)
     half_window = (window_size - 1) // 2
     # precompute coefficients
-    b = np.mat([[k ** i for i in order_range]
-                for k in range(-half_window, half_window + 1)])
+    b = np.mat(
+        [[k**i for i in order_range] for k in range(-half_window, half_window + 1)]
+    )
     m = np.linalg.pinv(b).A[deriv]
     # pad the signal at the extremes with
     # values taken from the signal itself
-    firstvals = y[0] - np.abs(y[1:half_window + 1][::-1] - y[0])
-    lastvals = y[-1] + np.abs(y[-half_window - 1:-1][::-1] - y[-1])
+    firstvals = y[0] - np.abs(y[1 : half_window + 1][::-1] - y[0])
+    lastvals = y[-1] + np.abs(y[-half_window - 1 : -1][::-1] - y[-1])
     y = np.concatenate((firstvals, y, lastvals))
-    return np.convolve(m, y, mode='valid')
+    return np.convolve(m, y, mode="valid")
 
 
 def savitzky_golay_piecewise(xvals, data, kernel=11, order=4):
-    '''
+    """
     One of the most popular applications of S-G filter, apart from smoothing
     UV-VIS and IR spectra, is smoothing of curves obtained in electroanalytical
     experiments. In cyclic voltammetry, voltage (being the abcissa) changes
@@ -133,7 +143,7 @@ def savitzky_golay_piecewise(xvals, data, kernel=11, order=4):
     True
 
     h=plt.plot(x, yn, 'r', x, y, 'k', x, yr, 'b.')
-    '''
+    """
     turnpoint = 0
     last = len(xvals)
     if xvals[1] > xvals[0]:  # x is increasing?
@@ -153,7 +163,8 @@ def savitzky_golay_piecewise(xvals, data, kernel=11, order=4):
         firstpart = savitzky_golay(data[0:turnpoint], kernel, order)
         # recursively smooth the rest
         rest = savitzky_golay_piecewise(
-            xvals[turnpoint:], data[turnpoint:], kernel, order)
+            xvals[turnpoint:], data[turnpoint:], kernel, order
+        )
         return np.concatenate((firstpart, rest))
 
 
@@ -208,10 +219,10 @@ def sgolay2d(z, window_size, order, derivative=None):
     n_terms = (order + 1) * (order + 2) / 2.0
 
     if window_size % 2 == 0:
-        raise ValueError('window_size must be odd')
+        raise ValueError("window_size must be odd")
 
-    if window_size ** 2 < n_terms:
-        raise ValueError('order is too high for the window size')
+    if window_size**2 < n_terms:
+        raise ValueError("order is too high for the window size")
 
     half_size = window_size // 2
 
@@ -224,12 +235,14 @@ def sgolay2d(z, window_size, order, derivative=None):
     exps = [(k - n, n) for k in range(order + 1) for n in range(k + 1)]
 
     # coordinates of points
-    ind = np.arange(-half_size, half_size + 1, dtype=np.float)
+    ind = np.arange(-half_size, half_size + 1, dtype=float)
     dx = np.repeat(ind, window_size)
-    dy = np.tile(ind, [window_size, 1]).reshape(window_size ** 2, )
+    dy = np.tile(ind, [window_size, 1]).reshape(
+        window_size**2,
+    )
 
     # build matrix of system of equation
-    A = np.empty((window_size ** 2, len(exps)))
+    A = np.empty((window_size**2, len(exps)))
     for i, exp in enumerate(exps):
         A[:, i] = (dx ** exp[0]) * (dy ** exp[1])
 
@@ -238,70 +251,66 @@ def sgolay2d(z, window_size, order, derivative=None):
     Z = np.zeros((new_shape))
     # top band
     band = z[0, :]
-    Z[:half_size, half_size:-half_size] = band - \
-                                          np.abs(np.flipud(
-                                              z[1:half_size + 1, :]) - band)
+    Z[:half_size, half_size:-half_size] = band - np.abs(
+        np.flipud(z[1 : half_size + 1, :]) - band
+    )
     # bottom band
     band = z[-1, :]
-    Z[-half_size:, half_size:-half_size] = band + \
-                                           np.abs(np.flipud(
-                                               z[-half_size - 1:-1, :]) - band)
+    Z[-half_size:, half_size:-half_size] = band + np.abs(
+        np.flipud(z[-half_size - 1 : -1, :]) - band
+    )
     # left band
     band = np.tile(z[:, 0].reshape(-1, 1), [1, half_size])
-    Z[half_size:-half_size, :half_size] = band - \
-                                          np.abs(np.fliplr(
-                                              z[:, 1:half_size + 1]) - band)
+    Z[half_size:-half_size, :half_size] = band - np.abs(
+        np.fliplr(z[:, 1 : half_size + 1]) - band
+    )
     # right band
     band = np.tile(z[:, -1].reshape(-1, 1), [1, half_size])
-    Z[half_size:-half_size, -half_size:] = band + \
-                                           np.abs(np.fliplr(
-                                               z[:, -half_size - 1:-1]) - band)
+    Z[half_size:-half_size, -half_size:] = band + np.abs(
+        np.fliplr(z[:, -half_size - 1 : -1]) - band
+    )
     # central band
     Z[half_size:-half_size, half_size:-half_size] = z
 
     # top left corner
     band = z[0, 0]
-    Z[:half_size, :half_size] = band - \
-                                np.abs(
-                                    np.flipud(np.fliplr(z[1:half_size + 1,
-                                                        1:half_size + 1])) - band)
+    Z[:half_size, :half_size] = band - np.abs(
+        np.flipud(np.fliplr(z[1 : half_size + 1, 1 : half_size + 1])) - band
+    )
     # bottom right corner
     band = z[-1, -1]
-    Z[-half_size:, -half_size:] = band + \
-                                  np.abs(np.flipud(np.fliplr(
-                                      z[-half_size - 1:-1,
-                                      -half_size - 1:-1])) -
-                                         band)
+    Z[-half_size:, -half_size:] = band + np.abs(
+        np.flipud(np.fliplr(z[-half_size - 1 : -1, -half_size - 1 : -1])) - band
+    )
 
     # top right corner
     band = Z[half_size, -half_size:]
-    Z[:half_size, -half_size:] = band - \
-                                 np.abs(
-                                     np.flipud(
-                                         Z[half_size + 1:2 * half_size + 1,
-                                         -half_size:]) - band)
+    Z[:half_size, -half_size:] = band - np.abs(
+        np.flipud(Z[half_size + 1 : 2 * half_size + 1, -half_size:]) - band
+    )
     # bottom left corner
     band = Z[-half_size:, half_size].reshape(-1, 1)
-    Z[-half_size:, :half_size] = band - \
-                                 np.abs(
-                                     np.fliplr(Z[-half_size:,
-                                               half_size + 1:2 * half_size + 1]) - band)
+    Z[-half_size:, :half_size] = band - np.abs(
+        np.fliplr(Z[-half_size:, half_size + 1 : 2 * half_size + 1]) - band
+    )
 
     # solve system and convolve
     if derivative is None:
         m = np.linalg.pinv(A)[0].reshape((window_size, -1))
-        return scipy.signal.fftconvolve(Z, m, mode='valid')
-    elif derivative == 'col':
+        return scipy.signal.fftconvolve(Z, m, mode="valid")
+    elif derivative == "col":
         c = np.linalg.pinv(A)[1].reshape((window_size, -1))
-        return scipy.signal.fftconvolve(Z, -c, mode='valid')
-    elif derivative == 'row':
+        return scipy.signal.fftconvolve(Z, -c, mode="valid")
+    elif derivative == "row":
         r = np.linalg.pinv(A)[2].reshape((window_size, -1))
-        return scipy.signal.fftconvolve(Z, -r, mode='valid')
-    elif derivative == 'both':
+        return scipy.signal.fftconvolve(Z, -r, mode="valid")
+    elif derivative == "both":
         c = np.linalg.pinv(A)[1].reshape((window_size, -1))
         r = np.linalg.pinv(A)[2].reshape((window_size, -1))
-        return (scipy.signal.fftconvolve(Z, -r, mode='valid'),
-                scipy.signal.fftconvolve(Z, -c, mode='valid'))
+        return (
+            scipy.signal.fftconvolve(Z, -r, mode="valid"),
+            scipy.signal.fftconvolve(Z, -c, mode="valid"),
+        )
 
 
 class PPform(object):
@@ -368,9 +377,9 @@ class PPform(object):
         return res
 
     def linear_extrapolate(self, output=True):
-        '''
+        """
         Return 1D PPform which extrapolate linearly outside its basic interval
-        '''
+        """
 
         max_order = 2
 
@@ -400,14 +409,14 @@ class PPform(object):
 
         a_n = pl.polyreloc(a_nn, -dxN)  # Relocate last polynomial
         # set to zero all terms of order > maxOrder
-        a_n[0:self.order - max_order] = 0
+        a_n[0 : self.order - max_order] = 0
 
         # Get the coefficients for the new first piece (a_1)
         # by first setting all terms of order > maxOrder to zero and then
         # relocate the polynomial.
 
         # Set to zero all terms of order > maxOrder, i.e., not using them
-        a_11 = coefs[self.order - max_order::, 0]
+        a_11 = coefs[self.order - max_order : :, 0]
         dx1 = dx[0]
 
         a_1 = pl.polyreloc(a_11, -dx1)  # Relocate first polynomial
@@ -572,23 +581,23 @@ class SmoothSpline(PPform):
         # ndy = y.ndim
         szy = y.shape
 
-        nd = np.int(prod(szy[:-1]))  ## modified by Bo Zhang
+        nd = int(prod(szy[:-1]))  ## modified by Bo Zhang
         ny = szy[-1]
 
         if n < 2:
-            raise ValueError('There must be >=2 data points.')
+            raise ValueError("There must be >=2 data points.")
         elif (dx <= 0).any():
-            raise ValueError('Two consecutive values in x can not be equal.')
+            raise ValueError("Two consecutive values in x can not be equal.")
         elif n != ny:
-            raise ValueError('x and y must have the same length.')
+            raise ValueError("x and y must have the same length.")
 
         dydx = np.diff(y) / dx
 
-        if (n == 2):  # % straight line
+        if n == 2:  # % straight line
             coefs = np.vstack([dydx.ravel(), y[0, :]])
         else:
 
-            dx1 = 1. / dx
+            dx1 = 1.0 / dx
             D = sparse.spdiags(var * ones(n), 0, n, n)  # The variance
 
             u, p = self._compute_u(p, D, dydx, dx, dx1, n)
@@ -597,8 +606,10 @@ class SmoothSpline(PPform):
             zrs = zeros(nd)
             if p < 1:
                 # faster than yi-6*(1-p)*Q*u
-                Qu = D * diff(vstack([zrs, diff(vstack([zrs, u, zrs]),
-                                                axis=0) * dx1, zrs]), axis=0)
+                Qu = D * diff(
+                    vstack([zrs, diff(vstack([zrs, u, zrs]), axis=0) * dx1, zrs]),
+                    axis=0,
+                )
                 ai = (y - (6 * (1 - p) * Qu).T).T
             else:
                 ai = y.reshape(n, -1)
@@ -611,9 +622,9 @@ class SmoothSpline(PPform):
             #    dfi   = diff(ai)./dx-(ci+di.*dx).*dx = bi;
 
             ci = np.vstack([zrs, 3 * p * u])
-            di = (diff(vstack([ci, zrs]), axis=0) * dx1 / 3)
-            bi = (diff(ai, axis=0) * dx1 - (ci + di * dx) * dx)
-            ai = ai[:n - 1, ...]
+            di = diff(vstack([ci, zrs]), axis=0) * dx1 / 3
+            bi = diff(ai, axis=0) * dx1 - (ci + di * dx) * dx
+            ai = ai[: n - 1, ...]
             if nd > 1:
                 di = di.T
                 ci = ci.T
@@ -624,27 +635,29 @@ class SmoothSpline(PPform):
                 else:
                     coefs = vstack([ci.ravel(), bi.ravel(), ai.ravel()])
             else:
-                coefs = vstack(
-                    [di.ravel(), ci.ravel(), bi.ravel(), ai.ravel()])
+                coefs = vstack([di.ravel(), ci.ravel(), bi.ravel(), ai.ravel()])
 
         return coefs, x
 
     @staticmethod
     def _compute_u(p, D, dydx, dx, dx1, n):
         if p is None or p != 0:
-            data = [dx[1:n - 1], 2 * (dx[:n - 2] + dx[1:n - 1]), dx[:n - 2]]
+            data = [dx[1 : n - 1], 2 * (dx[: n - 2] + dx[1 : n - 1]), dx[: n - 2]]
             R = sparse.spdiags(data, [-1, 0, 1], n - 2, n - 2)
 
         if p is None or p < 1:
             Q = sparse.spdiags(
-                [dx1[:n - 2], -(dx1[:n - 2] + dx1[1:n - 1]), dx1[1:n - 1]],
-                [0, -1, -2], n, n - 2)
-            QDQ = (Q.T * D * Q)
+                [dx1[: n - 2], -(dx1[: n - 2] + dx1[1 : n - 1]), dx1[1 : n - 1]],
+                [0, -1, -2],
+                n,
+                n - 2,
+            )
+            QDQ = Q.T * D * Q
             if p is None or p < 0:
                 # Estimate p
-                p = 1. / \
-                    (1. + QDQ.diagonal().sum() /
-                     (100. * R.diagonal().sum() ** 2))
+                p = 1.0 / (
+                    1.0 + QDQ.diagonal().sum() / (100.0 * R.diagonal().sum() ** 2)
+                )
 
             if p == 0:
                 QQ = 6 * QDQ
@@ -678,7 +691,7 @@ def pchip_slopes(x, y):
     hk = x[1:] - x[:-1]
     mk = (y[1:] - y[:-1]) / hk
     smk = np.sign(mk)
-    condition = ((smk[1:] != smk[:-1]) | (mk[1:] == 0) | (mk[:-1] == 0))
+    condition = (smk[1:] != smk[:-1]) | (mk[1:] == 0) | (mk[:-1] == 0)
 
     w1 = 2 * hk[1:] + hk[:-1]
     w2 = hk[1:] + 2 * hk[:-1]
@@ -696,8 +709,8 @@ def pchip_slopes(x, y):
     return dk
 
 
-def slopes(x, y, method='parabola', tension=0, monotone=False):
-    '''
+def slopes(x, y, method="parabola", tension=0, monotone=False):
+    """
     Return estimated slopes y'(x)
 
     Parameters
@@ -728,44 +741,43 @@ def slopes(x, y, method='parabola', tension=0, monotone=False):
     Wikipedia:  Monotone cubic interpolation
                 Cubic Hermite spline
 
-    '''
-    x = np.asarray(x, np.float_)
-    y = np.asarray(y, np.float_)
-    yp = np.zeros(y.shape, np.float_)
+    """
+    x = np.asarray(x, float)
+    y = np.asarray(y, float)
+    yp = np.zeros(y.shape, float)
 
     dx = x[1:] - x[:-1]
     # Compute the slopes of the secant lines between successive points
     dydx = (y[1:] - y[:-1]) / dx
 
     method = method.lower()
-    if method.startswith('p'):  # parabola'):
-        yp[1:-1] = (dydx[:-1] * dx[1:] + dydx[1:] * dx[:-1]) / \
-                   (dx[1:] + dx[:-1])
+    if method.startswith("p"):  # parabola'):
+        yp[1:-1] = (dydx[:-1] * dx[1:] + dydx[1:] * dx[:-1]) / (dx[1:] + dx[:-1])
         yp[0] = 2.0 * dydx[0] - yp[1]
         yp[-1] = 2.0 * dydx[-1] - yp[-2]
     else:
         # At the endpoints - use one-sided differences
         yp[0] = dydx[0]
         yp[-1] = dydx[-1]
-        if method.startswith('s'):  # secant'):
+        if method.startswith("s"):  # secant'):
             # In the middle - use the average of the secants
             yp[1:-1] = (dydx[:-1] + dydx[1:]) / 2.0
         else:  # Cardinal or Catmull-Rom method
             yp[1:-1] = (y[2:] - y[:-2]) / (x[2:] - x[:-2])
-            if method.startswith('car'):  # cardinal'):
+            if method.startswith("car"):  # cardinal'):
                 yp = (1 - tension) * yp
 
     if monotone:
         # Special case: intervals where y[k] == y[k+1]
         # Setting these slopes to zero guarantees the spline connecting
         # these points will be flat which preserves monotonicity
-        ii, = (dydx == 0.0).nonzero()
+        (ii,) = (dydx == 0.0).nonzero()
         yp[ii] = 0.0
         yp[ii + 1] = 0.0
 
         alpha = yp[:-1] / dydx
         beta = yp[1:] / dydx
-        dist = alpha ** 2 + beta ** 2
+        dist = alpha**2 + beta**2
         tau = 3.0 / np.sqrt(dist)
 
         # To prevent overshoot or undershoot, restrict the position vector
@@ -775,7 +787,7 @@ def slopes(x, y, method='parabola', tension=0, monotone=False):
         # where tau = 3/sqrt(alpha**2 + beta**2).
 
         # Find the indices that need adjustment
-        indices_to_fix, = (dist > 9.0).nonzero()
+        (indices_to_fix,) = (dist > 9.0).nonzero()
         for ii in indices_to_fix:
             yp[ii] = tau[ii] * alpha[ii] * dydx[ii]
             yp[ii + 1] = tau[ii] * beta[ii] * dydx[ii]
@@ -826,18 +838,18 @@ def stineman_interp(xi, x, y, yp=None):
     """
 
     # Cast key variables as float.
-    x = np.asarray(x, np.float_)
-    y = np.asarray(y, np.float_)
+    x = np.asarray(x, float)
+    y = np.asarray(y, float)
     assert x.shape == y.shape
     # N = len(y)
 
     if yp is None:
         yp = slopes(x, y)
     else:
-        yp = np.asarray(yp, np.float_)
+        yp = np.asarray(yp, float)
 
-    xi = np.asarray(xi, np.float_)
-    # yi = np.zeros(xi.shape, np.float_)
+    xi = np.asarray(xi, float)
+    # yi = np.zeros(xi.shape, float)
 
     # calculate linear slopes
     dx = x[1:] - x[:-1]
@@ -874,13 +886,13 @@ def stineman_interp(xi, x, y, yp=None):
     dy1pdy2 = np.where(dy1dy2, dy1 + dy2, np.inf)
     yi = yo + dy1dy2 * np.choose(
         np.array(np.sign(dy1dy2), np.int32) + 1,
-        ((2 * xi - xidx - xidxp1) / ((dy1mdy2) * (xidxp1 - xidx)), 0.0,
-         1 / (dy1pdy2)))
+        ((2 * xi - xidx - xidxp1) / ((dy1mdy2) * (xidxp1 - xidx)), 0.0, 1 / (dy1pdy2)),
+    )
     return yi
 
 
 class StinemanInterp(object):
-    '''
+    """
     Returns an interpolating function
         that runs through a set of points according to the algorithm of
         Stineman (1980).
@@ -967,17 +979,17 @@ class StinemanInterp(object):
     See Also
     --------
     slopes, Pchip
-    '''
+    """
 
-    def __init__(self, x, y, yp=None, method='parabola', monotone=False):
+    def __init__(self, x, y, yp=None, method="parabola", monotone=False):
         if yp is None:
             yp = slopes(x, y, method, monotone=monotone)
-        self.x = np.asarray(x, np.float_)
-        self.y = np.asarray(y, np.float_)
-        self.yp = np.asarray(yp, np.float_)
+        self.x = np.asarray(x, float)
+        self.y = np.asarray(y, float)
+        self.yp = np.asarray(yp, float)
 
     def __call__(self, xi):
-        xi = np.asarray(xi, np.float_)
+        xi = np.asarray(xi, float)
         x = self.x
         y = self.y
         yp = self.yp
@@ -1017,13 +1029,17 @@ class StinemanInterp(object):
         dy1pdy2 = np.where(dy1dy2, dy1 + dy2, np.inf)
         yi = yo + dy1dy2 * np.choose(
             np.array(np.sign(dy1dy2), np.int32) + 1,
-            ((2 * xi - xidx - xidxp1) / ((dy1mdy2) * (xidxp1 - xidx)), 0.0,
-             1 / (dy1pdy2)))
+            (
+                (2 * xi - xidx - xidxp1) / ((dy1mdy2) * (xidxp1 - xidx)),
+                0.0,
+                1 / (dy1pdy2),
+            ),
+        )
         return yi
 
 
 class StinemanInterp2(BPoly):
-    def __init__(self, x, y, yp=None, method='parabola', monotone=False):
+    def __init__(self, x, y, yp=None, method="parabola", monotone=False):
         if yp is None:
             yp = slopes(x, y, method, monotone=monotone)
         yyp = [z for z in zip(y, yp)]
@@ -1032,12 +1048,12 @@ class StinemanInterp2(BPoly):
 
 
 class CubicHermiteSpline(BPoly):
-    '''
+    """
     Piecewise Cubic Hermite Interpolation using Catmull-Rom
     method for computing the slopes.
-    '''
+    """
 
-    def __init__(self, x, y, yp=None, method='Catmull-Rom'):
+    def __init__(self, x, y, yp=None, method="Catmull-Rom"):
         if yp is None:
             yp = slopes(x, y, method, monotone=False)
         yyp = [z for z in zip(y, yp)]
@@ -1138,7 +1154,7 @@ class Pchip(BPoly):
 
     """
 
-    def __init__(self, x, y, yp=None, method='secant'):
+    def __init__(self, x, y, yp=None, method="secant"):
         if yp is None:
             yp = slopes(x, y, method=method, monotone=True)
         yyp = [z for z in zip(y, yp)]
@@ -1147,7 +1163,7 @@ class Pchip(BPoly):
         # super(Pchip, self).__init__(x, yyp, orders=3)
 
 
-def interp3(x, y, z, v, xi, yi, zi, method='cubic'):
+def interp3(x, y, z, v, xi, yi, zi, method="cubic"):
     """Interpolation on 3-D. x, y, xi, yi should be 1-D
     and z.shape == (len(x), len(y), len(z))"""
     q = (x, y, z)
@@ -1159,7 +1175,7 @@ def interp3(x, y, z, v, xi, yi, zi, method='cubic'):
 
 
 def somefunc(x, y, z):
-    return x ** 2 + y ** 2 - z ** 2 + x * y * z
+    return x**2 + y**2 - z**2 + x * y * z
 
 
 def test_interp3():
@@ -1176,15 +1192,16 @@ def test_interp3():
     vi = interp3(x, y, z, v, xi, yi, zi)
 
     import matplotlib.pyplot as plt
+
     X, Y = np.meshgrid(xi, yi)
     plt.figure(1)
     plt.subplot(1, 2, 1)
     plt.pcolor(X, Y, vi[:, :, 12].T)
-    plt.title('interpolated')
+    plt.title("interpolated")
     plt.subplot(1, 2, 2)
     plt.pcolor(X, Y, somefunc(xi[:, None], yi[None, :], zi[12]).T)
-    plt.title('exact')
-    plt.show('hold')
+    plt.title("exact")
+    plt.show("hold")
 
 
 def test_smoothing_spline():
@@ -1200,8 +1217,8 @@ def test_smoothing_spline():
     # dy = y-y1
     import matplotlib.pyplot as plt
 
-    plt.plot(x, y, x1, y1, '.', x1, dy1, 'ro', x1, y01, 'r-')
-    plt.show('hold')
+    plt.plot(x, y, x1, y1, ".", x1, dy1, "ro", x1, y01, "r-")
+    plt.show("hold")
     pass
     # tck = interpolate.splrep(x, y, s=len(x))
 
@@ -1212,17 +1229,17 @@ def compare_methods():
     #
     fun = np.sin
     # Create a example vector containing a sine wave.
-    x = np.arange(30.0) / 10.
+    x = np.arange(30.0) / 10.0
     y = fun(x)
 
     # Interpolate the data above to the grid defined by "xvec"
-    xvec = np.arange(250.) / 100.
+    xvec = np.arange(250.0) / 100.0
 
     # Initialize the interpolator slopes
     # Create the pchip slopes
-    m = slopes(x, y, method='parabola', monotone=True)
-    m1 = slopes(x, y, method='parabola', monotone=False)
-    m2 = slopes(x, y, method='catmul', monotone=False)
+    m = slopes(x, y, method="parabola", monotone=True)
+    m1 = slopes(x, y, method="parabola", monotone=False)
+    m2 = slopes(x, y, method="catmul", monotone=False)
     m3 = pchip_slopes(x, y)
 
     # Call the monotonic piece-wise Hermite cubic interpolator
@@ -1234,14 +1251,16 @@ def compare_methods():
     import matplotlib.pyplot as plt
 
     plt.figure()
-    plt.plot(x, y, 'ro', xvec, fun(xvec), 'r')
+    plt.plot(x, y, "ro", xvec, fun(xvec), "r")
     plt.title("pchip() Sin test code")
 
     # Plot the interpolated points
-    plt.plot(xvec, yvec, xvec, yvec1, xvec, yvec2, 'g.', xvec, yvec3)
+    plt.plot(xvec, yvec, xvec, yvec1, xvec, yvec2, "g.", xvec, yvec3)
     plt.legend(
-        ['true', 'true', 'parbola_monoton', 'parabola', 'catmul', 'pchip'],
-        frameon=False, loc=0)
+        ["true", "true", "parbola_monoton", "parabola", "catmul", "pchip"],
+        frameon=False,
+        loc=0,
+    )
     plt.ioff()
     plt.show()
 
@@ -1249,6 +1268,7 @@ def compare_methods():
 def demo_monoticity():
     # Step function test...
     import matplotlib.pyplot as plt
+
     plt.figure(2)
     plt.title("pchip() step function test")
     # Create a step function (will demonstrate monotonicity)
@@ -1256,7 +1276,7 @@ def demo_monoticity():
     y = np.array([-1.0, -1, -1, 0, 1, 1, 1])
 
     # Interpolate using monotonic piecewise Hermite cubic spline
-    xvec = np.arange(599.) / 100. - 3.0
+    xvec = np.arange(599.0) / 100.0 - 3.0
 
     # Create the pchip slopes
     m = slopes(x, y, monotone=True)
@@ -1268,7 +1288,8 @@ def demo_monoticity():
 
     # Call the Scipy cubic spline interpolator
     from scipy.interpolate import interpolate as ip
-    function = ip.interp1d(x, y, kind='cubic')
+
+    function = ip.interp1d(x, y, kind="cubic")
     yvec2 = function(xvec)
 
     # Non-montonic cubic Hermite spline interpolator using
@@ -1278,11 +1299,11 @@ def demo_monoticity():
     yvec5 = Pchip(x, y, m3)(xvec)  # @UnusedVariable
 
     # Plot the results
-    plt.plot(x, y, 'ro', label='Data')
-    plt.plot(xvec, yvec, 'b', label='Pchip')
-    plt.plot(xvec, yvec2, 'k', label='interp1d')
-    plt.plot(xvec, yvec3, 'g', label='CHS')
-    plt.plot(xvec, yvec4, 'm', label='Stineman')
+    plt.plot(x, y, "ro", label="Data")
+    plt.plot(xvec, yvec, "b", label="Pchip")
+    plt.plot(xvec, yvec2, "k", label="interp1d")
+    plt.plot(xvec, yvec3, "g", label="CHS")
+    plt.plot(xvec, yvec4, "m", label="Stineman")
     # plt.plot(xvec, yvec5, 'yo', label='Pchip2')
     plt.xlabel("X")
     plt.ylabel("Y")
@@ -1297,6 +1318,7 @@ def test_func():
     from scipy import interpolate
     import matplotlib.pyplot as plt
     import matplotlib
+
     matplotlib.interactive(False)
 
     coef = np.array([[1, 1], [0, 1]])  # linear from 0 to 2
@@ -1312,24 +1334,25 @@ def test_func():
     xnew = linspace(0, 2 * pi, 100)
     ynew = interpolate.splev(xnew, tck, der=0)  # @UndefinedVariable
     tck0 = interpolate.splmake(  # @UndefinedVariable
-        xnew, ynew, order=3, kind='smoothest', conds=None)
+        xnew, ynew, order=3, kind="smoothest", conds=None
+    )
     pp = interpolate.ppform.fromspline(*tck0)  # @UndefinedVariable
 
-    plt.plot(x, y, "x", xnew, ynew, xnew, sin(xnew), x, y, "b", x, pp(x), 'g')
-    plt.legend(['Linear', 'Cubic Spline', 'True'])
-    plt.title('Cubic-spline interpolation')
+    plt.plot(x, y, "x", xnew, ynew, xnew, sin(xnew), x, y, "b", x, pp(x), "g")
+    plt.legend(["Linear", "Cubic Spline", "True"])
+    plt.title("Cubic-spline interpolation")
     plt.show()
 
-    t = np.arange(0, 1.1, .1)
+    t = np.arange(0, 1.1, 0.1)
     x = np.sin(2 * np.pi * t)
     y = np.cos(2 * np.pi * t)
     _tck1, _u = interpolate.splprep([t, y], s=0)  # @UndefinedVariable
     tck2 = interpolate.splrep(t, y, s=len(t), task=0)  # @UndefinedVariable
     # interpolate.spl
-    tck = interpolate.splmake(t, y, order=3, kind='smoothest', conds=None)
+    tck = interpolate.splmake(t, y, order=3, kind="smoothest", conds=None)
     self = interpolate.ppform.fromspline(*tck2)  # @UndefinedVariable
     plt.plot(t, self(t))
-    plt.show('hold')
+    plt.show("hold")
     pass
 
 
@@ -1347,18 +1370,20 @@ def test_pp():
     pp(1.5)
     dpp = pp.derivative()
     import matplotlib.pyplot as plt
+
     x = np.linspace(-1, 3)
-    plt.plot(x, pp(x), x, dpp(x), '.')
+    plt.plot(x, pp(x), x, dpp(x), ".")
     plt.show()
 
 
 def test_docstrings():
     import doctest
-    print('Testing docstrings in {}'.formate(__file__))
+
+    print("Testing docstrings in {}".formate(__file__))
     doctest.testmod(optionflags=doctest.NORMALIZE_WHITESPACE)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # test_func()
     test_docstrings()
     # test_smoothing_spline()
