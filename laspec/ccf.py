@@ -78,7 +78,7 @@ def xcorr_spec_vectorized(rv_grid, wave_obs, flux_obs, wave_mod, flux_mod):
     nmod = flux_mod.shape[0]
     nrv = len(rv_grid)
     # make model cube
-    flux_mod_interp = np.zeros((nmod, nrv, npix), dtype=np.float64)
+    flux_mod_interp = np.zeros((nmod, nrv, npix), dtype=float)
     for imod in range(nmod):
         for irv in range(nrv):
             flux_mod_interp[imod, irv, :] = np.interp(
@@ -337,7 +337,7 @@ def xcorr_spec_rvgrid(wave_obs, flux_obs, wave_mod, flux_mod, rv_grid=(-500, 500
     # RV grid --> CCF grid
     rv_grid = np.asarray(rv_grid)
     # nz = len(z_grid)
-    ccf_grid = np.ones_like(rv_grid, np.float)
+    ccf_grid = np.ones_like(rv_grid, float)
 
     # calculate CCF
     for i_rv, this_rv in enumerate(rv_grid):
@@ -476,9 +476,9 @@ class RVM:
         # determine number of models
         if 0 < nmod < 1:
             assert self.nmod * nmod >= 1
-            nmod = np.int(self.nmod * nmod)
+            nmod = int(self.nmod * nmod)
         elif nmod > 1:
-            nmod = np.int(nmod)
+            nmod = int(nmod)
         else:
             raise ValueError("Invalid nmod value: {}".format(nmod))
         # determine ind of new models
@@ -604,8 +604,8 @@ class RVM:
             method=method,
         )  # Powell
         result = dict(
-            rv_opt=np.float(opt.x),
-            rv_err=np.float(opt.hess_inv) if method == "BFGS" else np.nan,
+            rv_opt=float(opt.x),
+            rv_err=float(opt.hess_inv) if method == "BFGS" else np.nan,
             rv_best=rv_best,
             ccfmax=-opt["fun"],
             success=opt.success,
@@ -795,7 +795,7 @@ class RVM:
             )  # Powell
             # store single star result
             this_res = dict(n_spec=n_spec)
-            this_res["rv1_opt_{}".format(cache_name)] = np.float(opt.x)
+            this_res["rv1_opt_{}".format(cache_name)] = float(opt.x)
             this_res["rv1_best_{}".format(cache_name)] = rv_best_grid
             this_res["ccfmax1_{}".format(cache_name)] = -opt["fun"]
             this_res["imod_{}".format(cache_name)] = imod_selected
@@ -830,14 +830,14 @@ class RVM:
                     x_mc, [16, 50, 84]
                 )
                 this_res["rv1_err_{}".format(cache_name)] = (
-                    np.float(opt.hess_inv)
+                    float(opt.hess_inv)
                     if method == "BFGS"
                     else np.mean(np.diff(this_res["rv1_pct_{}".format(cache_name)]))
                 )
             else:
                 flux_err_obs = None
                 this_res["rv1_err_{}".format(cache_name)] = (
-                    np.float(opt.hess_inv) if method == "BFGS" else np.nan
+                    float(opt.hess_inv) if method == "BFGS" else np.nan
                 )
 
             # measure double components
@@ -1167,8 +1167,8 @@ class RVM:
         # method="Powell")
         # x = np.interp(wave, wave_obs/(1+opt.x/SOL_kms), flux_obs).reshape(1, -1)
         return dict(
-            rv_opt=np.float(opt.x),
-            rv_err=np.float(opt.hess_inv) if method == "BFGS" else np.nan,
+            rv_opt=float(opt.x),
+            rv_err=float(opt.hess_inv) if method == "BFGS" else np.nan,
             rv_best=rv_best,
             ccfmax=ccfmax,
             success=opt.success,
