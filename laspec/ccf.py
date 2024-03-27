@@ -6,7 +6,9 @@ import datetime
 import os
 import warnings
 from collections import OrderedDict
+from typing import Optional
 
+import joblib
 import numpy as np
 from astropy import constants
 from matplotlib import pyplot as plt
@@ -1181,8 +1183,14 @@ class RVM:
         )
 
     def measure_binary_mrsbatch(
-        self, fp, lmjm, snr_B=None, snr_R=None, snr_threshold=5, raise_error=False
-    ):
+        self,
+        fp: str,
+        lmjm: int,
+        snr_B: Optional[float] = None,
+        snr_R: Optional[float] = None,
+        snr_threshold: float = 5.0,
+        raise_error: bool = False,
+    ) -> OrderedDict:
         """this is the configuration used in"""
         # read spectrum
         mrv_kwargs = {
@@ -1250,7 +1258,13 @@ class RVM:
         return rvr_B
 
     def mrsbatch(
-        self, fpout, fp_list, lmjm_list, snr_B_list, snr_R_list, snr_threshold=5
+        self,
+        fp_list: list[str],
+        lmjm_list: list[int],
+        snr_B_list: list[float],
+        snr_R_list: list[float],
+        snr_threshold: float = 5.0,
+        fpout: Optional[str] = None,
     ):
         if os.path.exists(fpout):
             return
@@ -1267,7 +1281,10 @@ class RVM:
                 )
                 for i in range(nspec)
             ]
-        return rvr
+        if fpout is None:
+            return rvr
+        else:
+            joblib.dump(rvr, fpout)
 
 
 def construct_rv_grid(rv_grid=(-600, 600, 10)):
