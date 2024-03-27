@@ -3,11 +3,7 @@ import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 with open("requirements.txt", "r") as f:
-    requirements = [
-        req.strip()
-        for req in f.readlines()
-        if not req.startswith("#") and req.__contains__("==")
-    ]
+    requirements = [req.strip() for req in f.readlines() if not req.startswith("#")]
 
 setuptools.setup(
     name="laspec",
