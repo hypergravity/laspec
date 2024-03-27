@@ -1,9 +1,13 @@
 """
-This module aims to integrate some useful kits to cope with LAMOST data.
-
+Aim
+---
+Some useful kits to cope with LAMOST data.
 """
-import os.path
 
+__all__ = ["CodeKit", "LrsKit", "MrsKit", "PubKit"]
+
+import os.path
+from typing import Union, Iterable, Optional
 import numpy as np
 import joblib
 from astropy import table
@@ -13,16 +17,16 @@ from .mrs import MrsFits, MrsSpec
 from . import PACKAGE_PATH
 
 
-PATH_M9WAVEBR = PACKAGE_PATH + "/data/lamost/m9waveBR.dump"
-PATH_L9WAVEBR = PACKAGE_PATH + "/data/lamost/l9waveBR.dump"
+PATH_M9WAVEBR = os.path.join(PACKAGE_PATH, "data/lamost/m9waveBR.dump")
+PATH_L9WAVEBR = os.path.join(PACKAGE_PATH, "data/lamost/l9waveBR.dump")
 
 
 class LrsKit:
-    """ a set of LAMOST MRS processing functions """
+    """a set of LAMOST MRS processing functions"""
 
     @staticmethod
     def load_wave():
-        """ load MRS wavelength (BR)
+        """load MRS wavelength (BR)
 
         Notes
         -----
@@ -32,8 +36,8 @@ class LrsKit:
         return joblib.load(PATH_L9WAVEBR)
 
     @staticmethod
-    def read_whole_spec(this_fp, rv_B=0., rv_R=0., wave_BR=None):
-        """ read one whole LAMOST LRS spectrum
+    def read_whole_spec(this_fp, rv_B=0.0, rv_R=0.0, wave_BR=None):
+        """read one whole LAMOST LRS spectrum
 
         Parameters
         ----------
@@ -54,8 +58,8 @@ class LrsKit:
 
         if wave_BR is None:
             wave_BR = LrsKit.load_wave()
-        wave_B = wave_BR[wave_BR < 6000.]
-        wave_R = wave_BR[wave_BR > 6000.]
+        wave_B = wave_BR[wave_BR < 6000.0]
+        wave_R = wave_BR[wave_BR > 6000.0]
 
         if not os.path.exists(this_fp):
             raise FileNotFoundError("{} not found!")
@@ -65,31 +69,42 @@ class LrsKit:
             this_spec = MrsSpec.from_lrs(this_fp, norm_type="spline", niter=2)
 
             # measure RV
-            this_flux_norm_B, this_flux_norm_err_B = this_spec.interp_then_norm(wave_B, rv=rv_B)
-            this_flux_norm_R, this_flux_norm_err_R = this_spec.interp_then_norm(wave_R, rv=rv_R)
+            this_flux_norm_B, this_flux_norm_err_B = this_spec.interp_then_norm(
+                wave_B, rv=rv_B
+            )
+            this_flux_norm_R, this_flux_norm_err_R = this_spec.interp_then_norm(
+                wave_R, rv=rv_R
+            )
 
-            return np.hstack((this_flux_norm_B, this_flux_norm_R)), \
-                np.hstack((this_flux_norm_err_B, this_flux_norm_err_R))
+            return np.hstack((this_flux_norm_B, this_flux_norm_R)), np.hstack(
+                (this_flux_norm_err_B, this_flux_norm_err_R)
+            )
         except Exception as ae:
             # raise ae
-            return np.zeros(len(wave_BR), float) * np.nan, np.zeros(len(wave_BR), float) * np.nan
+            return (
+                np.zeros(len(wave_BR), float) * np.nan,
+                np.zeros(len(wave_BR), float) * np.nan,
+            )
 
     @staticmethod
     def generate_filepath(lmjd, planid, spid, fiberid, obsdate=None, dirspec=None):
-        """ generate spectral file path """
+        """generate spectral file path"""
         if dirspec is None:
             return "spec-{}-{}_sp{:02d}-{:03d}.fits.gz".format(
-                lmjd, planid, spid, fiberid)
+                lmjd, planid, spid, fiberid
+            )
         else:
             return "{}/{}/{}/spec-{}-{}_sp{:02d}-{:03d}.fits.gz".format(
-                dirspec, obsdate.replace("-", ""), planid, lmjd, planid, spid, fiberid)
+                dirspec, obsdate.replace("-", ""), planid, lmjd, planid, spid, fiberid
+            )
 
 
 class MrsKit:
-    """ a set of LAMOST MRS processing functions """
+    """a set of LAMOST MRS processing functions"""
+
     @staticmethod
     def read_multi_spec(fp_list, lmjm_list, rvzp_B_list, rvzp_R_list, wave_interp=None):
-        """  read multiple spectra, interpolate to a wavelength grid
+        """read multiple spectra, interpolate to a wavelength grid
 
         Parameters
         ----------
@@ -123,8 +138,14 @@ class MrsKit:
             this_rvzp_R = rvzp_R_list[i_spec]
             # read this epoch
             this_flux, this_flux_err, this_mask = MrsKit.read_single_epoch(
-                this_fp, this_lmjm, this_rvzp_B, this_rvzp_R,
-                wave_interp=wave_interp if wave_interp is not None else MrsKit.load_wave())
+                this_fp,
+                this_lmjm,
+                this_rvzp_B,
+                this_rvzp_R,
+                wave_interp=(
+                    wave_interp if wave_interp is not None else MrsKit.load_wave()
+                ),
+            )
             # append data
             flux_obs_list.append(this_flux)
             flux_err_obs_list.append(this_flux_err)
@@ -133,16 +154,28 @@ class MrsKit:
         return np.array(flux_obs_list), np.array(flux_err_obs_list), np.array(mask_list)
 
     @staticmethod
-    def read_single_epoch(this_fp, this_lmjm, this_rvzp_B=0., this_rvzp_R=0., wave_interp=None):
-        """ read a single epoch """
+    def read_single_epoch(
+        this_fp, this_lmjm, this_rvzp_B=0.0, this_rvzp_R=0.0, wave_interp=None
+    ):
+        """read a single epoch"""
         # read spectra and reduce
         mf = MrsFits(this_fp)
         msB = mf.get_one_spec(lmjm=this_lmjm, band="B")
         msrB = msB.reduce(npix_cushion=70, norm_type="spline", niter=2)
         msR = mf.get_one_spec(lmjm=this_lmjm, band="R")
         msrR = msR.reduce(npix_cushion=70, norm_type="spline", niter=2)
-        maskB = (msrB.mask > 0) | (msrB.indcr > 0) | (msrB.flux_norm <= 0) | (msrB.flux_norm >= 3)
-        maskR = (msrR.mask > 0) | (msrR.indcr > 0) | (msrR.flux_norm <= 0) | (msrR.flux_norm >= 3)
+        maskB = (
+            (msrB.mask > 0)
+            | (msrB.indcr > 0)
+            | (msrB.flux_norm <= 0)
+            | (msrB.flux_norm >= 3)
+        )
+        maskR = (
+            (msrR.mask > 0)
+            | (msrR.indcr > 0)
+            | (msrR.flux_norm <= 0)
+            | (msrR.flux_norm >= 3)
+        )
         # shift rvzp
         wave_B = msrB.wave_rv(rv=-this_rvzp_B)
         wave_R = msrR.wave_rv(rv=-this_rvzp_R)
@@ -153,34 +186,41 @@ class MrsKit:
 
         # interpolate spectrum
         wave_BR = np.hstack((wave_B, wave_R))
-        this_flux = np.interp(wave_interp, wave_BR, np.hstack((msrB.flux_norm, msrR.flux_norm)))
-        this_flux_err = np.interp(wave_interp, wave_BR, np.hstack((msrB.flux_norm_err, msrR.flux_norm_err)))
+        this_flux = np.interp(
+            wave_interp, wave_BR, np.hstack((msrB.flux_norm, msrR.flux_norm))
+        )
+        this_flux_err = np.interp(
+            wave_interp, wave_BR, np.hstack((msrB.flux_norm_err, msrR.flux_norm_err))
+        )
         this_mask = np.interp(wave_interp, wave_BR, np.hstack((maskB, maskR))) > 0
         return this_flux, this_flux_err, this_mask
 
     @staticmethod
     def load_wave():
-        """ load MRS wavelength (BR) """
+        """load MRS wavelength (BR)"""
         return joblib.load(PATH_M9WAVEBR)
 
 
 class CodeKit:
 
     @staticmethod
-    def ezscatter(a, chunksize=1000, n_jobs=None):
-        """ scatter array a to several jobs """
-        if isinstance(a, int):
-            a = np.arange(a, dtype=int)
-        n_el = len(a)
+    def ezscatter(seq: Union[Iterable, int], chunksize=1000, n_jobs=None):
+        """scatter array ``seq`` to several jobs"""
+        if isinstance(seq, int):
+            seq = np.arange(seq, dtype=int)
+        n_el = len(seq)
         if n_jobs is not None:
             chunksize = int(np.ceil(n_el / n_jobs))
         n_chunks = int(np.ceil(n_el / chunksize))
-        a_scattered = [a[chunksize * i_chunk:np.min((chunksize * (i_chunk + 1), n_el))] for i_chunk in range(n_chunks)]
+        a_scattered = [
+            seq[chunksize * i_chunk : np.min((chunksize * (i_chunk + 1), n_el))]
+            for i_chunk in range(n_chunks)
+        ]
         return a_scattered
 
 
 class PubKit:
-    """ toolkit for publishing data
+    """toolkit for publishing data
 
     Examples
     --------
@@ -235,13 +275,26 @@ class PubKit:
             return col
 
         ccol = col.astype(this_dtype)
-        print("compressed column : *{}* from {} to {}".format(col.name, original_dtype, this_dtype))
+        print(
+            "compressed column : *{}* from {} to {}".format(
+                col.name, original_dtype, this_dtype
+            )
+        )
         return ccol
 
     @staticmethod
-    def modify_column(tbl, colname, name=None, description=None, remove_mask=False, fill_value=None,
-                      remove_directly=True, eps=2e-3, reserved=False):
-        """ modify column
+    def modify_column(
+        tbl,
+        colname,
+        name=None,
+        description=None,
+        remove_mask=False,
+        fill_value=None,
+        remove_directly=True,
+        eps=2e-3,
+        reserved=False,
+    ):
+        """modify column
 
         Parameters
         ----------
@@ -299,7 +352,13 @@ class PubKit:
                 mcol = table.Column(data, name=name, description=description)
             else:
                 # keep masked
-                mcol = table.MaskedColumn(data, mask=mask, name=name, fill_value=fill_value, description=description)
+                mcol = table.MaskedColumn(
+                    data,
+                    mask=mask,
+                    name=name,
+                    fill_value=fill_value,
+                    description=description,
+                )
         else:
             # for normal Column
             data = col.data
@@ -313,7 +372,7 @@ class PubKit:
 
     @staticmethod
     def compress_table(tbl, tbl_name="tbl", eps=2e-3, reserved=("bjd", "ra", "dec")):
-        """ compress table
+        """compress table
 
         Parameters
         ----------
@@ -351,16 +410,18 @@ class PubKit:
         tinfo = table.Table(infolist)
         print(tinfo)
         print()
-        print(" >>> Please copy & paste the code below to your editor/console and execute.")
+        print(
+            " >>> Please copy & paste the code below to your editor/console and execute."
+        )
         print(" >>> Modify the parameters for columns when necessary")
         print()
 
         code = ""
         for i in range(len(tinfo)):
             code += "PubKit.modify_column({}, ".format(tbl_name)
-            code += "colname=\"{}\", ".format(tinfo[i]["colname"])
-            code += "name=\"{}\", ".format(tinfo[i]["colname"])
-            code += "description=\"\", ".format()
+            code += 'colname="{}", '.format(tinfo[i]["colname"])
+            code += 'name="{}", '.format(tinfo[i]["colname"])
+            code += 'description="", '.format()
             code += "eps={}, ".format(eps)
             this_kwargs = dict(
                 remove_mask=False,
