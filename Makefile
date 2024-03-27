@@ -1,3 +1,5 @@
+all: install clean
+
 install:
 	pip install .
 	rm -rf build dist *egg-info
@@ -8,3 +10,6 @@ upload:
 
 clean:
 	rm -rf build dist *egg-info
+
+test: install clean
+	pytest . --import-mode=prepend
