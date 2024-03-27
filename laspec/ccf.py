@@ -215,7 +215,7 @@ def xcorr_spec_binary_rvgrid(
     wave_mod2,
     flux_mod2,
     flux_err=None,
-    rv1_init=0,
+    rv1_init=0.0,
     eta_init=0.3,
     eta_lim=(0.1, 1.2),
     drvmax=500,
@@ -489,6 +489,8 @@ class RVM:
             ind = np.arange(self.nmod)[-nmod:]
         elif method == "random":
             ind = np.random.choice(np.arange(self.nmod), size=nmod, replace=False)
+        else:
+            raise ValueError(f"Invalid method {method}")
         # construct new RVM
         return RVM(self.pmod[ind, :], self.wave_mod, self.flux_mod[ind, :])
 
@@ -892,7 +894,7 @@ class RVM:
         flux_mod1,
         wave_mod2,
         flux_mod2,
-        rv1_init=0,
+        rv1_init=0.0,
         eta_init=0.3,
         eta_lim=(0.1, 1.0),
         drvmax=500,
@@ -999,6 +1001,7 @@ class RVM:
                 drv_best[i], ccfmax[i] = self.measure2(
                     wave_obs,
                     flux_obs,
+                    flux_err=flux_err,
                     wave_mod1=self.wave_mod,
                     flux_mod1=self.flux_mod[rvr1["imod"]],
                     wave_mod2=self.wave_mod,
@@ -1204,8 +1207,9 @@ class RVM:
                 cache_name="B",
                 nmc=50,
                 **mrv_kwargs,
-                suffix="B"
+                suffix="B",
             )
+            rvr_B["bjdmid"] = ms.bjdmid
         except Exception as e_:
             if raise_error:
                 raise e_
@@ -1229,8 +1233,9 @@ class RVM:
                 cache_name="R",
                 nmc=50,
                 **mrv_kwargs,
-                suffix="R"
+                suffix="R",
             )
+            rvr_R["bjdmid"] = ms.bjdmid
             # ind_use = (msr.wave < 6800) & ((msr.wave < 6540) | (msr.wave > 6590))
             # rvr_Rm = self.measure_binary(msr.wave[ind_use], msr.flux_norm[ind_use],
             #                              flux_err=msr.flux_norm_err[ind_use], nmc=50, **mrv_kwargs, suffix="Rm")
@@ -1347,7 +1352,6 @@ def test_new_rvm():
         this_rvr = rvm.measure_binary(
             wave_obs,
             flux_obs,
-            w_obs=None,
             rv_grid=(-600, 600, 10),
             flux_bounds=(0, 3.0),
             eta_init=0.3,
