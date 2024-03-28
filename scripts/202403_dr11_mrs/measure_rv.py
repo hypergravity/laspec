@@ -4,6 +4,14 @@ Aim:
 
 Last modified:
     2024-03-28
+
+
+cd /nfsdata/users/cham/projects/lamost/dr11-v1.0/reduced_catalog
+echo 3 > /proc/sys/vm/drop_caches
+pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+pip install git+https://github.com/hypergravity/laspec.git --force-reinstall
+pip install git+https://gitee.com/hypergravity/laspec.git --force-reinstall
+
 """
 
 import os
@@ -26,7 +34,7 @@ os.chdir("/nfsdata/users/cham/projects/lamost/dr11-v1.0/reduced_catalog")
 t = table.Table.read("dr11v1.0-BR-snr5-im.fits")
 n_spec = len(t)
 spec_root = "/nfsdata/users/cham/projects/lamost/dr11-v1.0/medfits"
-idx_list = CodeKit.ezscatter(n_spec, chunksize=10000)
+idx_list = CodeKit.ezscatter(n_spec, chunksize=1000)
 for i_idx, idx in enumerate(idx_list):
     print(f"Prepare for {i_idx}")
     fp_input = f"rvr/input_{i_idx:05d}.joblib"
@@ -63,13 +71,13 @@ for i_idx, idx in enumerate(idx_list):
     joblib.dump(d, fp_input)
 
 
-def batch_processing(i_idx=0):  # 0-1236
+def batch_processing(i_idx=0):
     print(f"[{i_idx:05d}] Prepare for {i_idx}")
     os.chdir("/nfsdata/users/cham/projects/lamost/dr11-v1.0/reduced_catalog")
     # make RVM
     print(f"[{i_idx:05d}] Load RVM")
     # rvm = joblib.load("RVM_FOR_PARALLEL.joblib")
-    rvmdata = joblib.load("RVMDATA_R7500.joblib")
+    rvmdata = joblib.load("../../rvm/RVMDATA_R7500_M8.joblib")
     rvm = RVM(**rvmdata)
     rvm.make_cache(cache_name="B", wave_range=(5000, 5300), rv_grid=(-1000, 1000, 10))
     rvm.make_cache(cache_name="R", wave_range=(6350, 6750), rv_grid=(-1000, 1000, 10))
@@ -81,6 +89,28 @@ def batch_processing(i_idx=0):  # 0-1236
     print(f"[{i_idx:05d}] Finished")
 
 
-results = joblib.Parallel(n_jobs=30, verbose=99)(
-    joblib.delayed(batch_processing)(i_idx) for i_idx in range(1236)
+# 7GB / rvm object
+# alpha: 1000GB -> 84
+# beta:  153GB -> 18
+# gamma: 256GB -> 30
+
+n_task = 12365
+# alpha
+results = joblib.Parallel(n_jobs=84, verbose=99)(
+    joblib.delayed(batch_processing)(i_idx) for i_idx in range(0, 12365, 1)
+)
+
+# beta
+results = joblib.Parallel(n_jobs=18, verbose=99)(
+    joblib.delayed(batch_processing)(i_idx) for i_idx in range(8000, 12365, 2)
+)
+
+# gamma
+results = joblib.Parallel(n_jobs=36, verbose=99)(
+    joblib.delayed(batch_processing)(i_idx) for i_idx in range(7501, 12365, 2)
+)
+
+# raku
+results = joblib.Parallel(n_jobs=32, verbose=99)(
+    joblib.delayed(batch_processing)(i_idx) for i_idx in range(5000, 7501, 1)
 )
