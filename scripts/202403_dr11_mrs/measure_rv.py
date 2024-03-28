@@ -21,8 +21,16 @@ from astropy import table
 import numpy as np
 from laspec.lamost_kits import CodeKit
 
-
-os.chdir("/nfsdata/users/cham/projects/lamost/dr11-v1.0/reduced_catalog")
+hostname = os.uname()[1]
+if hostname in ["alpha", "beta", "gamma"]:
+    WORKDIR = "/nfsdata/users/cham/projects/lamost/dr11-v1.0/reduced_catalog"
+    SPECDIR = "/nfsdata/users/cham/projects/lamost/dr11-v1.0/medfits"
+elif hostname == "Mac-Studio.local":
+    WORKDIR = "/Users/cham/nfsdata/users/cham/projects/lamost/dr11-v1.0/reduced_catalog"
+    SPECDIR = "/Users/cham/nfsdata/users/cham/projects/lamost/dr11-v1.0/medfits"
+else:
+    raise ValueError(f"Invalid hostname {hostname}")
+os.chdir(WORKDIR)
 
 # rvmdata = joblib.load("RVMDATA_R7500.joblib")
 # rvm = RVM(**rvmdata)
@@ -33,7 +41,6 @@ os.chdir("/nfsdata/users/cham/projects/lamost/dr11-v1.0/reduced_catalog")
 
 t = table.Table.read("dr11v1.0-BR-snr5-im.fits")
 n_spec = len(t)
-spec_root = "/nfsdata/users/cham/projects/lamost/dr11-v1.0/medfits"
 idx_list = CodeKit.ezscatter(n_spec, chunksize=1000)
 for i_idx, idx in enumerate(idx_list):
     print(f"Prepare for {i_idx}")
@@ -59,7 +66,7 @@ for i_idx, idx in enumerate(idx_list):
 
         # this_snrR = t[i]["rv0_lamost_B"]
         this_fp = os.path.join(
-            spec_root,
+            SPECDIR,
             this_date,
             this_planid,
             f"med-{this_lmjd}-{this_planid}_sp{this_spid:02d}-{this_fiberid:03d}.fits.gz",
@@ -73,7 +80,7 @@ for i_idx, idx in enumerate(idx_list):
 
 def batch_processing(i_idx=0):
     print(f"[{i_idx:05d}] Prepare for {i_idx}")
-    os.chdir("/nfsdata/users/cham/projects/lamost/dr11-v1.0/reduced_catalog")
+    os.chdir(WORKDIR)
     # make RVM
     print(f"[{i_idx:05d}] Load RVM")
     # rvm = joblib.load("RVM_FOR_PARALLEL.joblib")
@@ -85,7 +92,21 @@ def batch_processing(i_idx=0):
     print(f"[{i_idx:05d}] Process spectra")
     fp_input = f"rvr/input_{i_idx:05d}.joblib"
     kwargs = joblib.load(fp_input)
+    # adjust for mac-studio
+    hostname = os.uname()[1]
+    if hostname == "Mac-Studio.local":
+        kwargs["fp_list"] = [
+            _.replace("/nfsdata", "/Users/cham/nfsdata") for _ in kwargs["fp_list"]
+        ]
+        kwargs["fpout"] = "../../" + kwargs["fpout"]
     rvm.mrsbatch(**kwargs)
+    # %%timeit -r 10
+    # rvm.measure_binary_mrsbatch(
+    #     kwargs["fp_list"][0],
+    #     kwargs["lmjm_list"][0],
+    #     kwargs["snr_B_list"][0],
+    #     kwargs["snr_R_list"][0],
+    # )
     print(f"[{i_idx:05d}] Finished")
 
 
@@ -110,7 +131,7 @@ results = joblib.Parallel(n_jobs=36, verbose=99)(
     joblib.delayed(batch_processing)(i_idx) for i_idx in range(7501, 12365, 2)
 )
 
-# raku
-results = joblib.Parallel(n_jobs=32, verbose=99)(
+# mac-studio
+results = joblib.Parallel(n_jobs=6, verbose=99)(
     joblib.delayed(batch_processing)(i_idx) for i_idx in range(5000, 7501, 1)
 )
