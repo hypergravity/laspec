@@ -189,6 +189,7 @@ def group_obsid(t, temp_folder=".", stilts=None):
     if os.path.exists(file_group_results):
         print(f"Remove {file_group_results}")
         os.remove(file_group_results)
+    print("Internal match ...")
     result = subprocess.run(command, capture_output=True, shell=True)
     print(
         f"Stilts returncode: {result.returncode}\n"
@@ -197,7 +198,7 @@ def group_obsid(t, temp_folder=".", stilts=None):
     )
     assert os.path.exists(file_group_results)
 
-    # read results
+    # read results obsid <-> GroupID
     print("Reading stilts results ...")
     t_uresult = table.Table.read(file_group_results)["obsid", "GroupID"]
     n_pseudosingle_observation = t_uresult["GroupID"].mask.sum()
@@ -214,7 +215,10 @@ def group_obsid(t, temp_folder=".", stilts=None):
     # find unique gid
     u_gid, u_gsize = np.unique(t_obsid_gid["gid"].data, return_counts=True)
     t_gid_gsize = table.Table(
-        [table.Column(u_gid, name="gid"), table.Column(u_gsize, name="gsize")]
+        [
+            table.Column(u_gid, name="gid"),
+            table.Column(u_gsize, name="gsize"),
+        ]
     )
     # map negative gid with gsize>1 to positive
     u_gid_to_map = np.unique(
@@ -230,44 +234,55 @@ def group_obsid(t, temp_folder=".", stilts=None):
     for i in trange(n_map):
         map_dict[u_gid_to_map[i]] = u_gid_mapped[i]
     print("Fix pseudo-single observation to positive gids ...")
-    mapped_gid = np.empty_like(t_obsid_gid["gid"].data)
-    for i in trange(len(t_obsid_gid)):
-        if t_obsid_gid[i]["gid"] in map_dict.keys():
-            mapped_gid[i] = map_dict[t_obsid_gid[i]["gid"]]
+
+    # make mapping dict
+    mapped_gid = np.empty_like(t_uresult["gid"].data)
+    for i in trange(len(t_uresult)):
+        if t_uresult[i]["gid"] in map_dict.keys():
+            mapped_gid[i] = map_dict[t_uresult[i]["gid"]]
         else:
-            mapped_gid[i] = t_obsid_gid[i]["gid"]
+            mapped_gid[i] = t_uresult[i]["gid"]
+
     # redefine negative gids
     n_single_observation = np.sum(mapped_gid < 0)
+    print(f"- n_single_observation={n_single_observation}")
     mapped_gid[mapped_gid < 0] = -1 - np.arange(n_single_observation, dtype=int)
-    # construct mapped gid
-    print("Construct fixed gid table")
-    t_im_gid = table.Table([mapped_gid], names=["gid"])
+
+    # use mapped gid in t_uresult
+    t_uresult["gid"] = mapped_gid
+
     # find unique gid
-    u_gid, u_gsize = np.unique(t_im_gid["gid"].data, return_counts=True)
+    u_gid, u_gsize = np.unique(t_uresult["gid"].data, return_counts=True)
     print("Add gsize column")
-    t_im_gid_gsize = table.join(
-        t_im_gid,
-        table.Table(
-            [
-                table.Column(u_gid, name="gid"),
-                table.Column(u_gsize, name="gsize"),
-            ]
-        ),
-        keys=["gid"],
+
+    t_im_obsid_gid = table.join(
+        t_obsid,
+        t_uresult,
+        keys=["obsid"],
         join_type="left",
     )
-    # remove temp file
-    # os.remove(file_obsid_ra_dec)
-    # os.remove(file_group_results)
+    u_gid, u_gsize = np.unique(t_im_obsid_gid["gid"], return_counts=True)
+    gsize_dict = dict()
+    for _gid, _gsize in zip(u_gid, u_gsize):
+        gsize_dict[_gid] = _gsize
+
+    # set gsize
+    print("Set gsize")
+    t_im_obsid_gid.add_column(
+        table.Column(np.zeros(len(t), dtype=np.int32), name="gsize")
+    )
+    for i in trange(len(t)):
+        t_im_obsid_gid[i]["gsize"] = gsize_dict[t_im_obsid_gid[i]["gid"]]
 
     # add id column
-    if "id" not in t_im_gid_gsize.colnames:
+    if "id" not in t_im_obsid_gid.colnames:
         print("Add id column")
-        t_im_gid_gsize.add_column(
-            table.Column(np.arange(len(t_im_gid_gsize)), dtype=np.int32, name="id"),
+        t_im_obsid_gid.add_column(
+            table.Column(np.arange(len(t_im_obsid_gid)), dtype=np.int32, name="id"),
             index=0,
         )
-    return table.hstack((t, t_im_gid_gsize))
+    t_im_obsid_gid.remove_column("obsid")
+    return table.hstack((t, t_im_obsid_gid))
 
 
 # change working directory & read catalog (dr11-v1.0)
@@ -289,14 +304,32 @@ t = t_BR[(t_BR["snr_B"] > SNR) | (t_BR["snr_R"] > SNR)]
 t_BR_im = group_obsid(t)
 t_BR_im.write("dr11v1.0-BR-snr5-im.fits", overwrite=True)
 
+t_upload = table.Table.read("dr11v1.0-BR-snr5-im[uploaded].fits")
+assert np.all(t_BR_im["sobsid"] == t_upload["sobsid"])
+print(t["sobsid"])
+print(t_BR_im["sobsid"])
+print(t_upload["sobsid"])
+
+
 t_BR_im[
-    "id",
-    "gid",
-    "gsize",
+    "rv0_lamost_B",
+    "rv0_err_lamost_B",
+    "rv1_lamost_B",
+    "rv1_err_lamost_B",
+    "rv_flag_lamost_B",
+    "bad_lamost_B",
     "sobsid",
     "snr_B",
+    "rv0_lamost_R",
+    "rv0_err_lamost_R",
+    "rv1_lamost_R",
+    "rv1_err_lamost_R",
+    "rv_flag_lamost_R",
+    "bad_lamost_R",
     "snr_R",
     "obsid",
+    "gp_id",
+    "designation",
     "obsdate",
     "lmjd",
     "mjd",
@@ -304,20 +337,6 @@ t_BR_im[
     "spid",
     "fiberid",
     "lmjm",
-    "rv0_lamost_B",
-    "rv0_err_lamost_B",
-    "rv1_lamost_B",
-    "rv1_err_lamost_B",
-    "rv_flag_lamost_B",
-    "bad_lamost_B",
-    "rv0_lamost_R",
-    "rv0_err_lamost_R",
-    "rv1_lamost_R",
-    "rv1_err_lamost_R",
-    "rv_flag_lamost_R",
-    "bad_lamost_R",
-    "gp_id",
-    "designation",
     "band",
     "ra_obs",
     "dec_obs",
@@ -344,4 +363,7 @@ t_BR_im[
     "lunardate",
     "moon_flg",
     "subproject",
+    "id",
+    "gid",
+    "gsize",
 ]
