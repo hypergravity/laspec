@@ -210,7 +210,8 @@ def group_obsid(t, temp_folder=".", stilts=None):
     t_uresult.remove_column("GroupID")
     t_uresult.add_column(table.Column(table.Column(data=gid, name="gid")))
 
-    t_obsid = table.Table([t["obsid"]])
+    # add id column
+    t_obsid = t["id", "obsid"]
     t_obsid_gid = table.join(t_obsid, t_uresult, keys=["obsid"], join_type="left")
     # find unique gid
     u_gid, u_gsize = np.unique(t_obsid_gid["gid"].data, return_counts=True)
@@ -252,9 +253,8 @@ def group_obsid(t, temp_folder=".", stilts=None):
     t_uresult["gid"] = mapped_gid
 
     # find unique gid
-    u_gid, u_gsize = np.unique(t_uresult["gid"].data, return_counts=True)
+    # u_gid, u_gsize = np.unique(t_uresult["gid"].data, return_counts=True)
     print("Add gsize column")
-
     t_im_obsid_gid = table.join(
         t_obsid,
         t_uresult,
@@ -274,15 +274,12 @@ def group_obsid(t, temp_folder=".", stilts=None):
     for i in trange(len(t)):
         t_im_obsid_gid[i]["gsize"] = gsize_dict[t_im_obsid_gid[i]["gid"]]
 
-    # add id column
-    if "id" not in t_im_obsid_gid.colnames:
-        print("Add id column")
-        t_im_obsid_gid.add_column(
-            table.Column(np.arange(len(t_im_obsid_gid)), dtype=np.int32, name="id"),
-            index=0,
-        )
-    t_im_obsid_gid.remove_column("obsid")
-    return table.hstack((t, t_im_obsid_gid))
+    t_im_obsid_gid.sort("id")
+    t_im_obsid_gid.remove_columns(["id", "obsid"])
+
+    # t_im_obsid_gid.remove_column("obsid")
+    t_imatch = table.hstack((t, t_im_obsid_gid))
+    return t_imatch
 
 
 # change working directory & read catalog (dr11-v1.0)
@@ -301,15 +298,20 @@ t_BR.write("dr11v1.0-BR.fits", overwrite=True)
 
 SNR = 5
 t = t_BR[(t_BR["snr_B"] > SNR) | (t_BR["snr_R"] > SNR)]
+print(f"{len(t_BR)}->{len(t)}")
+t.add_column(table.Column(np.arange(len(t), dtype=int), name="id"))
 t_BR_im = group_obsid(t)
 t_BR_im.write("dr11v1.0-BR-snr5-im.fits", overwrite=True)
+print(f"{len(t_BR)}->{len(t)}->{len(t_BR_im)}")
 
-t_upload = table.Table.read("dr11v1.0-BR-snr5-im[uploaded].fits")
+t_upload = table.Table.read("dr11v1.0-BR-snr5-im[uploaded_v1].fits")
 assert np.all(t_BR_im["sobsid"] == t_upload["sobsid"])
+assert np.all(t_BR_im["sobsid"] == t["sobsid"])
 print(t["sobsid"])
 print(t_BR_im["sobsid"])
 print(t_upload["sobsid"])
 
+t_BR_im["id", "sobsid", "obsid", "ra", "dec"][t_BR_im["gid"] == 28734]
 
 t_BR_im[
     "rv0_lamost_B",
