@@ -88,19 +88,29 @@ class LrsKit:
 
     @staticmethod
     def generate_filepath(lmjd, planid, spid, fiberid, obsdate=None, dirspec=None):
-        """generate spectral file path"""
+        """generate LRS file path"""
         if dirspec is None:
-            return "spec-{}-{}_sp{:02d}-{:03d}.fits.gz".format(
-                lmjd, planid, spid, fiberid
-            )
+            return f"spec-{lmjd}-{planid}_sp{spid:02d}-{fiberid:03d}.fits.gz"
         else:
-            return "{}/{}/{}/spec-{}-{}_sp{:02d}-{:03d}.fits.gz".format(
-                dirspec, obsdate.replace("-", ""), planid, lmjd, planid, spid, fiberid
+            return (
+                f"{dirspec}/{obsdate.replace('-', '')}/{planid}/"
+                f"spec-{lmjd}-{planid}_sp{spid:02d}-{fiberid:03d}.fits.gz"
             )
 
 
 class MrsKit:
     """a set of LAMOST MRS processing functions"""
+
+    @staticmethod
+    def generate_filepath(lmjd, planid, spid, fiberid, obsdate=None, dirspec=None):
+        """generate MRS file path"""
+        if dirspec is None:
+            return f"med-{lmjd}-{planid}_sp{spid:02d}-{fiberid:03d}.fits.gz"
+        else:
+            return (
+                f"{dirspec}/{obsdate.replace('-', '')}/{planid}/"
+                f"med-{lmjd}-{planid}_sp{spid:02d}-{fiberid:03d}.fits.gz"
+            )
 
     @staticmethod
     def read_multi_spec(fp_list, lmjm_list, rvzp_B_list, rvzp_R_list, wave_interp=None):
