@@ -155,7 +155,7 @@ def internal_match(t: table.Table, n_split: int = 10):
 
 
 # after topcat / stilts
-def group_obsid(t, temp_folder=".", stilts=None):
+def group_obsid(t, radius=5, temp_folder=".", stilts=None):
     hostname = os.uname()[1]
     if stilts is None:
         if hostname == "alpha":
@@ -169,7 +169,7 @@ def group_obsid(t, temp_folder=".", stilts=None):
     file_group_results = os.path.join(temp_folder, "group_results.fits")
 
     command = (
-        f'java -jar {stilts} tmatch1 matcher=sky params=3 values="ra dec" '
+        f'java -jar {stilts} tmatch1 matcher=sky params={radius} values="ra dec" '
         f"action=identify in={file_obsid_ra_dec} out={file_group_results}"
     )
     print("Group ra-dec with stilts...")
