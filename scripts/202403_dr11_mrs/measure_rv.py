@@ -78,16 +78,9 @@ for i_idx, idx in enumerate(idx_list):
     joblib.dump(d, fp_input)
 
 
-def batch_processing(i_idx=0):
+def batch_processing(i_idx=0, debug=False):
     print(f"[{i_idx:05d}] Prepare for {i_idx}")
     os.chdir(WORKDIR)
-    # make RVM
-    print(f"[{i_idx:05d}] Load RVM")
-    # rvm = joblib.load("RVM_FOR_PARALLEL.joblib")
-    rvmdata = joblib.load("../../rvm/RVMDATA_R7500_M8.joblib")
-    rvm = RVM(**rvmdata)
-    rvm.make_cache(cache_name="B", wave_range=(5000, 5300), rv_grid=(-1000, 1000, 10))
-    rvm.make_cache(cache_name="R", wave_range=(6350, 6750), rv_grid=(-1000, 1000, 10))
     # load input data
     print(f"[{i_idx:05d}] Process spectra")
     fp_input = f"rvr/input_{i_idx:05d}.joblib"
@@ -99,6 +92,21 @@ def batch_processing(i_idx=0):
             _.replace("/nfsdata", "/Users/cham/nfsdata") for _ in kwargs["fp_list"]
         ]
         kwargs["fpout"] = "../../" + kwargs["fpout"]
+    # debug purpose
+    if debug:
+        for k in ["fp_list", "lmjm_list", "snr_B_list", "snr_R_list"]:
+            kwargs[k] = kwargs[k][:5]
+    # skip if output exists
+    if os.path.exists(kwargs["fpout"]):
+        return
+    # make RVM
+    print(f"[{i_idx:05d}] Load RVM")
+    # rvm = joblib.load("RVM_FOR_PARALLEL.joblib")
+    rvmdata = joblib.load("../../rvm/RVMDATA_R7500_M8.joblib")
+    rvm = RVM(**rvmdata)
+    rvm.make_cache(cache_name="B", wave_range=(5000, 5300), rv_grid=(-1000, 1000, 10))
+    rvm.make_cache(cache_name="R", wave_range=(6350, 6750), rv_grid=(-1000, 1000, 10))
+    # process spectra
     rvm.mrsbatch(**kwargs)
     # %%timeit -r 10
     # rvm.measure_binary_mrsbatch(
@@ -107,7 +115,10 @@ def batch_processing(i_idx=0):
     #     kwargs["snr_B_list"][0],
     #     kwargs["snr_R_list"][0],
     # )
-    print(f"[{i_idx:05d}] Finished")
+    if os.path.exists(kwargs["fpout"]):
+        print(f"[{i_idx:05d}] Finished -> {kwargs['fpout']}")
+    else:
+        print(f"[{i_idx:05d}] Failed -> {kwargs['fpout']}")
 
 
 # 7GB / rvm object
@@ -117,7 +128,7 @@ def batch_processing(i_idx=0):
 
 n_task = 12365
 # alpha
-results = joblib.Parallel(n_jobs=84, verbose=99)(
+results = joblib.Parallel(n_jobs=72, verbose=99)(
     joblib.delayed(batch_processing)(i_idx) for i_idx in range(0, 12365, 1)
 )
 
