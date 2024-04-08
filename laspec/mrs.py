@@ -1,4 +1,4 @@
-__all__ = ["MrsSpec", "MrsEpoch", "MrsFits", "MrsSource", "debad"]
+__all__ = ["MrsSpec", "MrsEpoch", "MrsFits", "MrsSource", "debad", "SOL_kms"]
 
 import glob
 import os
@@ -14,7 +14,7 @@ from scipy.signal import medfilt, gaussian
 from .normalization import normalize_spectrum_general
 from .time import datetime2jd, eval_bjd
 
-SOL_kms = constants.c.value / 1000
+SOL_kms = constants.c.value / 1000.0
 
 warnings.filterwarnings("ignore")
 

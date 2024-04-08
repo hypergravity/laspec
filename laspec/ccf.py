@@ -1,35 +1,67 @@
-# -*- coding: utf-8 -*-
 """
-ccf2.py, compared to ccf.py, has a more simple implementation
+RVM without weights.
+
+
+Vectorized functions
+--------------------
+xcorr_spec_vectorized(rv_grid, wave_obs, flux_obs, wave_mod, flux_mod)
+
+
+Un-vectorized functions
+-----------------------
+cov(x1, x2)
+├── xcorr(x1, x2)
+|    ├── xcorr_spec(rv, wave_obs, flux_obs, wave_mod, flux_mod) -> float
+|    |   ├── xcorr_spec_cost(rv, wave_obs, flux_obs, wave_mod, flux_mod)-> float
+|    |   ├── xcorr_spec_rvgrid
+|    |       ├── RVM.ccf_1mod
+|    |       ├── RVM.measure
+|    |       ├── RVM.measure_pw
+|    ├── xcorr_spec_twin(rv1, drv, eta, wave_obs, flux_obs, wave_mod, flux_mod) -> float
+|    ├── xcorr_spec_twin_gamma
+|    ├── nxcorr_spec_twin_gamma
+|    ├── nxcorr_spec_twin_gamma_BR
+|    ├── xcorr_spec_twin_gamma_rv1grid
+|        ├── No usage found
+|    ├── xcorr_spec_binary(rv1, rv2, eta, wave_obs, flux_obs, wave_mod1, flux_mod1, wave_mod2, flux_mod2) -> float
+|        ├── xcorr_spec_binary_cost(rv1_rv2_eta, wave_obs, flux_obs, wave_mod1, flux_mod1, wave_mod2, flux_mod2, eta_lim, drvmax) -> float
+|            ├── xcorr_spec_binary_rv2grid
+
 """
+
+__all__ = ["RVM", "SOL_kms"]
+
 import datetime
 import os
 import warnings
 from collections import OrderedDict
-from typing import Optional
+from typing import Optional, Union, Iterable
 
 import joblib
 import numpy as np
+import numpy.typing as npt
 from astropy import constants
 from matplotlib import pyplot as plt
-from scipy.optimize import minimize
+from scipy.optimize import minimize, OptimizeResult
 
 from .mrs import MrsFits
 
-SOL_kms = constants.c.value / 1000
+SOL_kms = constants.c.value / 1000.0
 
 
-# sine bell curves
-def sinebell(n=1000, index=0.5):
+# ================================================
+# sine bell curves, from Tonry & Davis (1979)
+# ================================================
+def sinebell(n: int = 1000, index: float = 0.5) -> npt.NDArray:
     """sine bell to left & right end of spectra"""
     return np.sin(np.linspace(0, np.pi, n)) ** index
 
 
-def sinebell_like(x, index=0.5):
+def sinebell_like(x, index: float = 0.5) -> npt.NDArray:
     return sinebell(len(x), index=index)
 
 
-def test_sinebell():
+def test_sinebell() -> None:
     plt.figure()
     plt.plot(sinebell(4000, 1))
     plt.plot(sinebell(4000, 1 / 2))
@@ -37,7 +69,7 @@ def test_sinebell():
     return
 
 
-def test_sinebell2():
+def test_sinebell2() -> tuple[npt.NDArray, npt.NDArray]:
     """load data"""
     wave, flux, flux_err = np.loadtxt("/hydrogen/projects/song/delCep_order20.dat").T
     # flux_sine = flux - flux.mean()
@@ -51,30 +83,50 @@ def test_sinebell2():
     return wave, flux_sine
 
 
+# ================================================
 # CCF related functions
-def cov(x1, x2):
-    """covariance"""
+# ================================================
+def cov(x1: npt.NDArray, x2: npt.NDArray) -> npt.NDArray:
+    """Evaluate covariance."""
     return np.mean((x1 - np.mean(x1)) * (x2 - np.mean(x2)))
 
 
-def xcorr(x1, x2):
-    """cross-correlation"""
+def xcorr(x1: npt.NDArray, x2: npt.NDArray) -> float:
+    """Evaluate cross-correlation."""
     return cov(x1, x2) / np.sqrt(cov(x1, x1) * cov(x2, x2))
 
 
-def xcorr_spec(rv, wave_obs, flux_obs, wave_mod, flux_mod):
-    """cross-correlation of two spectra"""
+def xcorr_spec(
+    rv: float,
+    wave_obs: npt.NDArray,
+    flux_obs: npt.NDArray,
+    wave_mod: npt.NDArray,
+    flux_mod: npt.NDArray,
+) -> float:
+    """Evaluate cross-correlation of two spectra."""
     flux_mod_interp = np.interp(wave_obs, wave_mod * (1 + rv / SOL_kms), flux_mod)
     return xcorr(flux_obs, flux_mod_interp)
 
 
-def xcorr_spec_cost(rv, wave_obs, flux_obs, wave_mod, flux_mod):
-    """negative xcorr_spec, used as cost function for minimization"""
+def xcorr_spec_cost(
+    rv: float,
+    wave_obs: npt.NDArray,
+    flux_obs: npt.NDArray,
+    wave_mod: npt.NDArray,
+    flux_mod: npt.NDArray,
+) -> float:
+    """Negative `xcorr_spec`, used as cost function for minimization"""
     return -xcorr_spec(rv, wave_obs, flux_obs, wave_mod, flux_mod)
 
 
-def xcorr_spec_vectorized(rv_grid, wave_obs, flux_obs, wave_mod, flux_mod):
-    """vectorized for finding best rv in a grid"""
+def xcorr_spec_vectorized(
+    wave_obs: npt.NDArray,
+    flux_obs: npt.NDArray,
+    wave_mod: npt.NDArray,
+    flux_mod: npt.NDArray,
+    rv_grid: npt.NDArray,
+) -> npt.NDArray:
+    """Vectorized cross-correlation at an `rv_grid`."""
     # determine shape
     npix = len(wave_obs)
     nmod = flux_mod.shape[0]
@@ -98,8 +150,16 @@ def xcorr_spec_vectorized(rv_grid, wave_obs, flux_obs, wave_mod, flux_mod):
     return ccf_grid
 
 
-def xcorr_spec_twin(rv1, drv, eta, wave_obs, flux_obs, wave_mod, flux_mod):
-    """cross correlation of two spectra (twin case)"""
+def xcorr_spec_twin(
+    rv1: float,
+    drv: float,
+    eta: float,
+    wave_obs: npt.NDArray,
+    flux_obs: npt.NDArray,
+    wave_mod: npt.NDArray,
+    flux_mod: npt.NDArray,
+) -> float:
+    """Evaluate cross-correlation of two spectra (twin case) with luminosity ratio `eta`."""
     flux_mod_interp = np.interp(
         wave_obs, wave_mod * (1 + rv1 / SOL_kms), flux_mod
     ) + eta * np.interp(wave_obs, wave_mod * (1 + (rv1 + drv) / SOL_kms), flux_mod)
@@ -107,9 +167,17 @@ def xcorr_spec_twin(rv1, drv, eta, wave_obs, flux_obs, wave_mod, flux_mod):
 
 
 def xcorr_spec_binary(
-    rv1, rv2, eta, wave_obs, flux_obs, wave_mod1, flux_mod1, wave_mod2, flux_mod2
-):
-    """cross correlation of two spectra (binary case)"""
+    rv1: float,
+    rv2: float,
+    eta: float,
+    wave_obs: npt.NDArray,
+    flux_obs: npt.NDArray,
+    wave_mod1: npt.NDArray,
+    flux_mod1: npt.NDArray,
+    wave_mod2: npt.NDArray,
+    flux_mod2: npt.NDArray,
+) -> float:
+    """Evaluate cross-correlation of two spectra (binary case)."""
     # combine two templates
     flux_mod_interp = np.interp(
         wave_obs, wave_mod1 * (1 + rv1 / SOL_kms), flux_mod1
@@ -117,17 +185,21 @@ def xcorr_spec_binary(
     return xcorr(flux_obs, flux_mod_interp)
 
 
-def derive_rv2(gamma, q, rv1):
+def derive_rv2(
+    gamma: Union[float, npt.NDArray],
+    q: Union[float, npt.NDArray],
+    rv1: Union[float, npt.NDArray],
+) -> Union[float, npt.NDArray]:
     """
-    derive rv2 from gamma, q, and rv1
+    Derive `rv2` from `gamma`, `q`, and `rv1` for a binary system.
 
     Parameters
     ----------
-    gamma : float
+    gamma : Union[float, npt.NDArray]
         RVs of center of mass
-    q : float
+    q : Union[float, npt.NDArray]
         mass ratio = m2/m1
-    rv1 : array or float
+    rv1 : Union[float, npt.NDArray]
         RVs of primary star
 
     Returns
@@ -138,8 +210,17 @@ def derive_rv2(gamma, q, rv1):
     return gamma * (1 + 1 / q) - rv1 / q
 
 
-def xcorr_spec_twin_gamma(rv1, gamma, eta, q, wave_obs, flux_obs, wave_mod, flux_mod):
-    """cross-correlation of two spectra (twin case)"""
+def xcorr_spec_twin_gamma(
+    rv1: float,
+    gamma: float,
+    eta: float,
+    q: float,
+    wave_obs: npt.NDArray,
+    flux_obs: npt.NDArray,
+    wave_mod: npt.NDArray,
+    flux_mod: npt.NDArray,
+) -> float:
+    """Evaluate cross-correlation of two spectra (twin case)"""
     rv2 = derive_rv2(gamma, q, rv1)
     # combine two templates
     flux_mod_interp = np.interp(
@@ -148,8 +229,17 @@ def xcorr_spec_twin_gamma(rv1, gamma, eta, q, wave_obs, flux_obs, wave_mod, flux
     return xcorr(flux_obs, flux_mod_interp)
 
 
-def nxcorr_spec_twin_gamma(rv1, gamma, eta, q, wave_obs, flux_obs, wave_mod, flux_mod):
-    """negative cross-correlation of two spectra (twin case)"""
+def nxcorr_spec_twin_gamma(
+    rv1: float,
+    gamma: float,
+    eta: float,
+    q: float,
+    wave_obs: npt.NDArray,
+    flux_obs: npt.NDArray,
+    wave_mod: npt.NDArray,
+    flux_mod: npt.NDArray,
+) -> float:
+    """Negative cross-correlation of two spectra (twin case)."""
     rv2 = derive_rv2(gamma, q, rv1)
     # combine two templates
     flux_mod_interp = np.interp(
@@ -159,9 +249,18 @@ def nxcorr_spec_twin_gamma(rv1, gamma, eta, q, wave_obs, flux_obs, wave_mod, flu
 
 
 def nxcorr_spec_twin_gamma_BR(
-    rv1, gamma, eta, q, wave_B, flux_B, wave_R, flux_R, wave_mod, flux_mod
-):
-    """sum of negative cross-correlation of two spectra (twin case) for B & R"""
+    rv1: float,
+    gamma: float,
+    eta: float,
+    q: float,
+    wave_B: npt.NDArray,
+    flux_B: npt.NDArray,
+    wave_R: npt.NDArray,
+    flux_R: npt.NDArray,
+    wave_mod: npt.NDArray,
+    flux_mod: npt.NDArray,
+) -> float:
+    """Sum of negative cross-correlation of two spectra (twin case) for B & R."""
     rv2 = derive_rv2(gamma, q, rv1)
     # combine two templates
     flux_mod_B = np.interp(
@@ -173,34 +272,40 @@ def nxcorr_spec_twin_gamma_BR(
     return -np.nansum((xcorr(flux_B, flux_mod_B), xcorr(flux_R, flux_mod_R)))
 
 
-def xcorr_spec_twin_gamma_rvgrid(
-    gamma, eta, q, wave_obs, flux_obs, wave_mod, flux_mod, rvgrid=(-500, 500, 10)
-):
+def xcorr_spec_twin_gamma_rv1grid(
+    rv1_grid: npt.NDArray,
+    gamma: float,
+    eta: float,
+    q: float,
+    wave_obs: npt.NDArray,
+    flux_obs: npt.NDArray,
+    wave_mod: npt.NDArray,
+    flux_mod: npt.NDArray,
+) -> float:
     """cross-correlation of two spectra (twin case)"""
-    rv1 = np.arange(rvgrid[0], rvgrid[1] + rvgrid[2], rvgrid[2])
-    rv2 = derive_rv2(gamma, q, rv1)
+    rv2 = derive_rv2(gamma, q, rv1_grid)
     # combine two templates
-    xcorr_results = np.zeros_like(rv1, dtype=float)
-    for irv in range(len(rv1)):
+    xcorr_results = np.zeros_like(rv1_grid, dtype=float)
+    for irv in range(len(rv1_grid)):
         flux_mod_interp = np.interp(
-            wave_obs, wave_mod * (1 + rv1[irv] / SOL_kms), flux_mod
+            wave_obs, wave_mod * (1 + rv1_grid[irv] / SOL_kms), flux_mod
         ) + eta * np.interp(wave_obs, wave_mod * (1 + rv2[irv] / SOL_kms), flux_mod)
         xcorr_results[irv] = xcorr(flux_obs, flux_mod_interp)
     return -np.max(xcorr_results)
 
 
 def xcorr_spec_binary_cost(
-    rv1_rv2_eta,
-    wave_obs,
-    flux_obs,
-    wave_mod1,
-    flux_mod1,
-    wave_mod2,
-    flux_mod2,
-    eta_lim=(0.1, 1.2),
-    drvmax=500,
-):
-    """the negative of xcorr_spec_binary, used as cost function for minimization"""
+    rv1_rv2_eta: tuple[float, float, float],
+    wave_obs: npt.NDArray,
+    flux_obs: npt.NDArray,
+    wave_mod1: npt.NDArray,
+    flux_mod1: npt.NDArray,
+    wave_mod2: npt.NDArray,
+    flux_mod2: npt.NDArray,
+    eta_lim: tuple[float, float] = (0.1, 1.2),
+    drvmax: float = 500.0,
+) -> float:
+    """Negative of xcorr_spec_binary, used as cost function for minimization."""
     rv1, rv2, eta = rv1_rv2_eta
     if not eta_lim[0] < eta <= eta_lim[1] or np.abs(rv2 - rv1) > drvmax:
         return np.inf
@@ -209,26 +314,25 @@ def xcorr_spec_binary_cost(
     )
 
 
-def xcorr_spec_binary_rvgrid(
-    wave_obs,
-    flux_obs,
-    wave_mod1,
-    flux_mod1,
-    wave_mod2,
-    flux_mod2,
-    flux_err=None,
-    rv1_init=0.0,
-    eta_init=0.3,
-    eta_lim=(0.1, 1.2),
-    drvmax=500,
-    drvstep=5,
-    method="Powell",
-    nmc=100,
-):
-    """cross-correlation of two spectra (binary case) based on rv grid"""
+def xcorr_spec_binary_rv2grid(
+    wave_obs: npt.NDArray,
+    flux_obs: npt.NDArray,
+    wave_mod1: npt.NDArray,
+    flux_mod1: npt.NDArray,
+    wave_mod2: npt.NDArray,
+    flux_mod2: npt.NDArray,
+    flux_err: Optional[npt.NDArray] = None,
+    rv1_init: float = 0.0,
+    eta_init: float = 0.3,
+    eta_lim: tuple[float, float] = (0.1, 1.2),
+    drvmax: float = 500.0,
+    drvstep: float = 5.0,
+    method: str = "Powell",
+    nmc: int = 100,
+) -> Union[OptimizeResult | tuple]:
+    """Evaluate cross-correlation of two spectra (binary case) based on RV2 grid."""
     # make grid for star 2
-    rv2_grid = np.arange(-drvmax, drvmax + drvstep, drvstep)
-
+    rv2_grid = construct_rv_grid((-drvmax, drvmax, drvstep))
     # ccf2_grid
     ccf2_grid = np.zeros_like(rv2_grid, float)
     for irv2, rv2 in enumerate(rv2_grid):
@@ -272,6 +376,7 @@ def xcorr_spec_binary_rvgrid(
         opt["ccfmax2"] = -opt["fun"]
 
     if flux_err is not None:
+        # add random noise to flux_obs
         xs = []
         for i in range(nmc):
             flux_mc = flux_obs + np.random.normal(0, 1, flux_obs.shape) * flux_err
@@ -294,17 +399,29 @@ def xcorr_spec_binary_rvgrid(
     return opt
 
 
-def respw_cost(rv, wave_obs, flux_obs, wave_mod, flux_mod, pw=1):
-    """cost function of residuals"""
+def respw_cost(
+    rv: float,
+    wave_obs: npt.NDArray,
+    flux_obs: npt.NDArray,
+    wave_mod: npt.NDArray,
+    flux_mod: npt.NDArray,
+    pw: float = 1,
+) -> float:
+    """Cost function of residual powered."""
     flux_mod_interp = np.interp(wave_obs, wave_mod * (1 + rv / SOL_kms), flux_mod)
     cost = np.sum(np.abs(flux_obs - flux_mod_interp) ** pw)
     return cost
 
 
 def respw_rvgrid(
-    wave_obs, flux_obs, wave_mod, flux_mod, pw=1, rv_grid=np.arange(-500, 510, 10)
-):
-    """cost function of residuals based on rv grid"""
+    wave_obs: npt.NDArray,
+    flux_obs: npt.NDArray,
+    wave_mod: npt.NDArray,
+    flux_mod: npt.NDArray,
+    rv_grid: npt.NDArray,
+    pw: float = 1,
+) -> npt.NDArray:
+    """Cost function of residuals based on rv grid."""
     respw_grid = np.array(
         [
             respw_cost(rv, wave_obs, flux_obs, wave_mod, flux_mod, pw=pw)
@@ -314,21 +431,28 @@ def respw_rvgrid(
     return respw_grid
 
 
-def xcorr_spec_rvgrid(wave_obs, flux_obs, wave_mod, flux_mod, rv_grid=(-500, 500, 10)):
-    """cross-correlation method
+def xcorr_spec_rvgrid(
+    wave_obs: npt.NDArray,
+    flux_obs: npt.NDArray,
+    wave_mod: npt.NDArray,
+    flux_mod: npt.NDArray,
+    rv_grid: npt.NDArray,
+) -> npt.NDArray:
+    """Evaluate cross-correlation via Tonry & Davis (1979).
+
     Interpolate a model spectrum with different RV and cross-correlate with
-    the observed spectrum, return the CCF on the RV grid.
+    the observed spectrum, return the CCF at the RV grid.
 
     wave_obs: array
-        wavelength of observed spectrum (normalized)
+        Wavelength of observed spectrum (normalized).
     flux_obs: array
-        flux of observed spectrum
+        Flux of observed spectrum.
     wave_mod: array
-        wavelength of model spectrum (normalized)
+        Wavelength of model spectrum (normalized).
     flux_mod:
-        flux of model spectrum
+        Flux of model spectrum.
     rv_grid:
-        km/s RV grid
+        RV grid, a tuple of (start, stop, step).
 
     """
     wave_obs = np.asarray(wave_obs)
@@ -337,7 +461,7 @@ def xcorr_spec_rvgrid(wave_obs, flux_obs, wave_mod, flux_mod, rv_grid=(-500, 500
     flux_mod = np.asarray(flux_mod)
 
     # RV grid --> CCF grid
-    rv_grid = np.asarray(rv_grid)
+    rv_grid = construct_rv_grid(rv_grid)
     # nz = len(z_grid)
     ccf_grid = np.ones_like(rv_grid, float)
 
@@ -345,11 +469,11 @@ def xcorr_spec_rvgrid(wave_obs, flux_obs, wave_mod, flux_mod, rv_grid=(-500, 500
     for i_rv, this_rv in enumerate(rv_grid):
         ccf_grid[i_rv] = xcorr_spec(this_rv, wave_obs, flux_obs, wave_mod, flux_mod)
 
-    return rv_grid, ccf_grid
+    return ccf_grid
 
 
 class RVM:
-    def __init__(self, pmod, wave_mod, flux_mod):
+    def __init__(self, pmod: npt.NDArray, wave_mod: npt.NDArray, flux_mod: npt.NDArray):
         """
         Parameters:
         -----------
@@ -389,22 +513,23 @@ class RVM:
         )
 
     def make_cache(
-        self, cache_name="B", wave_range=(5000, 5300), rv_grid=(-1000, 1000, 10)
-    ):
-        """make cache for fast RV measurements, only for single exposures
+        self,
+        cache_name: str = "B",
+        wave_range: Union[list[tuple], tuple] = (5000, 5300),
+        rv_grid: Union[tuple, npt.NDArray] = (-1000, 1000, 10),
+    ) -> None:
+        """Make cache for fast RV measurements, for single exposures only.
 
         Parameters
         ----------
         cache_name:
-            suffix of cached data
+            Suffix of cached data.
         wave_range:
-            wavelength bounds
+            Wavelength range(s).
         rv_grid:
-            rv_start, rv_stop, rv_step
-
+            A tuple of (rv_start, rv_stop, rv_step) or a list of tuples.
         """
         print("@RVM: making cache ...")
-
         if isinstance(wave_range, list):
             # multiple ranges
             ind_wave_cache = np.zeros_like(self.wave_mod, dtype=bool)
@@ -418,7 +543,6 @@ class RVM:
                     )
                 )
                 ind_wave_cache |= this_ind
-
         else:
             # single range
             ind_wave_cache = (self.wave_mod > wave_range[0]) & (
@@ -429,11 +553,10 @@ class RVM:
                     np.sum(ind_wave_cache), *wave_range
                 )
             )
-
         # cache wavelength
         wave_cache = self.wave_mod[ind_wave_cache]
         # cache rv_grid
-        rv_grid_cache = np.arange(rv_grid[0], rv_grid[1] + rv_grid[2], rv_grid[2])
+        rv_grid_cache = construct_rv_grid(rv_grid)
         # cache model flux
         npix = len(wave_cache)
         nmod = self.nmod
@@ -456,12 +579,10 @@ class RVM:
         self.__setattr__("_mean1_cache_{}".format(cache_name), _mean1)
         self.__setattr__("_res1_cache_{}".format(cache_name), _res1)
         self.__setattr__("_cov11_cache_{}".format(cache_name), _cov11)
-
         # update cache names
         self.cache_names.append(cache_name)
-        return
 
-    def delete_cache(self, cache_name):
+    def delete_cache(self, cache_name: str) -> None:
         """delete cache"""
         assert cache_name in self.cache_names
         print("@RVM: deleting cache [cache_name={}]...".format(cache_name))
@@ -472,9 +593,8 @@ class RVM:
         self.__delattr__("_res1_cache_{}".format(cache_name))
         self.__delattr__("_cov11_cache_{}".format(cache_name))
         self.cache_names.remove(cache_name)
-        return
 
-    def shrink(self, nmod=0.5, method="top"):
+    def shrink(self, nmod: Union[float, int] = 0.5, method: str = "top"):
         # determine number of models
         if 0 < nmod < 1:
             assert self.nmod * nmod >= 1
@@ -498,17 +618,17 @@ class RVM:
 
     def measure(
         self,
-        wave_obs,
-        flux_obs,
-        flux_err=None,
-        rv_grid=(-600, 600, 10),
-        flux_bounds=(0, 3.0),
-        nmc=100,
-        method="BFGS",
-        cache_name=None,
-        return_ccfgrid=False,
-    ):
-        """measure RV for a single spectrum
+        wave_obs: npt.NDArray,
+        flux_obs: npt.NDArray,
+        rv_grid: Union[tuple, list, npt.NDArray] = (-1000, 1000, 10),
+        flux_err: Optional[npt.NDArray] = None,
+        flux_bounds: tuple[float, float] = (0, 3.0),
+        nmc: int = 100,
+        method: str = "BFGS",
+        cache_name: Optional[str] = None,
+        return_ccfgrid: bool = False,
+    ) -> dict:
+        """Measure RV for a single spectrum.
 
         Parameters
         ----------
@@ -518,7 +638,7 @@ class RVM:
             observed flux (normalized)
         flux_err:
             observed flux error
-        rv_grid: tuple (rv_strat, rv_stop, rv_step)
+        rv_grid: Union[tuple, list, npt.NDArray]
             if cache, use the cached rv_grid
             else, use this rv_grid
         flux_bounds:
@@ -536,13 +656,15 @@ class RVM:
 
         Returns
         -------
-
+        dict
+            RV measurement.
         """
         # clip extreme values
         ind3 = (flux_obs > flux_bounds[0]) & (flux_obs < flux_bounds[1])
         flux_obs = np.interp(wave_obs, wave_obs[ind3], flux_obs[ind3])
         # CCF grid
         if cache_name in self.cache_names:
+            # if cache exists
             flux0 = np.interp(
                 self.__getattribute__("wave_mod_cache_{}".format(cache_name)),
                 wave_obs[ind3],
@@ -567,23 +689,22 @@ class RVM:
         elif cache_name == "matrix":
             # vectorize data to accelerate
             # e.g., 100 templates x 200 rv values (-1000 to 1000, a step of 10) x 3347 pixels takes 450MB memory
-            assert len(rv_grid) == 3
             rv_grid = construct_rv_grid(rv_grid)
             ccf_grid = xcorr_spec_vectorized(
-                rv_grid, wave_obs, flux_obs, self.wave_mod, self.flux_mod
+                wave_obs, flux_obs, self.wave_mod, self.flux_mod, rv_grid
             )
         elif cache_name is None or cache_name is False:
-            assert len(rv_grid) == 3
+            # no cache
             rv_grid = construct_rv_grid(rv_grid)
             ccf_grid = np.zeros((self.flux_mod.shape[0], rv_grid.shape[0]))
             for imod in range(self.nmod):
                 ccf_grid[imod] = xcorr_spec_rvgrid(
-                    wave_obs,
-                    flux_obs,
-                    self.wave_mod,
-                    self.flux_mod[imod],
+                    wave_obs=wave_obs,
+                    flux_obs=flux_obs,
+                    wave_mod=self.wave_mod,
+                    flux_mod=self.flux_mod[imod],
                     rv_grid=rv_grid,
-                )[1]
+                )
         else:
             raise ValueError(
                 "@RVM: invalid cache_name: {}. valid options:{} or matrix".format(
@@ -638,22 +759,23 @@ class RVM:
 
     def measure_multiepoch(
         self,
-        wave_obs_list,
-        flux_obs_list,
+        wave_obs_list: list,
+        flux_obs_list: list,
         flux_err_obs_list,
-        cache_name="BR",
-        flux_bounds=(0, 3),
-        method="BFGS",
-        eta_init=0.4,
-        eta_lim=(0.1, 2),
-        drvmax=500,
-        drvstep=10,
-        nmc=100,
-        verbose=False,
+        cache_name: str = "BR",
+        flux_bounds: tuple = (0.0, 3.0),
+        method: str = "BFGS",
+        eta_init: float = 0.4,
+        eta_lim: tuple = (0.1, 2.0),
+        drvmax: float = 500.0,
+        drvstep: float = 10,
+        nmc: int = 100,
+        verbose: bool = False,
     ):
-        """determine the RVs of multi-epoch spectra
+        """Determine the RVs of multi-epoch spectra.
+
         For best performance, all input spectra are assumed to have the same wavelength coverage.
-        Those with only one good arm
+        Those with only one good arm.
 
         Parameters
         ----------
@@ -663,16 +785,15 @@ class RVM:
             list of flux
         flux_err_obs_list:
             list flux_err
-        rv_init:
-            list of initial RVs
-        rv_grid:
-            if rv_init is None, use rv_grid to guess RVs
-        strategy: "max" | "mean"
-            the strategy used to select the best-match template
-            --- currently fixed to "max"
+        cache_name:
+            Cache name.
+        flux_bounds:
+            Flux bounds.
 
         Returns
         -------
+        list[dict]
+            RV measurements.
 
         """
         if verbose:
@@ -846,7 +967,7 @@ class RVM:
 
             # measure double components
             """ given a template, optimize (rv1, drv, eta) """
-            rvr2 = xcorr_spec_binary_rvgrid(
+            rvr2 = xcorr_spec_binary_rv2grid(
                 wave_obs,
                 flux_obs,
                 self.wave_mod,
@@ -889,23 +1010,23 @@ class RVM:
 
     def measure2(
         self,
-        wave_obs,
-        flux_obs,
-        flux_err,
-        wave_mod1,
-        flux_mod1,
-        wave_mod2,
-        flux_mod2,
-        rv1_init=0.0,
-        eta_init=0.3,
+        wave_obs: npt.NDArray,
+        flux_obs: npt.NDArray,
+        flux_err: npt.NDArray,
+        wave_mod1: npt.NDArray,
+        flux_mod1: npt.NDArray,
+        wave_mod2: npt.NDArray,
+        flux_mod2: npt.NDArray,
+        rv1_init: float = 0.0,
+        eta_init: float = 0.3,
         eta_lim=(0.1, 1.0),
-        drvmax=500,
-        drvstep=5,
-        method="Powell",
-        nmc=100,
+        drvmax: float = 500.0,
+        drvstep: float = 5.0,
+        method: str = "Powell",
+        nmc: int = 100,
     ):
         """given a template, optimize (rv1, drv, eta)"""
-        opt = xcorr_spec_binary_rvgrid(
+        opt = xcorr_spec_binary_rv2grid(
             wave_obs,
             flux_obs,
             wave_mod1,
@@ -934,7 +1055,7 @@ class RVM:
         )
         return flux_mod_interp
 
-    def reproduce_spectrum_single(self, rvr):
+    def reproduce_spectrum_single(self, rvr: dict):
         """reproduce the spectrum"""
         imod1 = rvr["imod1"]
         rv1 = rvr["rv1"]
@@ -960,22 +1081,22 @@ class RVM:
 
     def measure_binary(
         self,
-        wave_obs,
-        flux_obs,
-        flux_err=None,
-        cache_name="B",
-        rv_grid=(-600, 600, 10),
-        flux_bounds=(0, 3.0),
-        twin=True,
-        eta_init=0.3,
-        eta_lim=(0.01, 3.0),
-        drvmax=500,
-        drvstep=5,
-        method="Powell",
-        nmc=100,
-        suffix="",
-        return_ccfgrid=False,
-        return_spec=False,
+        wave_obs: npt.NDArray,
+        flux_obs: npt.NDArray,
+        rv_grid: Union[tuple, list, npt.NDArray] = (-1000, 1000, 10),
+        flux_err: Optional[npt.NDArray] = None,
+        cache_name: str = "B",
+        flux_bounds: tuple = (0.0, 3.0),
+        twin: bool = True,
+        eta_init: float = 0.3,
+        eta_lim: tuple = (0.01, 3.0),
+        drvmax: float = 500.0,
+        drvstep: float = 5.0,
+        method: str = "Powell",
+        nmc: int = 100,
+        suffix: str = "",
+        return_ccfgrid: bool = False,
+        return_spec: bool = False,
     ):
         # clip extreme values
         ind3 = (flux_obs > flux_bounds[0]) & (flux_obs < flux_bounds[1])
@@ -985,8 +1106,8 @@ class RVM:
         rvr1 = self.measure(
             wave_obs,
             flux_obs,
-            flux_err=flux_err,
             rv_grid=rv_grid,
+            flux_err=flux_err,
             nmc=nmc,
             cache_name=cache_name,
             return_ccfgrid=return_ccfgrid,
@@ -1097,64 +1218,65 @@ class RVM:
 
     def ccf_1mod(
         self,
-        wave_mod,
-        flux_mod,
-        wave_obs,
-        flux_obs,
-        rv_grid=(-600, 600, 100),
-        flux_bounds=(0, 3.0),
-    ):
-        """measure RV"""
+        wave_mod: npt.NDArray,
+        flux_mod: npt.NDArray,
+        wave_obs: npt.NDArray,
+        flux_obs: npt.NDArray,
+        rv_grid: Union[tuple, list, npt.NDArray] = (-1000, 1000, 10),
+        flux_bounds: tuple = (0, 3.0),
+    ) -> tuple[npt.NDArray, npt.NDArray]:
+        """Calculate CCF for a given flux_mod and a flux_obs at `rv_grid`."""
         # clip extreme values
         ind3 = (flux_obs > flux_bounds[0]) & (flux_obs < flux_bounds[1])
         flux_obs = np.interp(wave_obs, wave_obs[ind3], flux_obs[ind3])
         # CCF grid
-        ccf_grid = xcorr_spec_rvgrid(
-            wave_obs, flux_obs, wave_mod, flux_mod, rv_grid=rv_grid
-        )[1]
+        rv_grid = construct_rv_grid(rv_grid)
+        ccf_grid = xcorr_spec_rvgrid(wave_obs, flux_obs, wave_mod, flux_mod[1], rv_grid)
         return rv_grid, ccf_grid
 
     def chi2_1mod(
         self,
-        imod,
-        wave_obs,
-        flux_obs,
-        rv_grid=np.linspace(-600, 600, 100),
-        pw=2,
-        flux_bounds=(0, 3.0),
+        imod: int,
+        wave_obs: npt.NDArray,
+        flux_obs: npt.NDArray,
+        rv_grid: Union[tuple, list, npt.NDArray] = (-1000, 1000, 10),
+        pw: float = 2,
+        flux_bounds: tuple[float, float] = (0.0, 3.0),
     ):
         """measure RV"""
         # clip extreme values
         ind3 = (flux_obs > flux_bounds[0]) & (flux_obs < flux_bounds[1])
         flux_obs = np.interp(wave_obs, wave_obs[ind3], flux_obs[ind3])
         # respw grid
+        rv_grid = construct_rv_grid(rv_grid)
         respw_grid = respw_rvgrid(
             wave_obs,
             flux_obs,
             self.wave_mod,
             self.flux_mod[imod],
-            rv_grid=rv_grid,
+            rv_grid,
             pw=pw,
         )
         return rv_grid, respw_grid
 
     def measure_pw(
         self,
-        wave_obs,
-        flux_obs,
-        rv_grid=np.linspace(-600, 600, 100),
-        method="BFGS",
-        pw=1,
+        wave_obs: npt.NDArray,
+        flux_obs: npt.NDArray,
+        rv_grid: Union[tuple, list, npt.NDArray] = (-1000, 1000, 10),
+        method: str = "BFGS",
+        pw: float = 1.0,
     ):
         # clip extreme values
         ind3 = (flux_obs < 3) & (flux_obs > 0.0)
         flux_obs = np.interp(wave_obs, wave_obs[ind3], flux_obs[ind3])
         # CCF grid
+        rv_grid = construct_rv_grid(rv_grid)
         ccf = np.zeros((self.flux_mod.shape[0], rv_grid.shape[0]))
         for j in range(self.flux_mod.shape[0]):
             ccf[j] = xcorr_spec_rvgrid(
-                wave_obs, flux_obs, self.wave_mod, self.flux_mod[j], rv_grid=rv_grid
-            )[1]
+                wave_obs, flux_obs, self.wave_mod, self.flux_mod[j][1], rv_grid
+            )
         # CCF max
         ccfmax = np.max(ccf)
         ind_best = np.where(ccfmax == ccf)
@@ -1194,7 +1316,7 @@ class RVM:
         """this is the configuration used in"""
         # read spectrum
         mrv_kwargs = {
-            "rv_grid": (-1000, 1000, 201),
+            "rv_grid": (-1000, 1000, 10),
             "eta_init": 0.5,
             "eta_lim": (0.01, 3.0),
         }
@@ -1287,123 +1409,169 @@ class RVM:
             joblib.dump(rvr, fpout)
 
 
-def construct_rv_grid(rv_grid=(-600, 600, 10)):
-    """construct rv_grid from (rv_start, rv_stop, rv_step) form input"""
-    try:
-        assert len(rv_grid) == 3
-    except AssertionError:
-        raise AssertionError(
-            "rv_grid should have the form of (rv_start, rv_stop, rv_step)"
-        )
-    return np.arange(rv_grid[0], rv_grid[1] + rv_grid[2], rv_grid[2])
+def construct_rv_grid(
+    rv_grid: Union[tuple, list, npt.NDArray] = (-1000, 1000, 10)
+) -> npt.NDArray:
+    """Construct rv_grid form input.
+
+    Parameters
+    ----------
+    rv_grid : Union[tuple, list, npt.NDArray]
+        RV grid or parameters.
+        - tuple/list: (rv_start, rv_stop, rv_step)
+        - npt.NdArray: return grid
+
+    Returns
+    -------
+    npt.NDArray
+        RV grid.
+    """
+    if isinstance(rv_grid, (list, tuple)):
+        # RV grid parameters
+        assert (
+            isinstance(rv_grid, tuple) and len(rv_grid) == 3
+        ), "The input `rv_grid` should be a tuple of (rv_start, rv_stop, rv_step)!"
+        return np.arange(rv_grid[0], rv_grid[1] + rv_grid[2], rv_grid[2], dtype=float)
+    else:
+        # RV grid already
+        return np.asarray(rv_grid, dtype=float)
 
 
-def test_new_rvm():
+def test_rvm_20240401():
     import joblib
+    import numpy as np
+    from laspec import RVM
 
-    rvm = RVM(
-        joblib.load(
-            "/Users/cham/PycharmProjects/laspec/laspec/data/rvm/v8_rvm_pmod.dump"
-        ),
-        joblib.load(
-            "/Users/cham/PycharmProjects/laspec/laspec/data/rvm/v8_rvm_wave_mod.dump"
-        ),
-        joblib.load(
-            "/Users/cham/PycharmProjects/laspec/laspec/data/rvm/v8_rvm_flux_mod.dump"
-        ),
+    rvmdata = joblib.load("/Users/cham/projects/lamost/rvm/RVMDATA_R7500_M8.joblib")
+    rvm = RVM(**rvmdata)
+
+    i_test = 1
+    print(rvm.pmod[i_test])
+    rvm.make_cache(cache_name="B", wave_range=(5000, 5300), rv_grid=(-1000, 1000, 10))
+
+    index_B = (rvm.wave_mod > 5000) & (rvm.wave_mod < 5300)
+    rv = 123.45
+    wave_obs = rvm.wave_mod[index_B] * (1 + rv / SOL_kms)
+    flux_obs = rvm.flux_mod[i_test][index_B] + np.random.normal(
+        loc=0, scale=0.05, size=wave_obs.shape
     )
-
-    waveBR, spec_list = joblib.load(
-        "/Users/cham/projects/sb2/test_ccf/wave_flux_30.dump"
-    )
-    wave_obs = waveBR[waveBR < 5500]
-    npix = len(wave_obs)
-    # %%%% read spectra
-    import glob
-
-    fps = glob.glob("./*.fits.gz")
-
-    from laspec.mrs import MrsSource, debad
-
-    ms = MrsSource.read(fps)
-
-    # %%
-    fig, axs = plt.subplots(1, 2)
-    for i, me in enumerate(ms[:1]):
-        # wave_obs = me.wave_B
-        # flux_obs = me.flux_norm_B
-        wave_obs, flux_obs = (
-            me.wave_B[50:-50],
-            debad(me.wave_B, me.flux_norm_B, nsigma=(4, 8), maxiter=5)[50:-50],
-        )
-        axs[0].plot(wave_obs, flux_obs + i, "k")
-
-        # measure RV
-        rvr = rvm.measure(wave_obs, flux_obs)
-        print(rvr)
-        imod = rvr["imod"]
-        rv_grid, ccf_grid = rvm.ccf_1mod(
-            rvm.wave_mod,
-            rvm.flux_mod[imod],
-            wave_obs,
-            flux_obs,
-            rv_grid=(-2000, 2000, 5),
-        )
-        axs[1].plot(rv_grid, ccf_grid + i, "b")
-
     # %%time
-    rvr = []
-
-    for i, me in enumerate(ms[:]):
-        print(i)
-
-        # wave_obs = me.wave_B
-        # flux_obs = me.flux_norm_B
-
-        # remove cosmic rays
-        wave_obs, flux_obs = (
-            me.wave_B[50:-50],
-            debad(me.wave_B, me.flux_norm_B, nsigma=(4, 8), maxiter=5)[50:-50],
-        )
-        # measure binary
-        this_rvr = rvm.measure_binary(
-            wave_obs,
-            flux_obs,
-            rv_grid=(-600, 600, 10),
-            flux_bounds=(0, 3.0),
-            eta_init=0.3,
-            drvmax=500,
-            drvstep=5,
-            method="Powell",
-        )
-        this_rvr["lmjm"] = me.epoch
-        this_rvr["snr"] = me.snr[0]
-        # append results
-        rvr.append(this_rvr)
-
-    from astropy.table import Table
-
-    trvr = Table(rvr)
-    trvr.write("./trvr.fits", overwrite=True)
-    trvr.show_in_browser()
-    # %%
-    plt.figure()
-    plt.plot(trvr["snr"], trvr["ccfmax1"], "bo")
-    plt.plot(trvr["snr"], trvr["ccfmax2"], "ro")
-    plt.ylim(0, 1)
-    # %%
-    plt.figure()
-    plt.plot(trvr["lmjm"], trvr["rv1_drv_eta"][:, 0], "ro", label="star 1")
-    plt.plot(
-        trvr["lmjm"],
-        trvr["rv1_drv_eta"][:, 0] + trvr["rv1_drv_eta"][:, 1],
-        "bo",
-        label="star 2",
+    rvm.measure(wave_obs, flux_obs, flux_err=None, cache_name=None)
+    # %%time
+    rvm.measure(wave_obs, flux_obs, flux_err=None, cache_name="matrix")
+    # %%time
+    rvm.measure(wave_obs, flux_obs, flux_err=None, cache_name="B")
+    # %%time
+    rvm.measure_binary(
+        wave_obs, flux_obs, rv_grid=(-1000, 1000, 10), flux_err=None, cache_name="B"
     )
-    plt.legend(loc="right")
-    plt.xlabel("lmjm")
-    plt.ylabel("RV[km/s]")
 
 
-if __name__ == "__main__":
-    pass
+# def test_new_rvm():
+#     import joblib
+#
+#     rvm = RVM(
+#         joblib.load(
+#             "/Users/cham/PycharmProjects/laspec/laspec/data/rvm/v8_rvm_pmod.dump"
+#         ),
+#         joblib.load(
+#             "/Users/cham/PycharmProjects/laspec/laspec/data/rvm/v8_rvm_wave_mod.dump"
+#         ),
+#         joblib.load(
+#             "/Users/cham/PycharmProjects/laspec/laspec/data/rvm/v8_rvm_flux_mod.dump"
+#         ),
+#     )
+#
+#     waveBR, spec_list = joblib.load(
+#         "/Users/cham/projects/sb2/test_ccf/wave_flux_30.dump"
+#     )
+#     wave_obs = waveBR[waveBR < 5500]
+#     npix = len(wave_obs)
+#     # %%%% read spectra
+#     import glob
+#
+#     fps = glob.glob("./*.fits.gz")
+#     from laspec.mrs import MrsSource, debad
+#
+#     ms = MrsSource.read(fps)
+#
+#     # %%
+#     fig, axs = plt.subplots(1, 2)
+#     for i, me in enumerate(ms[:1]):
+#         # wave_obs = me.wave_B
+#         # flux_obs = me.flux_norm_B
+#         wave_obs, flux_obs = (
+#             me.wave_B[50:-50],
+#             debad(me.wave_B, me.flux_norm_B, nsigma=(4, 8), maxiter=5)[50:-50],
+#         )
+#         axs[0].plot(wave_obs, flux_obs + i, "k")
+#
+#         # measure RV
+#         rvr = rvm.measure(wave_obs, flux_obs)
+#         print(rvr)
+#         imod = rvr["imod"]
+#         rv_grid, ccf_grid = rvm.ccf_1mod(
+#             rvm.wave_mod,
+#             rvm.flux_mod[imod],
+#             wave_obs,
+#             flux_obs,
+#             rv_grid=(-2000, 2000, 5),
+#         )
+#         axs[1].plot(rv_grid, ccf_grid + i, "b")
+#
+#     # %%time
+#     rvr = []
+#
+#     for i, me in enumerate(ms[:]):
+#         print(i)
+#
+#         # wave_obs = me.wave_B
+#         # flux_obs = me.flux_norm_B
+#
+#         # remove cosmic rays
+#         wave_obs, flux_obs = (
+#             me.wave_B[50:-50],
+#             debad(me.wave_B, me.flux_norm_B, nsigma=(4, 8), maxiter=5)[50:-50],
+#         )
+#         # measure binary
+#         this_rvr = rvm.measure_binary(
+#             wave_obs,
+#             flux_obs,
+#             rv_grid=(-600, 600, 10),
+#             flux_bounds=(0, 3.0),
+#             eta_init=0.3,
+#             drvmax=500,
+#             drvstep=5,
+#             method="Powell",
+#         )
+#         this_rvr["lmjm"] = me.epoch
+#         this_rvr["snr"] = me.snr[0]
+#         # append results
+#         rvr.append(this_rvr)
+#
+#     from astropy.table import Table
+#
+#     trvr = Table(rvr)
+#     trvr.write("./trvr.fits", overwrite=True)
+#     trvr.show_in_browser()
+#     # %%
+#     plt.figure()
+#     plt.plot(trvr["snr"], trvr["ccfmax1"], "bo")
+#     plt.plot(trvr["snr"], trvr["ccfmax2"], "ro")
+#     plt.ylim(0, 1)
+#     # %%
+#     plt.figure()
+#     plt.plot(trvr["lmjm"], trvr["rv1_drv_eta"][:, 0], "ro", label="star 1")
+#     plt.plot(
+#         trvr["lmjm"],
+#         trvr["rv1_drv_eta"][:, 0] + trvr["rv1_drv_eta"][:, 1],
+#         "bo",
+#         label="star 2",
+#     )
+#     plt.legend(loc="right")
+#     plt.xlabel("lmjm")
+#     plt.ylabel("RV[km/s]")
+#
+#
+# if __name__ == "__main__":
+#     pass
