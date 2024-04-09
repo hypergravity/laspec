@@ -379,7 +379,7 @@ tseu_meta = table.join(
 print(len(tseu), len(tseu_meta))
 
 # =====================================
-# Plot
+# Figure: RVZP - date
 # =====================================
 # %%
 idx_good_rvzp_B = (
@@ -442,8 +442,20 @@ set_cham(12, latex=False, xminor=False)
 plt.rcParams["font.family"] = "Arial"
 
 kwargs = dict(ms=5, mec="k", mew=0.08, alpha=0.7)
-fig, axs = plt.subplots(2, 1, figsize=(15, 8), sharex=True, sharey=True)
-for lamp_type, color in zip(lamp_type_list, color_list):
+ekwargs = dict(
+    marker="_",
+    ms=5,
+    capthick=1,
+    capsize=5,
+    elinewidth=2,
+)
+ex_list = np.linspace(86600000, 86770000, 4)
+text_shift_list = [2, -7, 2, -5]
+
+fig, axs = plt.subplots(2, 1, figsize=(13, 6), sharex=False, sharey=True)
+for lamp_type, color, ex, text_shift in zip(
+    lamp_type_list, color_list, ex_list, text_shift_list
+):
     axs[0].plot(
         tseu_meta["u_lmjm"][lamp_B[lamp_type.lower()] & idx_good_rvzp_B],
         tseu_meta["rvzp_B"][lamp_B[lamp_type.lower()] & idx_good_rvzp_B],
@@ -452,7 +464,33 @@ for lamp_type, color in zip(lamp_type_list, color_list):
         label=lamp_type,
         **kwargs,
     )
-for lamp_type, color in zip(lamp_type_list, color_list):
+    if np.sum(lamp_B[lamp_type.lower()] & idx_good_rvzp_B) > 0:
+        pct = np.percentile(
+            np.asarray(
+                tseu_meta["rvzp_B"][lamp_B[lamp_type.lower()] & idx_good_rvzp_B]
+            ),
+            [16, 50, 84],
+        )
+        dpct = np.diff(pct)
+        axs[0].errorbar(
+            ex,
+            pct[1],
+            yerr=dpct.reshape(2, -1),
+            color=color,
+            markerfacecolor=color,
+            **ekwargs,
+        )
+        axs[0].text(
+            ex,
+            pct[2] + text_shift,
+            f"${{{pct[1]:.1f}}}^{{+{dpct[1]:.1f}}}_{{-{dpct[0]:.1f}}}$",
+            horizontalalignment="center",
+            fontsize=9,
+            color=color,
+        )
+for lamp_type, color, ex, text_shift in zip(
+    lamp_type_list, color_list, ex_list, text_shift_list
+):
     axs[1].plot(
         tseu_meta["u_lmjm"][lamp_R[lamp_type.lower()] & idx_good_rvzp_R],
         tseu_meta["rvzp_R"][lamp_R[lamp_type.lower()] & idx_good_rvzp_R],
@@ -461,24 +499,81 @@ for lamp_type, color in zip(lamp_type_list, color_list):
         label=lamp_type,
         **kwargs,
     )
+    if np.sum(lamp_R[lamp_type.lower()] & idx_good_rvzp_R) > 0:
+        pct = np.percentile(
+            np.asarray(
+                tseu_meta["rvzp_R"][lamp_R[lamp_type.lower()] & idx_good_rvzp_R]
+            ),
+            [16, 50, 84],
+        )
+        dpct = np.diff(pct)
+        axs[1].errorbar(
+            ex,
+            pct[1],
+            yerr=dpct.reshape(2, -1),
+            color=color,
+            markerfacecolor=color,
+            **ekwargs,
+        )
+        axs[1].text(
+            ex,
+            pct[2] + text_shift,
+            f"${{{pct[1]:.1f}}}^{{+{dpct[1]:.1f}}}_{{-{dpct[0]:.1f}}}$",
+            horizontalalignment="center",
+            fontsize=9,
+            color=color,
+        )
 
+month_map = {
+    1: "Jan",
+    2: "Feb",
+    3: "Mar",
+    4: "Apr",
+    5: "May",
+    6: "Jun",
+    7: "Jul",
+    8: "Aug",
+    9: "Sep",
+    10: "Oct",
+    11: "Nov",
+    12: "Dec",
+}
 lmjm_tick_list = []
 lmjm_label_list = []
+lmjm_year_tick_list = []
+year_tick_list = []
 for year in range(2017, 2024):
     for month in range(1, 13):
         date_str = f"{year:04d}-{month:02d}-01T00:00:00"
         lmjm_tick_list.append(Time(date_str, format="isot").mjd * 1440)
-        lmjm_label_list.append(f"{year:04d}-{month:02d}")
+        # lmjm_label_list.append(f"{year:04d}-{month:02d}")
+        lmjm_label_list.append(month_map[month])
+        if month == 1:
+            lmjm_year_tick_list.append(Time(date_str, format="isot").mjd * 1440)
+        if year == 2017 and month == 11:
+            year_tick_list.append(f"{year}")
+        elif year == 2023 and month == 7:
+            year_tick_list.append(f"{year}")
+        elif year in [2018, 2019, 2020, 2021, 2022] and month == 7:
+            year_tick_list.append(f"{year}")
+        else:
+            year_tick_list.append("")
 
+for ax in axs:
+    ax.set_yticks(np.arange(-30, 30, 5))
+    ax.set_xticks(lmjm_tick_list)
+    ax.set_ylim(-17, 17)
+    ax.set_xlim(83500000, 86850000)
+axs[0].xaxis.tick_top()
+axs[0].xaxis.set_label_position("top")
+axs[0].set_xticklabels(year_tick_list, fontsize=20, horizontalalignment="center")
+axs[0].xaxis.set_ticks_position("both")
 
-axs[1].set_yticks(np.arange(-30, 30, 5))
-axs[1].set_xticks(lmjm_tick_list)
 axs[1].set_xticklabels(lmjm_label_list, rotation=60)
-axs[1].set_ylim(-17, 17)
-axs[1].set_xlim(83500000, 86600000)
-axs[0].set_ylabel(r"$\Delta v_B$ [km s$^{-1}$]", fontsize=18)
-axs[1].set_ylabel(r"$\Delta v_R$ [km s$^{-1}$]", fontsize=18)
+axs[0].set_ylabel(r"$\Delta v_B$ [km s$^{-1}$]", fontsize=20)
+axs[1].set_ylabel(r"$\Delta v_R$ [km s$^{-1}$]", fontsize=20)
 axs[1].legend(loc="lower left", fontsize=10, framealpha=0.5)
+
 axs[0].annotate(
     "Blue Arm",
     xy=(0.1, 0.7),
@@ -486,8 +581,8 @@ axs[0].annotate(
     xytext=(0.2, 0.85),
     textcoords="axes fraction",
     color="tab:blue",
-    fontsize=25,
-    # fontweight="bold",
+    fontsize=20,
+    fontweight="bold",
     # arrowprops=dict(facecolor="black", arrowstyle="->"),
     horizontalalignment="center",
 )
@@ -498,8 +593,8 @@ axs[1].annotate(
     xytext=(0.2, 0.85),
     textcoords="axes fraction",
     color="tab:red",
-    fontsize=25,
-    # fontweight="bold",
+    fontsize=20,
+    fontweight="bold",
     # arrowprops=dict(facecolor="black", arrowstyle="->"),
     horizontalalignment="center",
 )
@@ -541,9 +636,77 @@ axs[1].annotate(
     horizontalalignment="left",
 )
 
-axs[0].grid(True, linewidth=0.5, color="gray", linestyle="-", alpha=0.5)
-axs[1].grid(True, linewidth=0.5, color="gray", linestyle="-", alpha=0.5)
+# axs[0].grid(True, linewidth=0.5, color="gray", linestyle="-", alpha=0.2)
+# axs[1].grid(True, linewidth=0.5, color="gray", linestyle="-", alpha=0.2)
+for ax in axs:
+    for ytick in range(-15, 20, 5):
+        ax.axhline(y=ytick, color="gray", linestyle="-", lw=0.5, alpha=0.5)
+    for xtick in lmjm_year_tick_list:
+        ax.axvline(x=xtick, color="gray", linestyle="-", lw=0.5, alpha=0.5)
+
 
 fig.tight_layout()
 fig.subplots_adjust(wspace=0, hspace=0.05)
+
+plt.annotate(
+    "Maximum",
+    xy=(0.5, 0.5),
+    xycoords="data",
+    xytext=(0.5, 0.5),
+    textcoords="figure fraction",
+    arrowprops=dict(facecolor="black", arrowstyle="->"),
+)
 fig.savefig("figs/rvzp_date.pdf")
+fig.savefig("figs/rvzp_date.png")
+
+# =====================================
+# Figure: RVZP - histogram - no need ...
+# =====================================
+set_cham(12, latex=False, xminor=True, yminor=False)
+
+fig, axs = plt.subplots(1, 2, figsize=(8, 4), sharex=True, sharey=True)
+kwargs = dict(
+    alpha=0.5,
+    density=True,
+    bins=np.linspace(-12, 12, 24),
+    edgecolor="k",
+    histtype="stepfilled",
+)
+for lamp_type, color in zip(lamp_type_list, color_list):
+    axs[0].hist(
+        tseu_meta["rvzp_B"][lamp_B[lamp_type.lower()] & idx_good_rvzp_B],
+        color=color,
+        label=lamp_type,
+        **kwargs,
+    )
+for lamp_type, color in zip(lamp_type_list, color_list):
+    axs[1].hist(
+        tseu_meta["rvzp_R"][lamp_R[lamp_type.lower()] & idx_good_rvzp_R],
+        color=color,
+        label=lamp_type,
+        **kwargs,
+    )
+
+axs[0].set_xlim(-12, 12)
+axs[0].set_xlabel(r"$\Delta v_B$ [km s$^{-1}$]", fontsize=20)
+axs[1].set_xlabel(r"$\Delta v_R$ [km s$^{-1}$]", fontsize=20)
+axs[0].set_ylabel(r"Counts", fontsize=20)
+axs[0].grid(True, linewidth=0.5, color="gray", linestyle="-", alpha=0.2)
+axs[1].grid(True, linewidth=0.5, color="gray", linestyle="-", alpha=0.2)
+fig.tight_layout()
+fig.subplots_adjust(wspace=0.05, hspace=0.05)
+fig.savefig("figs/rvzp_hist.pdf")
+
+fig, ax = plt.subplots(1, 1)
+ax.errorbar(
+    86830000,
+    1,
+    yerr=10,
+    marker="o",
+    ms=10,
+    markerfacecolor="none",
+    markeredgecolor="tab:blue",
+    markeredgewidth=2,
+    capsize=10,
+    elinewidth=2,
+)
