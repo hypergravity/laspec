@@ -9,7 +9,8 @@ import numpy as np
 from astropy import constants
 from astropy.io import fits
 from astropy.table import Table
-from scipy.signal import medfilt, gaussian
+from scipy.signal import medfilt
+from scipy.signal.windows import gaussian
 
 from .normalization import normalize_spectrum_general
 from .time import datetime2jd, eval_bjd
