@@ -178,7 +178,7 @@ def calibrate_rvzp(
     print("@RVZP: reconstruct mapping index from original catalog to tseu ...")
     ind_map = np.zeros(len(rvobs), dtype=int)
     for iseu in range(len(tseu)):
-        print("@RVZP: processing SEU [{}/{}] ...".format(iseu, len(tseu)))
+        print("@RVZP: map SEU [{}/{}] ...".format(iseu, len(tseu)))
         ind_map[(spid == tseu["u_spid"][iseu]) & (lmjm == tseu["u_lmjm"][iseu])] = iseu
     return tseu, ind_map
 
