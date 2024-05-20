@@ -1,0 +1,14 @@
+[package]
+pkgname = "laspec"
+version = "0.0.1"
+
+[downloadable_data]
+waveBR_L9 = "https://zenodo.org/records/11189780/files/waveBR_L9.joblib"
+waveBR_M9 = "https://zenodo.org/records/11189780/files/waveBR_M9.joblib"
+RVMDATA_R1800_L7="https://zenodo.org/records/11189780/files/RVMDATA_R1800_L7.joblib"
+RVMDATA_R7500_M7="https://zenodo.org/records/11189780/files/RVMDATA_R7500_M7.joblib"
+RVMDATA_R7500_M8="https://zenodo.org/records/11189780/files/RVMDATA_R7500_M8.joblib"
+
+
+
+[test]

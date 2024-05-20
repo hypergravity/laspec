@@ -29,7 +29,7 @@ setuptools.setup(
     include_package_data=False,
     package_data={
         "": ["LICENSE", "README.md"],
-        "laspec": ["data/lamost/*.dump"],
+        "laspec": ["config/*.toml"],
     },
     #  "laspec": ["data/*",
     #             "data/FERRESun/*",
