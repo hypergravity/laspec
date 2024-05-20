@@ -1,10 +1,44 @@
 import datetime
-import time
 import glob
-from copy import deepcopy
-import datetime
-from astropy.time import Time
+import os
+import time
 import warnings
+from copy import deepcopy
+
+import toml
+from astropy.time import Time
+from astropy.utils.data import download_file
+
+# determine CONFIG path
+CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config", "config.toml")
+# load config
+config = toml.load(CONFIG_PATH)
+# get the list of downloadable data
+DOWNLOADABLE_NAMES = list(config["downloadable_data"].keys())
+
+# get HOSTNAME
+HOSTNAME = os.uname()[1]
+# determine TEST_DATA_DIR via HOSTNAME
+TEST_DATA_DIR = (
+    os.path.join(os.path.dirname(__file__), "data")
+    if HOSTNAME in config["test_data"].keys()
+    else None
+)
+
+
+def download(name="RVMDATA_R7500_M8"):
+    if name in DOWNLOADABLE_NAMES:
+        remote_url = config["downloadable_data"][name]
+        pkgname = config["package"]["pkgname"]
+        print("Downloading {}...".format(remote_url))
+        return download_file(
+            remote_url=remote_url, cache=True, pkgname=pkgname, show_progress=True
+        )
+    else:
+        raise ValueError(f"'{name}' is not downloadable")
+
+
+# ---
 
 
 def ezcount(fmt="", delta_t=3):
@@ -35,7 +69,7 @@ def run5km():
 
 
 def tianhao():
-    """ time away from H. Tian's first house """
+    """time away from H. Tian's first house"""
     warnings.filterwarnings("ignore")
     t0 = Time(datetime.datetime.now())
     t1 = Time("2032-02-11T08:00:00", format="isot")
@@ -43,8 +77,13 @@ def tianhao():
     print("{:.5f} days away from H. Tian's first big house. ".format(dt.value))
 
 
-def ads(lib_id="v89_ChWTSKOUFvCpxOm6Tg", token="6OEonb0MGO6EzpatpzomBSJrXXbJziaiz6qzPTQn", tofile=None, rows=500,
-        sep="%"):
+def ads(
+    lib_id="v89_ChWTSKOUFvCpxOm6Tg",
+    token="6OEonb0MGO6EzpatpzomBSJrXXbJziaiz6qzPTQn",
+    tofile=None,
+    rows=500,
+    sep="%",
+):
     """
 
     Parameters
@@ -69,17 +108,25 @@ def ads(lib_id="v89_ChWTSKOUFvCpxOm6Tg", token="6OEonb0MGO6EzpatpzomBSJrXXbJziai
     import os
     import requests
     import json
+
     # get the data for a specific library
-    r = requests.get("https://api.adsabs.harvard.edu/v1/biblib/libraries/{}".format(lib_id),
-                     headers={"Authorization": "Bearer " + token}, params={"rows": rows})
+    r = requests.get(
+        "https://api.adsabs.harvard.edu/v1/biblib/libraries/{}".format(lib_id),
+        headers={"Authorization": "Bearer " + token},
+        params={"rows": rows},
+    )
     bibtags = r.json()["documents"]
 
     # get the AASTeX entries for multiple bibcodes
-    payload = {"bibcode": bibtags,
-               "sort": "year desc"}
-    r = requests.post("https://api.adsabs.harvard.edu/v1/export/bibtex",
-                      headers={"Authorization": "Bearer " + token, "Content-type": "application/json"},
-                      data=json.dumps(payload))
+    payload = {"bibcode": bibtags, "sort": "year desc"}
+    r = requests.post(
+        "https://api.adsabs.harvard.edu/v1/export/bibtex",
+        headers={
+            "Authorization": "Bearer " + token,
+            "Content-type": "application/json",
+        },
+        data=json.dumps(payload),
+    )
     print(r.json()["msg"])
     bibtex = r.json()["export"]
 
@@ -97,13 +144,17 @@ def ads(lib_id="v89_ChWTSKOUFvCpxOm6Tg", token="6OEonb0MGO6EzpatpzomBSJrXXbJziai
             reserved = []
             for _i, _ in enumerate(old):
                 if _.startswith(sep):
-                    reserved = old[:_i + 1]
+                    reserved = old[: _i + 1]
             # remove file
             os.remove(tofile)
             # write a new file
             with open(tofile, "w+") as f:
                 f.writelines(reserved)
-                f.writelines(["\n", ])
+                f.writelines(
+                    [
+                        "\n",
+                    ]
+                )
                 f.writelines(bibtex)
         print("@Bo: bibtex saved to {}\n".format(tofile))
         return

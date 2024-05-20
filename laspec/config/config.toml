@@ -9,6 +9,10 @@ RVMDATA_R1800_L7="https://zenodo.org/records/11189780/files/RVMDATA_R1800_L7.job
 RVMDATA_R7500_M7="https://zenodo.org/records/11189780/files/RVMDATA_R7500_M7.joblib"
 RVMDATA_R7500_M8="https://zenodo.org/records/11189780/files/RVMDATA_R7500_M8.joblib"
 
-
+stilts="https://www.star.bris.ac.uk/~mbt/stilts/stilts.jar"
 
 [test]
+
+[test_data]
+alpha="/home/cham/PycharmProjects/laspec/test_data"
+MBP16="/Users/cham/PycharmProjects/laspec/test_data"
