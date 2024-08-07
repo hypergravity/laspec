@@ -1,3 +1,7 @@
+"""
+
+"""
+
 import datetime
 import glob
 import os
@@ -24,6 +28,15 @@ TEST_DATA_DIR = (
     if HOSTNAME in config["test_data"].keys()
     else None
 )
+
+
+def get_test_data(path: str) -> str:
+    """Get test data from `TEST_DATA_DIR`."""
+    full_path = os.path.join(TEST_DATA_DIR, path)
+    if os.path.exists(full_path):
+        return full_path
+    else:
+        raise FileNotFoundError(f"File {full_path} does not exist.")
 
 
 def download(name="RVMDATA_R7500_M8"):
