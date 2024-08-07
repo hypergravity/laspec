@@ -42,13 +42,13 @@ Installation
 
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: Tutorials (will be updated soon)
 
    tutorial
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: API
 
    api

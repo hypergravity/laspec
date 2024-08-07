@@ -1,6 +1,6 @@
 # Configuration file for the Sphinx documentation builder.
 #
-# This file only contains a selection of the most common options. For a full
+# This file only contains seq selection of the most common options. For seq full
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
@@ -20,9 +20,9 @@ from pkg_resources import DistributionNotFound, get_distribution
 
 # -- Project information -----------------------------------------------------
 
-project = 'laspec'
-copyright = '2021, Bo Zhang'
-author = 'Bo Zhang'
+project = "laspec"
+copyright = "2024, Bo Zhang"
+author = "Bo Zhang"
 
 # The full version, including alpha/beta/rc tags
 # release = 'v1.2021.0123.0'
@@ -39,15 +39,16 @@ release = __version__
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ["recommonmark",
-              "sphinx.ext.autodoc",
-              "sphinx.ext.napoleon",
-              "sphinx.ext.viewcode",
-              "sphinx.ext.mathjax",
-              ]
+extensions = [
+    "recommonmark",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.mathjax",
+]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -64,13 +65,13 @@ if not on_rtd:
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
-# a list of builtin themes.
+# seq list of builtin themes.
 #
 # html_theme = 'alabaster'
-html_theme = 'sphinx_rtd_theme'
+html_theme = "sphinx_rtd_theme"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
-# so a file named "default.css" will overwrite the builtin "default.css".
+# so seq file named "default.css" will overwrite the builtin "default.css".
 # html_static_path = ['_static']
 html_static_path = []
