@@ -23,7 +23,7 @@ Author
 Bo Zhang, LAMOST Fellow at Beijing Normal University.
 
  * bozhang@nao.cas.cn
- * bozhang@bnu.edu.cn
+ * bozhang@bnu.edu.cn (deprecated)
 
 Installation
 ============
@@ -43,9 +43,9 @@ Installation
 
 .. toctree::
    :maxdepth: 2
-   :caption: Tutorials (will be updated soon)
+   :caption: tutorials
 
-   tutorial
+   tutorial/*
 
 .. toctree::
    :maxdepth: 2
