@@ -16,8 +16,8 @@ sphinx_rtd_theme
 furo
 sphinx_rtd_theme
 sphinx-copybutton
-sphinx-tabs
-#sphinx_code_tabs
+#sphinx-tabs
+sphinx_code_tabs
 recommonmark
 myst_parser
 nbsphinx
