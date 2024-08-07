@@ -19,8 +19,8 @@ formats:
 build:
   os: ubuntu-22.04
   tools:
-    python: "3.9"
-    nodejs: "16"
+    python: "3.12"
+    nodejs: "20"
 
 # Optionally set the version of Python and requirements required to build your docs
 python:
