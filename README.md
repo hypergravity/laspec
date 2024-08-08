@@ -1,11 +1,17 @@
-## laspec
+## `laspec`
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4381155.svg)](https://doi.org/10.5281/zenodo.4381155)
-![Upload Python Package](https://github.com/hypergravity/laspec/workflows/Upload%20Python%20Package/badge.svg)
 [![Documentation Status](https://readthedocs.org/projects/laspec/badge/?version=latest)](https://laspec.readthedocs.io/en/latest/?badge=latest)
 
 A toolkit for LAMOST spectra.
+- github: [https://github.com/hypergravity/laspec](https://github.com/hypergravity/laspec)
+- PYPI: [https://pypi.org/project/laspec/](https://pypi.org/project/laspec/)
 
-## citation
+## Author
+
+- Bo Zhang, [bozhang@nao.cas.cn](mailto:bozhang@nao.cas.cn)
+
+
+## Cite us
 If you make use of this package in your research, please cite the paper below:
 - [Self-consistent Stellar Radial Velocities from LAMOST Medium-Resolution Survey (MRS) DR7](https://ui.adsabs.harvard.edu/abs/2021ApJS..256...14Z/abstract)
 - [Deriving the Stellar Labels of LAMOST Spectra with the Stellar LAbel Machine (SLAM)](https://ui.adsabs.harvard.edu/abs/2020ApJS..246....9Z/abstract)
@@ -51,21 +57,13 @@ archivePrefix = {arXiv},
 }
 ```
 
-## author
-Bo Zhang, [bozhang@nao.cas.cn](mailto:bozhang@nao.cas.cn)
+## Installation
 
-## home page
-- github: [https://github.com/hypergravity/laspec](https://github.com/hypergravity/laspec)
-- PYPI: [https://pypi.org/project/laspec/](https://pypi.org/project/laspec/)
-
-## install
 ```bash
-git clone https://github.com/hypergravity/laspec.git
-cd laspec
-sh install.sh
+pip install git+https://github.com/hypergravity/laspec.git
 ```
 
-## doumentation
+## Documentation
 
 A documentation on ReadTheDoc will be updated soon ...
 
@@ -132,6 +130,11 @@ Link to the doc: [https://laspec.readthedocs.io/en/latest/](https://laspec.readt
     - air2vac: convert wavelength from air to vacuum
 
 
-## acknowledgements
+## repo structure
 
-...
+- laspec: package
+- docs: documentation
+- tests: unit test scripts
+- test_data: 
+- scripts: project code
+- 
