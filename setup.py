@@ -7,7 +7,7 @@ with open("requirements.txt", "r") as f:
 
 setuptools.setup(
     name="laspec",
-    version="2024.08.07",
+    version="2024.08.08",
     author="Bo Zhang",
     author_email="bozhang@nao.cas.cn",
     description="Modules for LAMOST spectra.",  # short description
