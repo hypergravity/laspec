@@ -16,8 +16,8 @@ from laspec.mrs import MrsFits
 
 hostname = os.uname()[1]
 if hostname in ["alpha", "beta", "gamma"]:
-    WORKDIR = "/nfsdata/users/cham/projects/lamost/dr11-v1.0/reduced_catalog"
-    SPECDIR = "/nfsdata/users/cham/projects/lamost/dr11-v1.0/medfits"
+    WORKDIR = "/nfsdata/share/lamost/dr11-v1.0/reduced_catalog"
+    SPECDIR = "/nfsdata/share/lamost/dr11-v1.0/medfits"
 elif hostname == "Mac-Studio.local":
     WORKDIR = "/Users/cham/nfsdata/users/cham/projects/lamost/dr11-v1.0/reduced_catalog"
     SPECDIR = "/Users/cham/nfsdata/users/cham/projects/lamost/dr11-v1.0/medfits"
