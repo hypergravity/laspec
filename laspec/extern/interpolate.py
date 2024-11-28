@@ -1,5 +1,7 @@
 #!/usr/bin/env python
-from __future__ import absolute_import, division
+
+# BZ 2024-11-28, migrated to Python 3
+# from __future__ import absolute_import, division
 
 import numpy as np
 import scipy.signal
@@ -9,6 +11,7 @@ import scipy.sparse as sparse
 from numpy import ones, zeros, prod, sin, diff, pi, inf, vstack, linspace
 from scipy.interpolate import BPoly, interp1d
 
+# BZ 2024-11-28
 # from wafo import polynomial as pl
 from . import polynomial as pl
 
@@ -950,7 +953,7 @@ class StinemanInterp(object):
 
     Examples
     --------
-    >>> import wafo.interpolate as wi
+    >>> # import wafo.interpolate as wi
     >>> import numpy as np
     >>> import matplotlib.pyplot as plt
     >>> x = np.linspace(0,2*pi,20)
@@ -1092,7 +1095,7 @@ class Pchip(BPoly):
 
     Example
     -------
-    >>> import wafo.interpolate as wi
+    >>> # import wafo.interpolate as wi
 
     # Create a step function (will demonstrate monotonicity)
     >>> x = np.arange(7.0) - 3.0
@@ -1383,10 +1386,10 @@ def test_docstrings():
     doctest.testmod(optionflags=doctest.NORMALIZE_WHITESPACE)
 
 
-if __name__ == "__main__":
-    # test_func()
-    test_docstrings()
-    # test_smoothing_spline()
-    # compare_methods()
-    # demo_monoticity()
-    # test_interp3()
+# if __name__ == "__main__":
+#     test_func()
+#     test_docstrings()
+#     test_smoothing_spline()
+#     compare_methods()
+#     demo_monoticity()
+#     test_interp3()

@@ -1,6 +1,7 @@
 """
     Extended functions to operate on polynomials
 """
+
 # ------------------------------------------------------------------------
 # Name:        polynomial
 # Purpose:     Functions to operate on polynomials.
@@ -17,202 +18,251 @@
 # Licence:     LGPL
 # ------------------------------------------------------------------------
 # !/usr/bin/env python
-from __future__ import absolute_import
+
+# BZ 2024-11-28, migrated to Python 3
+# from __future__ import absolute_import
 
 import warnings  # @UnusedImport
 from functools import reduce
 
 import numpy as np
 from matplotlib import pyplot as plt  # modified by Bo Zhang
-from numpy import (newaxis, arange, pi)
-from numpy.lib.polynomial import *  # @UnusedWildImport
+from numpy import newaxis, arange, pi
+
+# BZ 2024-11-28, numpy 2.x
+# from numpy.lib.polynomial import *  # @UnusedWildImport
+from numpy import (
+    poly,
+    roots,
+    polyint,
+    polyder,
+    polyadd,
+    polysub,
+    polymul,
+    polydiv,
+    polyval,
+    poly1d,
+    polyfit,
+)
 from numpy.polynomial import polyutils as pu
 from scipy.fftpack import dct, idct as _idct
 from scipy.interpolate import pade
 
-__all__ = np.lib.polynomial.__all__
-__all__ = __all__ + ['pade', 'padefit', 'polyreloc', 'polyrescl', 'polytrim',
-                     'poly2hstr', 'poly2str', 'polyshift', 'polyishift',
-                     'map_from_intervall', 'map_to_intervall', 'cheb2poly',
-                     'chebextr', 'chebroot', 'chebpoly', 'chebfit', 'chebval',
-                     'chebder', 'chebint', 'Cheb1d', 'dct', 'idct']
+
+__all__ = [
+    # these functions are from numpy
+    "poly",
+    "roots",
+    "polyint",
+    "polyder",
+    "polyadd",
+    "polysub",
+    "polymul",
+    "polydiv",
+    "polyval",
+    "poly1d",
+    "polyfit",
+    # these functions are defined in this module
+    "pade",
+    "padefit",
+    "polyreloc",
+    "polyrescl",
+    "polytrim",
+    "poly2hstr",
+    "poly2str",
+    "polyshift",
+    "polyishift",
+    # "map_from_intervall", # no such function found in this module
+    # "map_to_intervall", # no such function found in this module
+    "cheb2poly",
+    "chebextr",
+    "chebroot",
+    "chebpoly",
+    "chebfit",
+    "chebval",
+    "chebder",
+    "chebint",
+    "Cheb1d",
+    "dct",
+    "idct",
+]
+
+# BZ: use numpy.polyint instead
+# def polyint(p, m=1, k=None):
+#     """
+#     Return an antiderivative (indefinite integral) of a polynomial.
+#
+#     The returned order `m` antiderivative `P` of polynomial `p` satisfies
+#     :math:`\\frac{d^m}{dx^m}P(x) = p(x)` and is defined up to `m - 1`
+#     integration constants `k`. The constants determine the low-order
+#     polynomial part
+#
+#     .. math:: \\frac{k_{m-1}}{0!} x^0 + \\ldots + \\frac{k_0}{(m-1)!}x^{m-1}
+#
+#     of `P` so that :math:`P^{(j)}(0) = k_{m-j-1}`.
+#
+#     Parameters
+#     ----------
+#     p : {array_like, poly1d}
+#         Polynomial to differentiate.
+#         A sequence is interpreted as polynomial coefficients, see `poly1d`.
+#     m : int, optional
+#         Order of the antiderivative. (Default: 1)
+#     k : {None, list of `m` scalars, scalar}, optional
+#         Integration constants. They are given in the order of integration:
+#         those corresponding to highest-order terms come first.
+#
+#         If ``None`` (default), all constants are assumed to be zero.
+#         If `m = 1`, a single scalar can be given instead of a list.
+#
+#     See Also
+#     --------
+#     polyder : derivative of a polynomial
+#     poly1d.integ : equivalent method
+#
+#     Examples
+#     --------
+#     The defining property of the antiderivative:
+#
+#     >>> p = np.poly1d([1,1,1])
+#     >>> P = np.polyint(p)
+#     >>> P
+#     poly1d([ 0.33333333,  0.5       ,  1.        ,  0.        ])
+#     >>> np.polyder(P) == p
+#     True
+#
+#     The integration constants default to zero, but can be specified:
+#
+#     >>> P = np.polyint(p, 3)
+#     >>> P(0)
+#     0.0
+#     >>> np.polyder(P)(0)
+#     0.0
+#     >>> np.polyder(P, 2)(0)
+#     0.0
+#     >>> P = np.polyint(p, 3, k=[6, 5, 3])
+#     >>> P
+#     poly1d([ 0.01666667,  0.04166667,  0.16666667,  3. ,  5. , 3. ])
+#
+#     Note that 3 = 6 / 2!, and that the constants are given in the order of
+#     integrations. Constant of the highest-order polynomial term comes first:
+#
+#     >>> np.polyder(P, 2)(0)
+#     6.0
+#     >>> np.polyder(P, 1)(0)
+#     5.0
+#     >>> P(0)
+#     3.0
+#
+#     """
+#     m = int(m)
+#     if m < 0:
+#         raise ValueError("Order of integral must be positive (see polyder)")
+#     if k is None:
+#         k = np.zeros(m, float)
+#     k = np.atleast_1d(k)
+#     if len(k) == 1 and m > 1:
+#         k = k[0] * np.ones(m, float)
+#     if len(k) < m:
+#         raise ValueError("k must be a scalar or a rank-1 array of length 1 or >m.")
+#     truepoly = isinstance(p, poly1d)
+#     p = np.asarray(p)
+#     if m == 0:
+#         if truepoly:
+#             return poly1d(p)
+#         return p
+#     else:
+#         ix = arange(len(p), 0, -1)
+#         if p.ndim > 1:
+#             ix = ix[..., newaxis]
+#             pieces = p.shape[-1]
+#             k0 = k[0] * np.ones((1, pieces), dtype=int)
+#         else:
+#             k0 = [k[0]]
+#         y = np.concatenate((p.__truediv__(ix), k0), axis=0)
+#
+#         val = polyint(y, m - 1, k=k[1:])
+#         if truepoly:
+#             return poly1d(val)
+#         return val
 
 
-def polyint(p, m=1, k=None):
-    """
-    Return an antiderivative (indefinite integral) of a polynomial.
-
-    The returned order `m` antiderivative `P` of polynomial `p` satisfies
-    :math:`\\frac{d^m}{dx^m}P(x) = p(x)` and is defined up to `m - 1`
-    integration constants `k`. The constants determine the low-order
-    polynomial part
-
-    .. math:: \\frac{k_{m-1}}{0!} x^0 + \\ldots + \\frac{k_0}{(m-1)!}x^{m-1}
-
-    of `P` so that :math:`P^{(j)}(0) = k_{m-j-1}`.
-
-    Parameters
-    ----------
-    p : {array_like, poly1d}
-        Polynomial to differentiate.
-        A sequence is interpreted as polynomial coefficients, see `poly1d`.
-    m : int, optional
-        Order of the antiderivative. (Default: 1)
-    k : {None, list of `m` scalars, scalar}, optional
-        Integration constants. They are given in the order of integration:
-        those corresponding to highest-order terms come first.
-
-        If ``None`` (default), all constants are assumed to be zero.
-        If `m = 1`, a single scalar can be given instead of a list.
-
-    See Also
-    --------
-    polyder : derivative of a polynomial
-    poly1d.integ : equivalent method
-
-    Examples
-    --------
-    The defining property of the antiderivative:
-
-    >>> p = np.poly1d([1,1,1])
-    >>> P = np.polyint(p)
-    >>> P
-    poly1d([ 0.33333333,  0.5       ,  1.        ,  0.        ])
-    >>> np.polyder(P) == p
-    True
-
-    The integration constants default to zero, but can be specified:
-
-    >>> P = np.polyint(p, 3)
-    >>> P(0)
-    0.0
-    >>> np.polyder(P)(0)
-    0.0
-    >>> np.polyder(P, 2)(0)
-    0.0
-    >>> P = np.polyint(p, 3, k=[6, 5, 3])
-    >>> P
-    poly1d([ 0.01666667,  0.04166667,  0.16666667,  3. ,  5. , 3. ])
-
-    Note that 3 = 6 / 2!, and that the constants are given in the order of
-    integrations. Constant of the highest-order polynomial term comes first:
-
-    >>> np.polyder(P, 2)(0)
-    6.0
-    >>> np.polyder(P, 1)(0)
-    5.0
-    >>> P(0)
-    3.0
-
-    """
-    m = int(m)
-    if m < 0:
-        raise ValueError("Order of integral must be positive (see polyder)")
-    if k is None:
-        k = np.zeros(m, float)
-    k = np.atleast_1d(k)
-    if len(k) == 1 and m > 1:
-        k = k[0] * np.ones(m, float)
-    if len(k) < m:
-        raise ValueError(
-            "k must be a scalar or a rank-1 array of length 1 or >m.")
-    truepoly = isinstance(p, poly1d)
-    p = np.asarray(p)
-    if m == 0:
-        if truepoly:
-            return poly1d(p)
-        return p
-    else:
-        ix = arange(len(p), 0, -1)
-        if p.ndim > 1:
-            ix = ix[..., newaxis]
-            pieces = p.shape[-1]
-            k0 = k[0] * np.ones((1, pieces), dtype=int)
-        else:
-            k0 = [k[0]]
-        y = np.concatenate((p.__truediv__(ix), k0), axis=0)
-
-        val = polyint(y, m - 1, k=k[1:])
-        if truepoly:
-            return poly1d(val)
-        return val
-
-
-def polyder(p, m=1):
-    """
-    Return the derivative of the specified order of a polynomial.
-
-    Parameters
-    ----------
-    p : poly1d or sequence
-        Polynomial to differentiate.
-        A sequence is interpreted as polynomial coefficients, see `poly1d`.
-    m : int, optional
-        Order of differentiation (default: 1)
-
-    Returns
-    -------
-    der : poly1d
-        A new polynomial representing the derivative.
-
-    See Also
-    --------
-    polyint : Anti-derivative of a polynomial.
-    poly1d : Class for one-dimensional polynomials.
-
-    Examples
-    --------
-    The derivative of the polynomial :math:`x^3 + x^2 + x^1 + 1` is:
-
-    >>> p = np.poly1d([1,1,1,1])
-    >>> p2 = np.polyder(p)
-    >>> p2
-    poly1d([3, 2, 1])
-
-    which evaluates to:
-
-    >>> p2(2.)
-    17.0
-
-    We can verify this, approximating the derivative with
-    ``(f(x + h) - f(x))/h``:
-
-    >>> (p(2. + 0.001) - p(2.)) / 0.001
-    17.007000999997857
-
-    The fourth-order derivative of a 3rd-order polynomial is zero:
-
-    >>> np.polyder(p, 2)
-    poly1d([6, 2])
-    >>> np.polyder(p, 3)
-    poly1d([6])
-    >>> np.polyder(p, 4)
-    poly1d([ 0.])
-
-    """
-    m = int(m)
-    if m < 0:
-        raise ValueError("Order of derivative must be positive (see polyint)")
-    truepoly = isinstance(p, poly1d)
-    p = np.asarray(p)
-    if m == 0:
-        if truepoly:
-            return poly1d(p)
-        return p
-    else:
-        n = len(p) - 1
-        ix = arange(n, 0, -1)
-        if p.ndim > 1:
-            ix = ix[..., newaxis]
-        y = ix * p[:-1]
-        val = polyder(y, m - 1)
-        if truepoly:
-            return poly1d(val)
-        return val
+# BZ: use numpy.polyder instead
+# def polyder(p, m=1):
+#     """
+#     Return the derivative of the specified order of a polynomial.
+#
+#     Parameters
+#     ----------
+#     p : poly1d or sequence
+#         Polynomial to differentiate.
+#         A sequence is interpreted as polynomial coefficients, see `poly1d`.
+#     m : int, optional
+#         Order of differentiation (default: 1)
+#
+#     Returns
+#     -------
+#     der : poly1d
+#         A new polynomial representing the derivative.
+#
+#     See Also
+#     --------
+#     polyint : Anti-derivative of a polynomial.
+#     poly1d : Class for one-dimensional polynomials.
+#
+#     Examples
+#     --------
+#     The derivative of the polynomial :math:`x^3 + x^2 + x^1 + 1` is:
+#
+#     >>> p = np.poly1d([1,1,1,1])
+#     >>> p2 = np.polyder(p)
+#     >>> p2
+#     poly1d([3, 2, 1])
+#
+#     which evaluates to:
+#
+#     >>> p2(2.)
+#     17.0
+#
+#     We can verify this, approximating the derivative with
+#     ``(f(x + h) - f(x))/h``:
+#
+#     >>> (p(2. + 0.001) - p(2.)) / 0.001
+#     17.007000999997857
+#
+#     The fourth-order derivative of a 3rd-order polynomial is zero:
+#
+#     >>> np.polyder(p, 2)
+#     poly1d([6, 2])
+#     >>> np.polyder(p, 3)
+#     poly1d([6])
+#     >>> np.polyder(p, 4)
+#     poly1d([ 0.])
+#
+#     """
+#     m = int(m)
+#     if m < 0:
+#         raise ValueError("Order of derivative must be positive (see polyint)")
+#     truepoly = isinstance(p, poly1d)
+#     p = np.asarray(p)
+#     if m == 0:
+#         if truepoly:
+#             return poly1d(p)
+#         return p
+#     else:
+#         n = len(p) - 1
+#         ix = arange(n, 0, -1)
+#         if p.ndim > 1:
+#             ix = ix[..., newaxis]
+#         y = ix * p[:-1]
+#         val = polyder(y, m - 1)
+#         if truepoly:
+#             return poly1d(val)
+#         return val
 
 
 def polydeg(x, y):
-    '''
+    """
     Return optimal degree for polynomial fitting
 
 
@@ -251,7 +301,7 @@ def polydeg(x, y):
     See also
     --------
     polyfit, orthofit
-    '''
+    """
     x, y = np.atleast_1d(x, y)
     x = x.ravel()
     y = y.ravel()
@@ -262,7 +312,7 @@ def polydeg(x, y):
     #  developed in a series of orthogonal polynomials.
     ys = np.ones((N,)) * y.mean()
     # correction for small sample sizes
-    logsum2 = (np.log(2 * pi * ((ys - y) ** 2).sum() / N) + 1)
+    logsum2 = np.log(2 * pi * ((ys - y) ** 2).sum() / N) + 1
     AIC = 2 + N * logsum2 + 4 / (N - 2)
 
     n = 1
@@ -276,8 +326,9 @@ def polydeg(x, y):
         p = orthofit(x, y, n)
         ys = orthoval(p, x)
         # -- Akaike's Information Criterion
-        aic = (2 * (n + 1) * (1 + (n + 2) / (N - n - 2)) +
-               N * (np.log(2 * pi * np.sum((ys - y) ** 2) / N) + 1))
+        aic = 2 * (n + 1) * (1 + (n + 2) / (N - n - 2)) + N * (
+            np.log(2 * pi * np.sum((ys - y) ** 2) / N) + 1
+        )
 
         if aic >= AIC:
             nit += 1
@@ -294,7 +345,7 @@ def polydeg(x, y):
 
 
 def orthoval(p, x):
-    '''
+    """
     Evaluation of orthogonal polynomial
 
     Parameters
@@ -312,7 +363,7 @@ def orthoval(p, x):
     See Also
     --------
     orthofit
-    '''
+    """
     p = np.atleast_2d(p)
     n = p.shape[1] - 1
     xi = np.atleast_1d(x)
@@ -372,17 +423,17 @@ def ortho2poly(p):
     n = p.shape[1] - 1
     if n == 0:
         return p[0]
-    x = [1, ] * (n + 1)
-    x[1] = np.array([1, - p[1, 1]])
+    x = [1] * (n + 1)
+    x[1] = np.array([1, -p[1, 1]])
     for i in range(2, n + 1):
-        x[i] = polyadd(polymul([1, - p[1, i]], x[i - 1]), - p[2, i] * x[i - 2])
+        x[i] = polyadd(polymul([1, -p[1, i]], x[i - 1]), -p[2, i] * x[i - 2])
     for i in range(n + 1):
         x[i] *= p[0, i]
     return reduce(polyadd, x)
 
 
 def orthofit(x, y, n):
-    '''
+    """
     Fit orthogonal polynomial to data.
 
     Parameters
@@ -413,7 +464,7 @@ def orthofit(x, y, n):
 
     Example:
     -------
-    >>> x = np.linspace(0,10,300);
+    >>> x = np.linspace(0,10,300)
     >>> y = np.sin(x**3/100)**2 + 0.05*np.random.randn(x.size)
     >>> p = orthofit(x, y, 25)
     >>> ys = orthoval(p, x)
@@ -428,7 +479,7 @@ def orthofit(x, y, n):
     ---------
     Methodes de calcul numerique 2. JP Nougier. Hermes Science
     Publications, 2001. Section 4.7 pp 116-121
-    '''
+    """
     x, y = np.atleast_1d(x, y)
     x = x.ravel()
     y = y.ravel()
@@ -448,7 +499,7 @@ def orthofit(x, y, n):
         p[1, i] = np.dot(x, PL[i - 1] ** 2) / np.sum(PL[i - 1] ** 2)
         p[2, i] = np.dot(x, PL[i - 2] * PL[i - 1]) / np.sum(PL[i - 2] ** 2)
         PL[i] = (x - p[1, i]) * PL[i - 1] - p[2, i] * PL[i - 2]
-    p[0, :] = np.dot(PL, y) / np.sum(PL ** 2, axis=1)
+    p[0, :] = np.dot(PL, y) / np.sum(PL**2, axis=1)
     return p
     # ys = np.dot(p[0, :], PL)  # smoothed y
 
@@ -553,7 +604,7 @@ def polyrescl(p, x, y=1.0):
     r = np.atleast_1d(p)
     n = r.shape[0]
 
-    xscale = (float(x) ** arange(1 - n, 1))
+    xscale = float(x) ** arange(1 - n, 1)
     if r.ndim == 1:
         q = y * r * xscale
     else:
@@ -604,7 +655,7 @@ def polytrim(p):
         return r
 
 
-def poly2hstr(p, variable='x'):
+def poly2hstr(p, variable="x"):
     """
     Return polynomial as a Horner represented string.
 
@@ -634,7 +685,7 @@ def poly2hstr(p, variable='x'):
 
     coefs = polytrim(np.atleast_1d(p))
     order = len(coefs) - 1  # Order of polynomial.
-    s = ''  # Initialize output string.
+    s = ""  # Initialize output string.
     ix = 1
     for expon in range(order, -1, -1):
         coef = coefs[order - expon]
@@ -645,52 +696,51 @@ def poly2hstr(p, variable='x'):
         else:
             # Append exponent if necessary.
             if ix > 1:
-                exponstr = '%.0f' % ix
-                s = '%s**%s' % (s, exponstr)
+                exponstr = "%.0f" % ix
+                s = "%s**%s" % (s, exponstr)
                 ix = 1
             # Is it the first term?
-            isfirst = s == ''
+            isfirst = s == ""
 
             # We need the coefficient only if it is different from 1 or -1 or
             # when it is the constant term.
-            needcoef = ((abs(coef) != 1) |
-                        (expon == 0) & isfirst) | 1 - isfirst
+            needcoef = ((abs(coef) != 1) | (expon == 0) & isfirst) | 1 - isfirst
 
             # We need the variable except in the constant term.
-            needvar = (expon != 0)
+            needvar = expon != 0
 
             # Add sign, but we don't need a leading plus-sign.
             if isfirst:
                 if coef < 0:
-                    s = '-'  # % Unary minus.
+                    s = "-"  # % Unary minus.
             else:
                 if coef < 0:
-                    s = '%s - ' % s  # % Binary minus (subtraction).
+                    s = "%s - " % s  # % Binary minus (subtraction).
                 else:
-                    s = '%s + ' % s  # % Binary plus (addition).
+                    s = "%s + " % s  # % Binary plus (addition).
 
             # Append the coefficient if it is different from one or when it is
             # the constant term.
             if needcoef:
-                coefstr = '%.20g' % abs(coef)
-                s = '%s%s' % (s, coefstr)
+                coefstr = "%.20g" % abs(coef)
+                s = "%s%s" % (s, coefstr)
 
             # Append variable if necessary.
             if needvar:
                 # Append a multiplication sign if necessary.
                 if needcoef:
                     if 1 - isfirst:
-                        s = '(%s)' % s
-                    s = '%s*' % s
-                s = '%s%s' % (s, var)
+                        s = "(%s)" % s
+                    s = "%s*" % s
+                s = "%s%s" % (s, var)
 
     # Now treat the special case where the polynomial is zero.
-    if s == '':
-        s = '0'
+    if s == "":
+        s = "0"
     return s
 
 
-def poly2str(p, variable='x'):
+def poly2str(p, variable="x"):
     """
     Return polynomial as a string.
 
@@ -725,37 +775,40 @@ def poly2str(p, variable='x'):
     N = len(coeffs) - 1
 
     for k in range(N + 1):
-        coefstr = '%.4g' % abs(coeffs[k])
-        if coefstr[-4:] == '0000':
+        coefstr = "%.4g" % abs(coeffs[k])
+        if coefstr[-4:] == "0000":
             coefstr = coefstr[:-5]
-        power = (N - k)
+        power = N - k
         if power == 0:
-            if coefstr != '0':
-                newstr = '%s' % (coefstr,)
+            if coefstr != "0":
+                newstr = "%s" % (coefstr,)
             else:
-                newstr = '0' if k == 0 else ''
+                newstr = "0" if k == 0 else ""
         elif power == 1:
-            if coefstr == '0':
-                newstr = ''
-            elif coefstr in ['b', '1']:
+            if coefstr == "0":
+                newstr = ""
+            elif coefstr in ["b", "1"]:
                 newstr = var
             else:
-                newstr = '%s*%s' % (coefstr, var)
+                newstr = "%s*%s" % (coefstr, var)
         else:
-            if coefstr == '0':
-                newstr = ''
-            elif coefstr in ['b', '1']:
-                newstr = '%s**%d' % (var, power,)
+            if coefstr == "0":
+                newstr = ""
+            elif coefstr in ["b", "1"]:
+                newstr = "%s**%d" % (
+                    var,
+                    power,
+                )
             else:
-                newstr = '%s*%s**%d' % (coefstr, var, power)
+                newstr = "%s*%s**%d" % (coefstr, var, power)
 
         if k > 0:
-            if newstr != '':
+            if newstr != "":
                 if coeffs[k] < 0:
                     thestr = "%s - %s" % (thestr, newstr)
                 else:
                     thestr = "%s + %s" % (thestr, newstr)
-        elif (k == 0) and (newstr != '') and (coeffs[k] < 0):
+        elif (k == 0) and (newstr != "") and (coeffs[k] < 0):
             thestr = "-%s" % (newstr,)
         else:
             thestr = newstr
@@ -801,7 +854,7 @@ def polyshift(py, a=-1, b=1):
     if (a == -1) & (b == 1):
         return py
     L = b - a
-    return polyishift(py, -(2. + b + a) / L, (2. - b - a) / L)
+    return polyishift(py, -(2.0 + b + a) / L, (2.0 - b - a) / L)
 
 
 def polyishift(px, a=-1, b=1):
@@ -843,7 +896,7 @@ def polyishift(px, a=-1, b=1):
     if (a == -1) & (b == 1):
         return px
     L = b - a
-    xscale = 2. / L
+    xscale = 2.0 / L
     xloc = -float(a + b) / L
     return polyreloc(polyrescl(px, xscale), xloc)
 
@@ -955,7 +1008,7 @@ def cheb2poly(ck, a=-1, b=1):
     b_Nmi = np.zeros(1)
     b_Nmip1 = np.zeros(1)
     y = np.r_[2 / (b - a), -(a + b) / (b - a)]
-    y2 = 2. * y
+    y2 = 2.0 * y
 
     # Clenshaw recurence
     for ix in range(n - 1):
@@ -1003,7 +1056,7 @@ def chebextr(n):
     http://en.wikipedia.org/wiki/Chebyshev_nodes
     http://en.wikipedia.org/wiki/Chebyshev_polynomials
     """
-    return - np.cos((pi * arange(n + 1)) / n)
+    return -np.cos((pi * arange(n + 1)) / n)
 
 
 def chebroot(n, kind=1):
@@ -1042,8 +1095,8 @@ def chebroot(n, kind=1):
     http://en.wikipedia.org/wiki/Chebyshev_polynomials
     """
     if kind not in (1, 2):
-        raise ValueError('kind must be 1 or 2')
-    return - np.cos(pi * (arange(n) + 0.5 * kind) / (n + kind - 1))
+        raise ValueError("kind must be 1 or 2")
+    return -np.cos(pi * (arange(n) + 0.5 * kind) / (n + kind - 1))
 
 
 def chebpoly(n, x=None, kind=1):
@@ -1099,7 +1152,7 @@ def chebpoly(n, x=None, kind=1):
         return p
     else:  # Evaluate polynomial in chebychev form
         ck = np.zeros(n + 1)
-        ck[0] = 1.
+        ck[0] = 1.0
         return _chebval(np.atleast_1d(x), ck, kind=kind)
 
 
@@ -1159,14 +1212,14 @@ def chebfit(fun, n=10, a=-1, b=1, trace=False):
     Journal of the ACM (JACM), Vol. 12 ,  Issue 3, pp 295 - 314
     """
 
-    if (n > 50):
-        warnings.warn('CHEBFIT should only be used for n<50')
+    if n > 50:
+        warnings.warn("CHEBFIT should only be used for n<50")
 
-    if hasattr(fun, '__call__'):
+    if hasattr(fun, "__call__"):
         x = map_to_interval(chebroot(n), a, b)
         f = fun(x)
         if trace:
-            plt.plot(x, f, '+')
+            plt.plot(x, f, "+")
     else:
         f = fun
         n = len(f)
@@ -1177,7 +1230,7 @@ def chebfit(fun, n=10, a=-1, b=1, trace=False):
     # w[0] = 0.5, w[n]=1 for n>0
 
     ck = dct(f[::-1]) / n
-    ck[0] = ck[0] / 2.
+    ck[0] = ck[0] / 2.0
     return ck[::-1]
 
 
@@ -1246,14 +1299,13 @@ def chebfit_dct(f, n=(10,), domain=None):
     """
     n = np.atleast_1d(n)
     if np.any(n > 50):
-        warnings.warn('CHEBFIT should only be used for n<50')
+        warnings.warn("CHEBFIT should only be used for n<50")
 
-    if hasattr(f, '__call__'):
+    if hasattr(f, "__call__"):
         if domain is None:
             domain = (-1, 1) * len(n)
         domain = np.atleast_2d(domain).reshape((-1, 2))
-        xi = [map_to_interval(chebroot(ni), d[0], d[1])
-              for ni, d in zip(n, domain)]
+        xi = [map_to_interval(chebroot(ni), d[0], d[1]) for ni, d in zip(n, domain)]
         Xi = np.meshgrid(*xi)
         ck = f(*Xi)
     else:
@@ -1263,7 +1315,7 @@ def chebfit_dct(f, n=(10,), domain=None):
     ndim = len(n)
     for i in range(ndim):
         ck = dct(ck[..., ::-1])
-        ck[..., 0] = ck[..., 0] / 2.
+        ck[..., 0] = ck[..., 0] / 2.0
         if i < ndim - 1:
             ck = np.rollaxis(ck, axis=-1)
     return ck / np.product(n)
@@ -1391,7 +1443,7 @@ def chebval(x, ck, a=-1, b=1, kind=1, fill=None):
     if fill is None:
         f = _chebval(y, ck, kind=kind)
     else:
-        cond = (abs(y) <= 1)
+        cond = abs(y) <= 1
         f = np.where(cond, 0, fill)
         if np.any(cond):
             yk = np.extract(cond, y)
@@ -1450,7 +1502,7 @@ def chebder(ck, a=-1, b=1):
     for j in range(2, n):
         cder[j] = cder[j - 2] + 2 * (n - j) * ck[j]
 
-    return cder * 2. / (b - a)  # Normalize to the interval b-a.
+    return cder * 2.0 / (b - a)  # Normalize to the interval b-a.
 
 
 def chebint(ck, a=-1, b=1):
@@ -1512,17 +1564,17 @@ def chebint(ck, a=-1, b=1):
     con = 0.25 * (b - a)
 
     dif1 = np.diff(ck[-1::-2])
-    ix1 = np.r_[1:n - 1:2]
+    ix1 = np.r_[1 : n - 1 : 2]
     cint[ix1] = -(con * dif1) / ix1
     if n > 3:
         dif2 = np.diff(ck[-2::-2])
-        ix2 = np.r_[2:n - 1:2]
+        ix2 = np.r_[2 : n - 1 : 2]
         cint[ix2] = -(con * dif2) / ix2
     cint = cint[::-1]
     # cint(n) is a special case
     cint[-1] = (con * ck[n - 2]) / (n - 1)
     # Set integration constant
-    cint[0] = 2 * np.sum((-1) ** np.r_[0:n - 1] * cint[-2::-1])
+    cint[0] = 2 * np.sum((-1) ** np.r_[0 : n - 1] * cint[-2::-1])
     return cint
 
 
@@ -1538,14 +1590,14 @@ class Cheb1d(object):
             for key in ck.__dict__.keys():
                 self.__dict__[key] = ck.__dict__[key]
             return
-        cki = np.trim_zeros(np.atleast_1d(ck), 'b')  # modified by Bo Zhang
+        cki = np.trim_zeros(np.atleast_1d(ck), "b")  # modified by Bo Zhang
         if len(cki.shape) > 1:
             raise ValueError("Polynomial must be 1d only.")
-        self.__dict__['coeffs'] = cki
-        self.__dict__['order'] = len(cki) - 1
-        self.__dict__['a'] = a
-        self.__dict__['b'] = b
-        self.__dict__['kind'] = kind
+        self.__dict__["coeffs"] = cki
+        self.__dict__["order"] = len(cki) - 1
+        self.__dict__["a"] = a
+        self.__dict__["b"] = b
+        self.__dict__["kind"] = kind
 
     def __call__(self, x):
         return chebval(x, self.coeffs, self.a, self.b, self.kind)
@@ -1598,34 +1650,42 @@ class Cheb1d(object):
 
     def __eq__(self, other):
         other = Cheb1d(other)
-        return (np.all(self.coeffs == other.coeffs) and (self.a == other.a) and
-                (self.b == other.b) and (self.kind == other.kind))
+        return (
+            np.all(self.coeffs == other.coeffs)
+            and (self.a == other.a)
+            and (self.b == other.b)
+            and (self.kind == other.kind)
+        )
 
     def __ne__(self, other):
-        return np.any(self.coeffs != other.coeffs) or (self.a != other.a) or (
-            self.b != other.b) or (self.kind != other.kind)
+        return (
+            np.any(self.coeffs != other.coeffs)
+            or (self.a != other.a)
+            or (self.b != other.b)
+            or (self.kind != other.kind)
+        )
 
     def __setattr__(self, key, val):
         raise ValueError("Attributes cannot be changed this way.")
 
     def __getattr__(self, key):
-        if key in ['c', 'coef', 'coefficients']:
+        if key in ["c", "coef", "coefficients"]:
             return self.coeffs
-        elif key in ['o']:
+        elif key in ["o"]:
             return self.order
-        elif key in ['a']:
+        elif key in ["a"]:
             return self.a
-        elif key in ['b']:
+        elif key in ["b"]:
             return self.b
-        elif key in ['k']:
+        elif key in ["k"]:
             return self.kind
         else:
             try:
                 return self.__dict__[key]
             except KeyError:
                 raise AttributeError(
-                    "'%s' has no attribute '%s'" %
-                    (self.__class__, key))
+                    "'%s' has no attribute '%s'" % (self.__class__, key)
+                )
 
     def __getitem__(self, val):
         if val > self.order:
@@ -1640,9 +1700,9 @@ class Cheb1d(object):
             raise ValueError("Does not support negative powers.")
         if key > self.order:
             zr = np.zeros(key - self.order, self.coeffs.dtype)
-            self.__dict__['coeffs'] = np.concatenate((self.coeffs, zr))
-            self.__dict__['order'] = key
-        self.__dict__['coeffs'][key] = val
+            self.__dict__["coeffs"] = np.concatenate((self.coeffs, zr))
+            self.__dict__["order"] = key
+        self.__dict__["coeffs"][key] = val
         return
 
     def __iter__(self):
@@ -1738,10 +1798,10 @@ def padefit(c, m=None):
 
 
 def test_pade():
-    cof = np.array(([1.0, 1.0, 1.0 / 2, 1. / 6, 1. / 24]))
+    cof = np.array(([1.0, 1.0, 1.0 / 2, 1.0 / 6, 1.0 / 24]))
     p, q = pade(cof, 2)
     t = arange(0, 2, 0.1)
-    assert (np.all(abs(p(t) / q(t) - np.exp(t)) < 0.3))
+    assert np.all(abs(p(t) / q(t) - np.exp(t)) < 0.3)
 
 
 def padefitlsq(fun, m, k, a=-1, b=1, trace=False, x=None, end_points=True):
@@ -1824,17 +1884,19 @@ def padefitlsq(fun, m, k, a=-1, b=1, trace=False, x=None, end_points=True):
             # to the endpoints.
             x = map_to_interval(chebroot(npt, kind=1), a, b)
 
-    if hasattr(fun, '__call__'):
+    if hasattr(fun, "__call__"):
         fs = fun(x)
     else:
         fs = fun
         n = len(fs)
         if n < npt:
-            warnings.warn('Check the result! Number of function values ' +
-                          'should be at least: %d' % npt)
+            warnings.warn(
+                "Check the result! Number of function values "
+                + "should be at least: %d" % npt
+            )
 
     if trace:
-        plt.plot(x, fs, '+')
+        plt.plot(x, fs, "+")
 
     wt = np.ones((npt))
     ee = np.ones((npt))
@@ -1860,21 +1922,32 @@ def padefitlsq(fun, m, k, a=-1, b=1, trace=False, x=None, end_points=True):
         cof = np.dot(cof, v)
 
         # Tabulate the deviations and revise the weights
-        ee = polyval(cof[m::-1], x) / \
-             polyval(cof[ncof:m:-1].tolist() + [1, ], x) - fs
+        ee = (
+            polyval(cof[m::-1], x)
+            / polyval(
+                cof[ncof:m:-1].tolist()
+                + [
+                    1,
+                ],
+                x,
+            )
+            - fs
+        )
 
         wt = np.abs(ee)
         devmax = max(wt)
         mad = wt.mean()  # mean absolute deviation
 
         # Save only the best coefficients found
-        if (devmax <= smallest_devmax):
+        if devmax <= smallest_devmax:
             smallest_devmax = devmax
             c1 = cof[m::-1]
-            c2 = cof[ncof:m:-1].tolist() + [1, ]
+            c2 = cof[ncof:m:-1].tolist() + [
+                1,
+            ]
 
         if trace:
-            print('Iteration=%d,  max error=%g' % (ix, devmax))
+            print("Iteration=%d,  max error=%g" % (ix, devmax))
             plt.plot(x, fs, x, ee + fs)
     return poly1d(c1), poly1d(c2)
 
@@ -1884,8 +1957,8 @@ def main():
     [c1, c2] = padefitlsq(exp, 3, 3, 0, 2)
 
     x = np.linspace(0, 4)
-    plt.plot(x, polyval(c1, x) / polyval(c2, x), 'g')
-    plt.plot(x, exp(x), 'r')
+    plt.plot(x, polyval(c1, x) / polyval(c2, x), "g")
+    plt.plot(x, exp(x), "r")
 
     import scipy.special as sp
 
@@ -1895,10 +1968,10 @@ def main():
     _pd = polyder(p)
     _st = poly2str(p)
     # polynomial coeff exponential function:
-    c = poly1d(1. / sp.gamma(np.r_[6 + 1:0:-1]))
+    c = poly1d(1.0 / sp.gamma(np.r_[6 + 1 : 0 : -1]))
     [p, q] = padefit(c)
     x = np.linspace(0, 4)
-    plt.plot(x, c(x), x, p(x) / q(x), 'g-', x, exp(x), 'r.')
+    plt.plot(x, c(x), x, p(x) / q(x), "g-", x, exp(x), "r.")
     plt.close()
     x = arange(4)
     dx = dct(x)
@@ -1909,7 +1982,7 @@ def main():
     ck = chebfit(exp, 6, a, b)
     _t = chebval(0, ck, a, b)
     x = np.linspace(0, 2, 6)
-    plt.plot(x, exp(x), 'r', x, chebval(x, ck, a, b), 'g.')
+    plt.plot(x, exp(x), "r", x, chebval(x, ck, a, b), "g.")
     # x1 = chebroot(9).'*(b-a)/2+(b+a)/2 ;
     # ck1 =chebfit([x1 exp(x1)],9,a,b);
     # plot(x,exp(x),'r'), hold on
@@ -1930,7 +2003,7 @@ def main():
 
 def test_polydeg():
     x = np.linspace(0, 10, 300)
-    y = np.sin(x ** 3 / 100) ** 2 + 0.05 * np.random.randn(x.size)
+    y = np.sin(x**3 / 100) ** 2 + 0.05 * np.random.randn(x.size)
     n = polydeg(x, y)
     # n = 2
     p = orthofit(x, y, n)
@@ -1939,16 +2012,17 @@ def test_polydeg():
     ys = orthoval(p, xi)
 
     ys2 = orthoval(p, xi)
-    plt.plot(x, y, '.', x, ys0, 'k', xi, ys, 'r', xi, ys2, 'r.')
+    plt.plot(x, y, ".", x, ys0, "k", xi, ys, "r", xi, ys2, "r.")
     p0 = ortho2poly(p)
     p1 = polyfit(x, ys0, n)
-    plt.plot(xi, polyval(p0, xi), 'g-.', xi, polyval(p1, xi), 'go')
-    plt.show('hold')
+    plt.plot(xi, polyval(p0, xi), "g-.", xi, polyval(p1, xi), "go")
+    plt.show("hold")
 
 
 def test_docstrings():
     import doctest
-    print('Testing docstrings in %s' % __file__)
+
+    print("Testing docstrings in %s" % __file__)
     options = doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS
     doctest.testmod(optionflags=options, verbose=False)
 
@@ -2004,15 +2078,17 @@ def chebvandernd(deg, *xi):
         raise ValueError("degrees must be non-negative integers")
     ndim = len(xi)
     if len(ideg) != ndim:
-        msg = 'length of deg must be the same as number of dimensions'
+        msg = "length of deg must be the same as number of dimensions"
         raise ValueError(msg)
 
     xi = np.array(xi, copy=0) + 0.0
     chebvander = np.polynomial.chebyshev.chebvander
     shape0 = xi[0].shape
     s0 = (1,) * ndim
-    vxi = [chebvander(x, d).reshape(shape0 + s0[:i] + (-1,) + s0[i + 1::])
-           for i, (d, x) in enumerate(zip(ideg, xi))]
+    vxi = [
+        chebvander(x, d).reshape(shape0 + s0[:i] + (-1,) + s0[i + 1 : :])
+        for i, (d, x) in enumerate(zip(ideg, xi))
+    ]
 
     v = reduce(np.multiply, vxi)
 
@@ -2133,7 +2209,9 @@ def chebfitnd(xi, f, deg, rcond=None, full=False, w=None):
         rhs = rhs * w
 
     if rcond is None:
-        rcond = xi[0].size * np.finfo(x.dtype).eps
+        # BZ: no `x` found, use `xi` instead
+        rcond = xi[0].size * np.finfo(xi.dtype).eps
+        # rcond = xi[0].size * np.finfo(x.dtype).eps
 
     if issubclass(lhs.dtype.type, np.complexfloating):
         scl = np.sqrt((np.square(lhs.real) + np.square(lhs.imag)).sum(axis=0))
@@ -2201,7 +2279,7 @@ def chebvalnd(c, *xi):
     try:
         xi = np.array(xi, copy=0)
     except:
-        raise ValueError('x, y, z are incompatible')
+        raise ValueError("x, y, z are incompatible")
     chebval = np.polynomial.chebyshev.chebval
     c = chebval(xi[0], c)
     for x in xi[1:]:
@@ -2264,7 +2342,7 @@ def chebgridnd(c, *xi):
 
 def test_chebfit1d():
     def f(x):
-        return np.exp(-x ** 2)
+        return np.exp(-(x**2))
 
     # x = chebroot(n=64, kind=1)
     # z = f(x)
@@ -2276,7 +2354,7 @@ def test_chebfit1d():
 
     # plt.plot(xi, zi,'.', xi, f(xi))
     plt.semilogy(xi, np.abs(zi - f(xi)))
-    plt.show('hold')
+    plt.show("hold")
 
 
 def test_chebfit2d():
@@ -2286,7 +2364,7 @@ def test_chebfit2d():
     xgrid, ygrid = np.meshgrid(x, x)
 
     def f(x, y):
-        return np.exp(-x ** 2 - 6 * y ** 2)
+        return np.exp(-(x**2) - 6 * y**2)
 
     zgrid = f(xgrid, ygrid)
 
@@ -2311,10 +2389,10 @@ def test_chebfit2d():
     # plt.contourf(Xi, Yi, np.abs(devi))
     plt.colorbar()
     # plt.semilogy(np.abs(devi.ravel()))
-    plt.show('hold')
+    plt.show("hold")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     if False:  # True: #
         main()
     else:
