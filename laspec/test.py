@@ -1,7 +1,5 @@
 import os
 
-from conda.exceptions import DirectoryNotFoundError
-
 
 def get_test_data(relative_file_path: str = "README.md") -> str:
     """Get the absolute path to the test data file.
@@ -23,7 +21,7 @@ def get_test_data(relative_file_path: str = "README.md") -> str:
         default=os.path.join(os.path.dirname(os.path.dirname(__file__)), "test_data"),
     )
     if not os.path.exists(LASPEC_TEST_DATA_ROOT):
-        raise DirectoryNotFoundError(f"{LASPEC_TEST_DATA_ROOT} does not exist.")
+        raise FileNotFoundError(f"Directory {LASPEC_TEST_DATA_ROOT} does not exist.")
 
     # get absolute file path
     absolute_file_path = os.path.join(LASPEC_TEST_DATA_ROOT, relative_file_path)
