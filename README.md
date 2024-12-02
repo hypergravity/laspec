@@ -3,26 +3,21 @@
 [![Documentation Status](https://readthedocs.org/projects/laspec/badge/?version=latest)](https://laspec.readthedocs.io/en/latest/?badge=latest)
 
 A toolkit for LAMOST spectra.
+- GitHub: [https://github.com/hypergravity/laspec](https://github.com/hypergravity/laspec)
+- PYPI: [https://pypi.org/project/laspec/](https://pypi.org/project/laspec/)
+
+## Author
+Bo Zhang ([bozhang@nao.cas.cn](mailto:bozhang@nao.cas.cn))
 
 ## Documentation
 
 [https://laspec.readthedocs.io/en/latest/](https://laspec.readthedocs.io/en/latest/)
-
-## Source code
-
-- github: [https://github.com/hypergravity/laspec](https://github.com/hypergravity/laspec)
-- PYPI: [https://pypi.org/project/laspec/](https://pypi.org/project/laspec/)
 
 ## Installation
 
 ```bash
 pip install git+https://github.com/hypergravity/laspec.git
 ```
-
-## Author
-
-- Bo Zhang, [bozhang@nao.cas.cn](mailto:bozhang@nao.cas.cn)
-
 
 ## Cite this package
 If you make use of this package in your research, please cite the paper below:
