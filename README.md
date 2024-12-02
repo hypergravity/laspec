@@ -3,8 +3,21 @@
 [![Documentation Status](https://readthedocs.org/projects/laspec/badge/?version=latest)](https://laspec.readthedocs.io/en/latest/?badge=latest)
 
 A toolkit for LAMOST spectra.
+
+## Documentation
+
+[https://laspec.readthedocs.io/en/latest/](https://laspec.readthedocs.io/en/latest/)
+
+## Source code
+
 - github: [https://github.com/hypergravity/laspec](https://github.com/hypergravity/laspec)
 - PYPI: [https://pypi.org/project/laspec/](https://pypi.org/project/laspec/)
+
+## Installation
+
+```bash
+pip install git+https://github.com/hypergravity/laspec.git
+```
 
 ## Author
 
@@ -56,15 +69,3 @@ archivePrefix = {arXiv},
       adsnote = {Provided by the SAO/NASA Astrophysics Data System}
 }
 ```
-
-## Installation
-
-```bash
-pip install git+https://github.com/hypergravity/laspec.git
-```
-
-## Documentation
-
-A documentation on ReadTheDoc will be updated soon ...
-
-Link to the doc: [https://laspec.readthedocs.io/en/latest/](https://laspec.readthedocs.io/en/latest/)
