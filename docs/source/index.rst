@@ -45,9 +45,9 @@ Installation
    :maxdepth: 2
    :caption: tutorials
 
-   tutorials/raed_lamost_lrs_spectrum.ipynb
-   tutorials/raed_lamost_mrs_spectrum.ipynb
-   tutorials/measure_radial_velocity.ipynb
+   tutorials/raed_lamost_lrs_spectrum
+   tutorials/raed_lamost_mrs_spectrum
+   tutorials/measure_radial_velocity
 
 .. toctree::
    :maxdepth: 2
