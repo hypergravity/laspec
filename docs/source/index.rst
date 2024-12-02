@@ -41,14 +41,6 @@ Installation
        pip install -U laspec
 
 
-.. toctree::
-    :maxdepth: 3
-    :caption: tutorials
-
-    tutorials/read_lamost_lrs_spectrum.ipynb
-    tutorials/read_lamost_mrs_spectrum.ipynb
-    tutorials/measure_radial_velocity.ipynb
-
 
 .. toctree::
     :maxdepth: 2
