@@ -1,10 +1,10 @@
 laspec API
 ==========
 
-laspec.bh module
-----------------
+laspec.binary module
+--------------------
 
-.. automodule:: laspec.bh
+.. automodule:: laspec.binary
    :members:
    :undoc-members:
    :show-inheritance:
