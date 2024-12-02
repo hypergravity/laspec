@@ -44,7 +44,7 @@ extensions = [
     # 'myst_parser',
     "nbsphinx",
     "recommonmark",
-    # "sphinx_markdown_tables",
+    "sphinx_markdown_tables",
     # "sphinx_tabs.tabs",
     # "sphinx_code_tabs",
     "sphinx_copybutton",
@@ -52,11 +52,11 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
     "sphinx.ext.mathjax",
-    # "sphinxcontrib.rawfiles",
+    "sphinxcontrib.rawfiles",
 ]
 source_parsers = {
     ".md": "recommonmark.parser.CommonMarkParser",
-    # ".ipynb": "nbsphinx.NotebookParser",
+    ".ipynb": "nbsphinx.NotebookParser",
 }
 
 # Add any paths that contain templates here, relative to this directory.

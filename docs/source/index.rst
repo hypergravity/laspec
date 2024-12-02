@@ -9,9 +9,6 @@ laspec
 .. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.4381155.svg
     :target: https://doi.org/10.5281/zenodo.4381155
 
-.. image:: https://github.com/hypergravity/laspec/workflows/Upload%20Python%20Package/badge.svg
-    :target: https://pypi.org/project/laspec
-
 .. image:: https://readthedocs.org/projects/laspec/badge/?version=latest
     :target: https://laspec.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
@@ -20,10 +17,11 @@ A toolkit for LAMOST spectra.
 
 Author
 ======
-Bo Zhang, LAMOST Fellow at Beijing Normal University.
 
- * bozhang@nao.cas.cn
- * bozhang@bnu.edu.cn (deprecated)
+Bo Zhang
+
+ - bozhang@nao.cas.cn
+ - bozhang@bnu.edu.cn (deprecated)
 
 Installation
 ============
@@ -40,9 +38,16 @@ Installation
 
        pip install -U laspec
 
+.. toctree::
+    :hidden:
+    :maxdepth: 2
+    :caption: Contents:
+
+    tutorials/index
 
 
 .. toctree::
+    :hidden:
     :maxdepth: 2
     :caption: API
 
@@ -61,4 +66,4 @@ History
 
 last modified : 2021.01.24
 
-I finally know how the `sphinx` and `readthedoc` work...
+I finally know how the `sphinx` and `readthedocs` work...
