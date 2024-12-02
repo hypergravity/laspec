@@ -7,14 +7,14 @@ laspec
 ======
 
 .. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.4381155.svg
-   :target: https://doi.org/10.5281/zenodo.4381155
+    :target: https://doi.org/10.5281/zenodo.4381155
 
 .. image:: https://github.com/hypergravity/laspec/workflows/Upload%20Python%20Package/badge.svg
-   :target: https://pypi.org/project/laspec
+    :target: https://pypi.org/project/laspec
 
 .. image:: https://readthedocs.org/projects/laspec/badge/?version=latest
-   :target: https://laspec.readthedocs.io/en/latest/?badge=latest
-   :alt: Documentation Status
+    :target: https://laspec.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
 
 A toolkit for LAMOST spectra.
 
@@ -42,19 +42,19 @@ Installation
 
 
 .. toctree::
-   :maxdepth: 2
-   :caption: tutorials
+    :maxdepth: 3
+    :caption: tutorials
 
-   tutorials/read_lamost_lrs_spectrum.ipynb
-   tutorials/read_lamost_mrs_spectrum.ipynb
-   tutorials/measure_radial_velocity.ipynb
+    tutorials/read_lamost_lrs_spectrum.ipynb
+    tutorials/read_lamost_mrs_spectrum.ipynb
+    tutorials/measure_radial_velocity.ipynb
 
 
 .. toctree::
-   :maxdepth: 2
-   :caption: API
+    :maxdepth: 2
+    :caption: API
 
-   api
+    api
 
 Indices and tables
 ==================
