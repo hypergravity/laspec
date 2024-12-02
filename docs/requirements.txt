@@ -15,7 +15,6 @@ pytest==8.3.4
 sphinx
 sphinx_rtd_theme
 furo
-sphinx_rtd_theme
 sphinx-copybutton
 #sphinx-tabs
 #sphinx_code_tabs

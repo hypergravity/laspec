@@ -56,7 +56,7 @@ extensions = [
 ]
 source_parsers = {
     ".md": "recommonmark.parser.CommonMarkParser",
-    ".ipynb": "nbsphinx.NotebookParser",
+    # ".ipynb": "nbsphinx.NotebookParser",
 }
 
 # Add any paths that contain templates here, relative to this directory.
