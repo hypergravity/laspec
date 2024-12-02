@@ -1,1 +1,1 @@
-from .bh import calculate_m2
+from .mass_function import calculate_m2
