@@ -29,3 +29,33 @@ def hex2deg(
         else -(abs(dec_degrees) + dec_minutes / 60 + dec_seconds / 3600)
     )
     return ra_deg, dec_deg
+
+
+def jhex2deg(
+    jhex: str = "J064726.41+223431.7",
+) -> tuple[float, float]:
+    """Convert J hexadecimal to decimal."""
+
+    if not jhex.startswith("J"):
+        raise ValueError("Invalid hexadecimal format")
+
+    idx_dec_sign = max(jhex.find("+"), jhex.find("-"))
+    if idx_dec_sign == -1:
+        raise ValueError("Invalid hexadecimal format")
+
+    # 提取匹配到的各个部分
+    ra_hours = int(jhex[1:3])
+    ra_minutes = int(jhex[3:5])
+    ra_seconds = float(jhex[5:idx_dec_sign])
+    dec_degrees = int(jhex[idx_dec_sign : idx_dec_sign + 3])
+    dec_minutes = int(jhex[idx_dec_sign + 3 : idx_dec_sign + 5])
+    dec_seconds = float(jhex[idx_dec_sign + 5 :])
+
+    # calculate ra and dec in deg
+    ra_deg = (ra_hours + ra_minutes / 60 + ra_seconds / 3600) * 15
+    dec_deg = (
+        dec_degrees + dec_minutes / 60 + dec_seconds / 3600
+        if dec_degrees >= 0
+        else -(abs(dec_degrees) + dec_minutes / 60 + dec_seconds / 3600)
+    )
+    return ra_deg, dec_deg
