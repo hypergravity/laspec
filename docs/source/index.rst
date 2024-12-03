@@ -23,27 +23,22 @@ Bo Zhang
  - bozhang@nao.cas.cn
  - bozhang@bnu.edu.cn (deprecated)
 
-Installation
-============
-
- * for the github version (recommended):
-
-   .. code-block:: bash
-
-       pip install -U git+git://github.com/hypergravity/laspec
-
- * for the PYPI version (usually behind the github version):
-
-   .. code-block:: bash
-
-       pip install -U laspec
 
 .. toctree::
     :hidden:
-    :maxdepth: 2
-    :caption: Contents:
+    :maxdepth: 3
+    :caption: Documentation
 
-    tutorials/index
+    documentation/installation
+    documentation/citation
+
+
+.. toctree::
+    :hidden:
+    :maxdepth: 3
+    :caption: Tutorials on LAMOST spectra
+
+    tutorials/read_lamost_lrs.ipynb
 
 
 .. toctree::
@@ -53,17 +48,28 @@ Installation
 
     api
 
-Indices and tables
-==================
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+.. toctree::
+    :hidden:
+    :maxdepth: 3
+    :caption: Scratch
+
+    scratch/index
 
 
-History
-=======
+.. comment::
 
-last modified : 2021.01.24
+   Indices and tables
+   ==================
 
-I finally know how the `sphinx` and `readthedocs` work...
+   * :ref:`genindex`
+   * :ref:`modindex`
+   * :ref:`search`
+
+
+   History
+   =======
+
+   last modified : 2021.01.24
+
+   I finally know how the `sphinx` and `readthedocs` work...
