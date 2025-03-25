@@ -13,7 +13,7 @@ from scipy.signal import medfilt
 from scipy.signal.windows import gaussian
 
 from .normalization import normalize_spectrum_general
-from .time import datetime2jd, eval_bjd
+from .time import datetime2jd, jd2bjd
 
 SOL_kms = constants.c.value / 1000.0
 
@@ -277,7 +277,7 @@ class MrsSpec:
                 hdu.header["DATE-END"], format="isot", tz_correction=8
             )
             ms.jdmid = (ms.jdbeg + ms.jdend) / 2.0
-            ms.bjdmid = eval_bjd(ms.ra, ms.dec, ms.jdmid)
+            ms.bjdmid = jd2bjd(ms.ra, ms.dec, ms.jdmid)
             return ms
 
     @staticmethod
@@ -323,10 +323,13 @@ class MrsSpec:
             wave, flux, ivar, ormask, info=info, norm_type=norm_type, **norm_kwargs
         )
         # calculate bjd
-        ms.jdbeg = datetime2jd(hdr["DATE-BEG"], format="isot", tz_correction=8)
-        ms.jdend = datetime2jd(hdr["DATE-END"], format="isot", tz_correction=8)
-        ms.jdmid = (ms.jdbeg + ms.jdend) / 2.0
-        ms.bjdmid = eval_bjd(ms.ra, ms.dec, ms.jdmid)
+        if hdr["DATE-BEG"] != "" and hdr["DATE-END"] != "":
+            ms.jdbeg = datetime2jd(hdr["DATE-BEG"], format="isot", tz_correction=8)
+            ms.jdend = datetime2jd(hdr["DATE-END"], format="isot", tz_correction=8)
+            ms.jdmid = (ms.jdbeg + ms.jdend) / 2.0
+        elif hdr["DATE-OBS"] != "":
+            ms.jdmid = datetime2jd(hdr["DATE-OBS"], format="isot", tz_correction=8)
+        ms.bjdmid = jd2bjd(ms.ra, ms.dec, ms.jdmid)
         return ms
 
     def normalize(self, llim=0.0, norm_type=None, **norm_kwargs):
@@ -934,7 +937,7 @@ class MrsFits(fits.HDUList):
                     self[kB].header["DATE-END"], format="isot", tz_correction=8
                 )
                 me.jdmid = (me.jdbeg + me.jdend) / 2.0
-                me.bjdmid = eval_bjd(me.ra, me.dec, me.jdmid)
+                me.bjdmid = jd2bjd(me.ra, me.dec, me.jdmid)
             elif kB not in self.hdunames and kR in self.hdunames:
                 me.jdbeg = datetime2jd(
                     self[kR].header["DATE-BEG"], format="isot", tz_correction=8
@@ -943,7 +946,7 @@ class MrsFits(fits.HDUList):
                     self[kR].header["DATE-END"], format="isot", tz_correction=8
                 )
                 me.jdmid = (me.jdbeg + me.jdend) / 2.0
-                me.bjdmid = eval_bjd(me.ra, me.dec, me.jdmid)
+                me.bjdmid = jd2bjd(me.ra, me.dec, me.jdmid)
             elif kB in self.hdunames and kR in self.hdunames:
                 # both records
                 jdbeg_B = datetime2jd(
@@ -964,7 +967,7 @@ class MrsFits(fits.HDUList):
                 me.jdbeg = jdbeg_B
                 me.jdend = jdend_B
                 me.jdmid = jdmid_B
-                me.bjdmid = eval_bjd(me.ra, me.dec, me.jdmid)
+                me.bjdmid = jd2bjd(me.ra, me.dec, me.jdmid)
         except Exception as ex:
             print("Keywords DATE-* not found from file {}!".format(me.filename))
 
@@ -1096,65 +1099,3 @@ def get_kwd_safe(hdr, key, fallback=0.0):
         return hdr[key]
     except Exception:
         return fallback
-
-
-def test_meta():
-    fp_mrs = "/Users/cham/PycharmProjects/laspec/laspec/data/sb2/med-58415-TD062610N184524B01_sp08-037.fits.gz"
-    mf = MrsFits(fp_mrs)
-    me = mf.get_one_epoch(84117836)
-    ms = me.speclist[0]
-
-
-if __name__ == "__main__":
-    os.chdir("/Users/cham/PycharmProjects/laspec/laspec/")
-    fp_lrs = "./data/KIC8098300/DR6_low/spec-57287-KP193637N444141V03_sp10-161.fits.gz"
-    fp_mrs = (
-        "./data/KIC8098300/DR7_medium/med-58625-TD192102N424113K01_sp12-076.fits.gz"
-    )
-
-    fps = glob.glob("./data/KIC8098300/DR7_medium/*.fits.gz")
-    # read fits
-    mf = MrsFits(fp_mrs)
-
-    # print info
-    mf.info()
-    print(mf)
-
-    # print all lmjm
-    print(mf.ls_epoch)
-
-    # get MRS spec from MrsFits
-    specCoaddB = MrsSpec.from_hdu(mf["COADD_B"], norm_type="poly")
-    msB = MrsSpec.from_hdu(mf["B-84420148"], norm_type="poly")
-    msR = MrsSpec.from_hdu(mf["R-84420148"], norm_type="poly")
-    print(msB, msR)
-    print(msB.snr, msR.snr)
-
-    # combine B and R into an epoch spec
-    me = MrsEpoch([msB, msR], specnames=["B", "R"])
-    print(me)
-
-    # a short way of doing this:
-    me = mf.get_one_epoch(84420148)
-    print(me)
-    me = mf.get_one_epoch("COADD", norm_type="spline")
-    print(me, me.snr)
-    mes = mf.get_all_epochs(including_coadd=False)
-    print(mes)
-
-    msrc = MrsSource(mes)
-    msrc1 = MrsSource.read(fps)
-
-    fig = plt.figure()
-    me.plot_norm()
-    me.plot_norm_reduce()
-
-    print(me, me.reduce())
-    # test lrs
-    ls = MrsSpec.from_lrs(fp_lrs)
-    ls.snr
-
-    # test reduce
-    fig = plt.figure()
-    msr = msB.reduce()
-    msr.plot_norm()
