@@ -9,9 +9,19 @@ from scipy.optimize import least_squares, minimize
 
 
 class NNModel(torch.nn.Module):
-    """ SLAM based on pytorch """
+    """SLAM based on pytorch"""
 
-    def __init__(self, n_label=3, n_pixel=1900, n_hidden=300, n_layer=3, drop_rate=0, wave=None, activation="relu", lastrelu=False):
+    def __init__(
+        self,
+        n_label=3,
+        n_pixel=1900,
+        n_hidden=300,
+        n_layer=3,
+        drop_rate=0,
+        wave=None,
+        activation="elu",
+        lastrelu=False,
+    ):
         super(NNModel, self).__init__()
         self.layers = torch.nn.ModuleList()
         self.layers.append(torch.nn.Linear(n_label, n_hidden))
@@ -58,7 +68,9 @@ class NNModel(torch.nn.Module):
             x = l(x)
         return x
 
-    def make_dataset(self, x, y, f_train=.9, batch_size=100, device=None, scale_y=False):
+    def make_dataset(
+        self, x, y, f_train=0.9, batch_size=100, device=None, scale_y=False
+    ):
         # normalization
         x = np.asarray(x, dtype=np.float32)
         y = np.asarray(y, dtype=np.float32)
@@ -68,7 +80,9 @@ class NNModel(torch.nn.Module):
             y = y / self.yscale[None, :]
         self.xmin = np.min(x, axis=0)
         self.xmax = np.max(x, axis=0)
-        x = (x - self.xmin.reshape(1, -1)) / (self.xmax.reshape(1, -1) - self.xmin.reshape(1, -1)) - 0.5
+        x = (x - self.xmin.reshape(1, -1)) / (
+            self.xmax.reshape(1, -1) - self.xmin.reshape(1, -1)
+        ) - 0.5
         # to tensor
 
         x = torch.from_numpy(x)
@@ -83,12 +97,18 @@ class NNModel(torch.nn.Module):
         # make dataset
         ds = torch.utils.data.TensorDataset(x, y)
         # train valid random split
-        ds_train, ds_test = torch.utils.data.random_split(ds, [n_train, n_sample - n_train])
+        ds_train, ds_test = torch.utils.data.random_split(
+            ds, [n_train, n_sample - n_train]
+        )
         # make dataloader for training set
         if True:
             # if weights even
-            dl_train = torch.utils.data.DataLoader(ds_train, sampler=None, batch_size=batch_size, shuffle=True)
-            dl_test = torch.utils.data.DataLoader(ds_test, sampler=None, batch_size=batch_size, shuffle=True)
+            dl_train = torch.utils.data.DataLoader(
+                ds_train, sampler=None, batch_size=batch_size, shuffle=True
+            )
+            dl_test = torch.utils.data.DataLoader(
+                ds_test, sampler=None, batch_size=batch_size, shuffle=True
+            )
         else:
             # if weights not even
             raise NotImplementedError()
@@ -96,10 +116,24 @@ class NNModel(torch.nn.Module):
             # dl = torch.utils.data.DataLoader(ds_train.dataset, sampler=wrs, batch_size=batch_size, shuffle=True, num_workers=1)
         return dl_train, dl_test
 
-    def fit(self, x=None, y=None, f_train=0.9, batch_size=100, device=None,
-            loss="L1", lr=1e-4, gain_loss=1e4, weight_decay=0,
-            n_epoch=20000, step_verbose=10,
-            sd_init=None, clean_history=True, restore_best=False, scale_y=False):
+    def fit(
+        self,
+        x=None,
+        y=None,
+        f_train=0.9,
+        batch_size=100,
+        device=None,
+        loss="L1",
+        lr=1e-4,
+        gain_loss=1e4,
+        weight_decay=0,
+        n_epoch=20000,
+        step_verbose=10,
+        sd_init=None,
+        clean_history=True,
+        restore_best=False,
+        scale_y=False,
+    ):
         """
 
         Parameters
@@ -147,7 +181,13 @@ class NNModel(torch.nn.Module):
             dl_train, dl_test = self.dl_train, self.dl_test
         else:
             dl_train, dl_test = self.make_dataset(
-                x, y, f_train=f_train, batch_size=batch_size, device=device, scale_y=scale_y)
+                x,
+                y,
+                f_train=f_train,
+                batch_size=batch_size,
+                device=device,
+                scale_y=scale_y,
+            )
             self.dl_train, self.dl_test = dl_train, dl_test
         #
         gain_loss = torch.tensor(gain_loss)
@@ -178,7 +218,9 @@ class NNModel(torch.nn.Module):
 
         # payne = Payne_model(n_layer=3,dropout=True,p=0.1)
         # payne = Payne_model(n_layer=3, dropout=False, p=0.1)
-        optimizer = torch.optim.Adam(self.parameters(), lr=lr, weight_decay=weight_decay)  # optimize all cnn parameters
+        optimizer = torch.optim.Adam(
+            self.parameters(), lr=lr, weight_decay=weight_decay
+        )  # optimize all cnn parameters
         # optimizer = torch.optim.SGD(payne.parameters(), lr=LR, momentum=.9)   # optimize all cnn parameters
         # optimizer = RAdam(payne.parameters(), lr=LR)  # optimize all cnn parameters
         if loss == "L1":
@@ -213,16 +255,28 @@ class NNModel(torch.nn.Module):
                 with torch.no_grad():
                     loss_train = []
                     for batch_idx, (batch_x, batch_y) in enumerate(dl_train):
-                        loss_train.append(loss_func(self(batch_x), batch_y, gain_loss).item())
+                        loss_train.append(
+                            loss_func(self(batch_x), batch_y, gain_loss).item()
+                        )
                     loss_train = np.mean(loss_train)
 
                     loss_test = []
                     for batch_idx, (batch_x, batch_y) in enumerate(dl_test):
-                        loss_test.append(loss_func(self(batch_x), batch_y, gain_loss).item())
+                        loss_test.append(
+                            loss_func(self(batch_x), batch_y, gain_loss).item()
+                        )
                     loss_test = np.mean(loss_test)
 
-                print("{} Epoch-[{:05d}/{:05d}] loss_train_batch={:.8f} loss_train={:.8f} loss_test={:.8f}".format(
-                    datetime.datetime.now(), epoch, n_epoch, loss_train_batch, loss_train, loss_test))
+                print(
+                    "{} Epoch-[{:05d}/{:05d}] loss_train_batch={:.8f} loss_train={:.8f} loss_test={:.8f}".format(
+                        datetime.datetime.now(),
+                        epoch,
+                        n_epoch,
+                        loss_train_batch,
+                        loss_train,
+                        loss_test,
+                    )
+                )
 
                 if not clean_history:
                     epoch += self.last_epoch
@@ -244,21 +298,38 @@ class NNModel(torch.nn.Module):
         return
 
     def predict_spectrum(self, x_test):
-        """ predict a spectrum """
+        """predict a spectrum"""
         x_test = (x_test - self.xmin) / (self.xmax - self.xmin) - 0.5
         return self(x_test).detach().numpy()
 
     def to_sp(self):
-        """ transform to SlamPredictor instance """
-        w = [self.state_dict_best[k].cpu().numpy() for k in self.state_dict_best.keys() if "weight" in k]
-        b = [self.state_dict_best[k].cpu().numpy()[:, None] for k in self.state_dict_best.keys() if "bias" in k]
+        """transform to SlamPredictor instance"""
+        w = [
+            self.state_dict_best[k].cpu().numpy()
+            for k in self.state_dict_best.keys()
+            if "weight" in k
+        ]
+        b = [
+            self.state_dict_best[k].cpu().numpy()[:, None]
+            for k in self.state_dict_best.keys()
+            if "bias" in k
+        ]
         alpha = 0.01 if self.activation == "relu" else 1.0
         xmin = self.xmin
         xmax = self.xmax
-        return SlamPredictor(w, b, alpha, xmin, xmax, wave=self.wave, yscale=self.yscale, activation=self.activation)
+        return SlamPredictor(
+            w,
+            b,
+            alpha,
+            xmin,
+            xmax,
+            wave=self.wave,
+            yscale=self.yscale,
+            activation=self.activation,
+        )
 
     def plot_history(self):
-        """ plot training history """
+        """plot training history"""
         if self.history is not None:
             fig, ax = plt.subplots(1, 1, figsize=(6, 5))
             for k in self.history.keys():
@@ -277,34 +348,55 @@ class NNModel(torch.nn.Module):
 
 class SlamL1Loss(torch.nn.Module):
 
-    def __init__(self, ) -> None:
+    def __init__(
+        self,
+    ) -> None:
         super(SlamL1Loss, self).__init__()
 
-    def forward(self, input: torch.Tensor, target: torch.Tensor, gain: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self, input: torch.Tensor, target: torch.Tensor, gain: torch.Tensor
+    ) -> torch.Tensor:
         return torch.mean(torch.mean(torch.abs(input - target), 0) * gain)
 
 
 class SlamL2Loss(torch.nn.Module):
 
-    def __init__(self, ) -> None:
+    def __init__(
+        self,
+    ) -> None:
         super(SlamL2Loss, self).__init__()
 
-    def forward(self, input: torch.Tensor, target: torch.Tensor, gain: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self, input: torch.Tensor, target: torch.Tensor, gain: torch.Tensor
+    ) -> torch.Tensor:
         return torch.mean(torch.mean(torch.square(input - target), 0) * gain)
 
 
 class SlamBCELoss(torch.nn.Module):
 
-    def __init__(self, ) -> None:
+    def __init__(
+        self,
+    ) -> None:
         super(SlamBCELoss, self).__init__()
 
-    def forward(self, input: torch.Tensor, target: torch.Tensor, gain: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self, input: torch.Tensor, target: torch.Tensor, gain: torch.Tensor
+    ) -> torch.Tensor:
         return torch.mean(
-            torch.mean(torch.nn.functional.binary_cross_entropy(input, target, reduction="none"), 0) * gain)
+            torch.mean(
+                torch.nn.functional.binary_cross_entropy(
+                    input, target, reduction="none"
+                ),
+                0,
+            )
+            * gain
+        )
 
 
 class SlamPredictor:
-    def __init__(self, w, b, alpha, xmin, xmax, wave=None, yscale=1., activation="relu"):
+    def __init__(
+        self, w, b, alpha, xmin, xmax, wave=None, yscale=1.0, activation="relu"
+    ):
         # self.alpha = np.float64(alpha)
         # self.w = [_.astype(np.float64) for _ in w]
         # self.b = [_.astype(np.float64) for _ in b]
@@ -319,7 +411,7 @@ class SlamPredictor:
         self.xmax = np.asarray(xmax)
         self.yscale = np.asarray(yscale)
 
-        self.xmean = .5 * (self.xmin + self.xmax)
+        self.xmean = 0.5 * (self.xmin + self.xmax)
         self.nlayer = len(w) - 1
         self.wave = wave
 
@@ -332,58 +424,102 @@ class SlamPredictor:
         return dict(w=self.w, b=self.b, alpha=self.alpha)
 
     def predict(self, x):
-        """ general """
+        """general"""
         x = np.asarray(x, dtype=np.float64)
         if x.ndim == 1:  # single entry
             # scale x
             xsT = ((x - self.xmin) / (self.xmax - self.xmin)).reshape(-1, 1) - 0.5
             # eval y
-            y = nneval(xsT, self.w, self.b, self.alpha, self.nlayer, self.activation).flatten() * self.yscale
+            y = (
+                nneval(
+                    xsT, self.w, self.b, self.alpha, self.nlayer, self.activation
+                ).flatten()
+                * self.yscale
+            )
             return y
         elif x.ndim == 2:  # multiple entries
             # scale x
-            xsT = (x.T - self.xmin[:, None]) / (self.xmax[:, None] - self.xmin[:, None]) - 0.5
+            xsT = (x.T - self.xmin[:, None]) / (
+                self.xmax[:, None] - self.xmin[:, None]
+            ) - 0.5
             # eval y
-            y = nneval(xsT, self.w, self.b, self.alpha, self.nlayer, self.activation).T * self.yscale[None, :]
+            y = (
+                nneval(xsT, self.w, self.b, self.alpha, self.nlayer, self.activation).T
+                * self.yscale[None, :]
+            )
             return y
         else:
             raise ValueError()
 
     def predict_one_spectrum_standard(self, x):
-        """ predict one spectrum, x is in standard space """
+        """predict one spectrum, x is in standard space"""
         # scale label
-        return nneval(np.asarray(x, dtype=np.float64).reshape(-1, 1), self.w, self.b, self.alpha,
-                      self.nlayer, self.activation).reshape(-1)
+        return nneval(
+            np.asarray(x, dtype=np.float64).reshape(-1, 1),
+            self.w,
+            self.b,
+            self.alpha,
+            self.nlayer,
+            self.activation,
+        ).reshape(-1)
 
     def predict_one_spectrum(self, x):
-        """ predict one spectrum """
+        """predict one spectrum"""
         # scale label
-        xsT = ((np.asarray(x, dtype=np.float64) - self.xmin) / (self.xmax - self.xmin)).reshape(-1, 1) - 0.5
-        return nneval(xsT, self.w, self.b, self.alpha, self.nlayer, self.activation).reshape(-1)
+        xsT = (
+            (np.asarray(x, dtype=np.float64) - self.xmin) / (self.xmax - self.xmin)
+        ).reshape(-1, 1) - 0.5
+        return nneval(
+            xsT, self.w, self.b, self.alpha, self.nlayer, self.activation
+        ).reshape(-1)
 
     def predict_one_spectrum_and_scale_y_back(self, x):
-        """ predict one spectrum and scale y """
+        """predict one spectrum and scale y"""
         # scale label
-        xsT = ((np.asarray(x, dtype=np.float64) - self.xmin) / (self.xmax - self.xmin)).reshape(-1, 1) - 0.5
-        y_standard = nneval(xsT, self.w, self.b, self.alpha, self.nlayer, self.activation).reshape(-1)
+        xsT = (
+            (np.asarray(x, dtype=np.float64) - self.xmin) / (self.xmax - self.xmin)
+        ).reshape(-1, 1) - 0.5
+        y_standard = nneval(
+            xsT, self.w, self.b, self.alpha, self.nlayer, self.activation
+        ).reshape(-1)
         y = y_standard * self.yscale
         return y
 
     def predict_one_spectrum_and_scale_y_back_rv(self, x, rv, left=None, right=None):
-        """ predict one spectrum and scale y """
+        """predict one spectrum and scale y"""
         # scale label
-        xsT = ((np.asarray(x, dtype=np.float64) - self.xmin) / (self.xmax - self.xmin)).reshape(-1, 1) - 0.5
-        y_standard = nneval(xsT, self.w, self.b, self.alpha, self.nlayer, self.activation).reshape(-1)
+        xsT = (
+            (np.asarray(x, dtype=np.float64) - self.xmin) / (self.xmax - self.xmin)
+        ).reshape(-1, 1) - 0.5
+        y_standard = nneval(
+            xsT, self.w, self.b, self.alpha, self.nlayer, self.activation
+        ).reshape(-1)
         y = y_standard * self.yscale
-        y_rv = np.interp(self.wave, self.wave * (1 + rv / 299792.458), y_standard, left=left, right=right)
+        y_rv = np.interp(
+            self.wave,
+            self.wave * (1 + rv / 299792.458),
+            y_standard,
+            left=left,
+            right=right,
+        )
         return y_rv
 
     def predict_one_spectrum_rv(self, x, rv, left=None, right=None):
-        """ predict one spectrum, with rv """
+        """predict one spectrum, with rv"""
         # scale label
-        xsT = ((np.asarray(x, dtype=np.float64) - self.xmin) / (self.xmax - self.xmin)).reshape(-1, 1) - 0.5
-        y_standard = nneval(xsT, self.w, self.b, self.alpha, self.nlayer, self.activation).reshape(-1)
-        y_standard_rv = np.interp(self.wave, self.wave * (1 + rv / 299792.458), y_standard, left=left, right=right)
+        xsT = (
+            (np.asarray(x, dtype=np.float64) - self.xmin) / (self.xmax - self.xmin)
+        ).reshape(-1, 1) - 0.5
+        y_standard = nneval(
+            xsT, self.w, self.b, self.alpha, self.nlayer, self.activation
+        ).reshape(-1)
+        y_standard_rv = np.interp(
+            self.wave,
+            self.wave * (1 + rv / 299792.458),
+            y_standard,
+            left=left,
+            right=right,
+        )
         return y_standard_rv
 
     # def predict_multiple_spectra(self, x):
@@ -397,15 +533,30 @@ class SlamPredictor:
     #         return nneval(self.w, self.b, xs, self.alpha).T * (self.ymax-self.ymin) + self.ymin
 
     def optimize(self, flux_obs, flux_err=None, pw=2, method="Nelder-Mead"):
-        return minimize(cost, self.xmean, args=(self, flux_obs, flux_err, pw), method=method)
+        return minimize(
+            cost, self.xmean, args=(self, flux_obs, flux_err, pw), method=method
+        )
 
     def least_squares(self, flux_obs, flux_err=None, p0=None, **kwargs):
-        res = least_squares(cost4ls, np.zeros_like(self.xmean, dtype=float) if p0 is None else self.scale_x(p0),
-                            args=(self, flux_obs, flux_err), **kwargs)
+        res = least_squares(
+            cost4ls,
+            np.zeros_like(self.xmean, dtype=float) if p0 is None else self.scale_x(p0),
+            args=(self, flux_obs, flux_err),
+            **kwargs
+        )
         return self.scale_x_back(res["x"])
 
-    def least_squares_multiple(self, flux_obs, flux_err=None, p0=None,
-                               n_jobs=2, verbose=10, backend="loky", batch_size=10, **kwargs):
+    def least_squares_multiple(
+        self,
+        flux_obs,
+        flux_err=None,
+        p0=None,
+        n_jobs=2,
+        verbose=10,
+        backend="loky",
+        batch_size=10,
+        **kwargs
+    ):
         flux_obs = np.asarray(flux_obs)
         nobs = flux_obs.shape[0]
         if flux_err is None:
@@ -424,12 +575,22 @@ class SlamPredictor:
         if "bounds" in kwargs.keys():
             bounds_lo = kwargs["bounds"][0]
             bounds_hi = kwargs["bounds"][1]
-            p0[np.any((p0 < bounds_lo) | (p0 > bounds_hi), axis=1)] = .5 * (bounds_lo + bounds_hi)
+            p0[np.any((p0 < bounds_lo) | (p0 > bounds_hi), axis=1)] = 0.5 * (
+                bounds_lo + bounds_hi
+            )
 
-        pool = joblib.Parallel(n_jobs=n_jobs, verbose=verbose, backend=backend, batch_size=batch_size)
-        res = pool(joblib.delayed(least_squares)(
-            cost4ls, p0 if p0 is None else p0[i], args=(self, flux_obs[i], flux_err[i]), **kwargs) for i in
-                   range(nobs))
+        pool = joblib.Parallel(
+            n_jobs=n_jobs, verbose=verbose, backend=backend, batch_size=batch_size
+        )
+        res = pool(
+            joblib.delayed(least_squares)(
+                cost4ls,
+                p0 if p0 is None else p0[i],
+                args=(self, flux_obs[i], flux_err[i]),
+                **kwargs
+            )
+            for i in range(nobs)
+        )
         res = np.asarray([_["x"] for _ in res])
         return self.scale_x_back(res)
 
@@ -460,29 +621,34 @@ class SlamPredictor:
     def scale_x_back(self, x_scaled):
         x_scaled = np.asarray(x_scaled, dtype=np.float64)
         if x_scaled.ndim == 1:
-            return (x_scaled + .5) * (self.xmax - self.xmin) + self.xmin
+            return (x_scaled + 0.5) * (self.xmax - self.xmin) + self.xmin
         else:
-            return (x_scaled + .5) * (self.xmax[None, :] - self.xmin[None, :]) + self.xmin[None, :]
+            return (x_scaled + 0.5) * (
+                self.xmax[None, :] - self.xmin[None, :]
+            ) + self.xmin[None, :]
 
     def scale_x(self, x):
         x = np.asarray(x, dtype=np.float64)
         if x.ndim == 1:
             return (x - self.xmin) / (self.xmax - self.xmin) - 0.5
         else:
-            return (x - self.xmin[None, :]) / (self.xmax[None, :] - self.xmin[None, :]) - 0.5
+            return (x - self.xmin[None, :]) / (
+                self.xmax[None, :] - self.xmin[None, :]
+            ) - 0.5
 
 
 # ###################################
 # functions for SlamPredictor
 # ###################################
 
-def elu(x, alpha=1.):
-    """ Exponential LU function """
-    return np.where(x >= 0, x, alpha * (np.exp(x) - 1.))
+
+def elu(x, alpha=1.0):
+    """Exponential LU function"""
+    return np.where(x >= 0, x, alpha * (np.exp(x) - 1.0))
 
 
 def leaky_relu(x, alpha=0.01):
-    """ Leaky ReLU function """
+    """Leaky ReLU function"""
     return np.where(x >= 0, x, alpha * x)
 
 
@@ -490,7 +656,7 @@ def model_func(sp, *args):
     return sp.predict_one_spectrum(np.array(args))
 
 
-def nneval(xs, w, b, alpha=1., nlayer=None, activation="relu"):
+def nneval(xs, w, b, alpha=1.0, nlayer=None, activation="relu"):
     assert activation in ("relu", "elu")
     if activation == "relu":
         func = leaky_relu
@@ -538,6 +704,6 @@ def cost4ls(x, sp, flux_obs, flux_err=None):
 def cost(x, sp, flux_obs, flux_err=None, pw=2):
     flux_mod = sp.predict_one_spectrum(x)
     if flux_err is None:
-        return .5 * np.sum(np.abs(flux_mod - flux_obs) ** pw)
+        return 0.5 * np.sum(np.abs(flux_mod - flux_obs) ** pw)
     else:
-        return .5 * np.sum((np.abs(flux_mod - flux_obs) / flux_err) ** pw)
+        return 0.5 * np.sum((np.abs(flux_mod - flux_obs) / flux_err) ** pw)
