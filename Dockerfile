@@ -20,6 +20,7 @@ RUN apt-get update --fix-missing && \
 # Miniconda3-latest-Linux-x86_64.sh
 # Miniconda3-latest-Linux-aarch64.sh
 RUN mkdir -p /opt \
+    && mkdir -p /laspec \
     && mkdir -p /slam \
     && wget --quiet https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /opt/miniconda.sh \
     && bash /opt/miniconda.sh -b -p /opt/conda \
@@ -39,13 +40,15 @@ ENV OMP_NUM_THREADS=1 \
     VECLIB_MAXIMUM_THREADS=1
 
 COPY .condarc /root/
-COPY requirements.txt /slam/
+COPY laspec /laspec/
+COPY setup.py /laspec/
+COPY requirements.txt /laspec/
 COPY projects/2024-12-22-speczoo/predict.py /slam/
 
 # switch to tsinghua pip/conda source
 RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple/ \
     && pip install ipython \
-    && pip install -r /slam/requirements.txt
+    && pip install -r /laspec/requirements.txt
 
 # CMD
 CMD [ "/bin/bash" ]
