@@ -6,7 +6,7 @@ RUN mkdir -p /laspec \
 WORKDIR /slam
 
 # switch to tsinghua apt source
-RUN sed -i "s/deb.debian.org/mirrors.tuna.tsinghua.edu.cn/g" /etc/apt/sources.list.d/debian.sources
+#RUN sed -i "s/deb.debian.org/mirrors.tuna.tsinghua.edu.cn/g" /etc/apt/sources.list.d/debian.sources
 #RUN --mount=type=cache,id=apt,target=/var/cache/apt \
 #RUN apt-get update --fix-missing && \
 #    apt-get install -y wget bzip2 ca-certificates curl git gcc g++ apt-utils && \
@@ -20,6 +20,7 @@ ENV OMP_NUM_THREADS=1 \
     NUMEXPR_NUM_THREADS=1 \
     VECLIB_MAXIMUM_THREADS=1
 
+# copy laspec
 COPY .condarc /root/
 COPY laspec /laspec/
 COPY setup.py /laspec/
@@ -29,7 +30,8 @@ COPY projects/2024-12-22-speczoo/predict.py /slam/
 COPY projects/2024-12-22-speczoo/sp.joblib /slam/
 
 # switch to tsinghua pip/conda source
-RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple/ \
+RUN --mount=type=cache,id=pip,uid=0,gid=0,target=/root/.cache \
+    pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple/ \
     && pip install ipython \
     && pip install /laspec
 
