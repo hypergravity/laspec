@@ -48,10 +48,10 @@ COPY projects/2024-12-22-speczoo/predict.py /slam/
 # switch to tsinghua pip/conda source
 RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple/ \
     && pip install ipython \
-    && pip install -r /laspec/requirements.txt
+    && pip install /laspec/
 
 # CMD
 CMD [ "/bin/bash" ]
 
-
+#docker build -t astroslam:latest -f Dockerfile .
 # docker run slam:latest predict
