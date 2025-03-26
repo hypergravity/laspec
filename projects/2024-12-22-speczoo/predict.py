@@ -51,7 +51,7 @@ x_pred = sp.least_squares(
 LALEL_NAMES = ["Teff", "logg", "[Fe/H]"]
 x_pred_dict = dict(zip(LALEL_NAMES, x_pred))
 
-print(json.dumps(x_pred))
+print(json.dumps(x_pred_dict))
 # save to json file
 try:
     with open("/slam/result.json", "w", encoding="utf-8") as f:
