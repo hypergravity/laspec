@@ -18,7 +18,8 @@ ENV OMP_NUM_THREADS=1 \
     MKL_NUM_THREADS=1 \
     OPENBLAS_NUM_THREADS=1 \
     NUMEXPR_NUM_THREADS=1 \
-    VECLIB_MAXIMUM_THREADS=1
+    VECLIB_MAXIMUM_THREADS=1 \
+    ASTROPY_IERS_AUTO_UPDATE=False
 
 # copy laspec
 COPY .condarc /root/
@@ -36,8 +37,9 @@ RUN --mount=type=cache,id=pip,uid=0,gid=0,target=/root/.cache \
     && pip install /laspec
 
 # CMD
-CMD [ "/bin/bash" ]
+CMD ipython /slam/predict.py
 
-# docker build -t astroslam:latest -f Dockerfile .
+# docker build -t astroslam:latest -f Dockerfile --no-cache .
 # docker run astroslam:latest pip list
-# docker run astroslam:latest python /slam/predict.py /nfsdata/share/lamost/dr11-v1.0/fits/20191026/HD213633N331403V01/spec-58783-HD213633N331403V01_sp14-205.fits.gz
+# docker run -v /nfsdata/share/lamost/dr11-v1.0/fits/20191026/HD213633N331403V01/spec-58783-HD213633N331403V01_sp14-205.fits.gz:/slam/input.fits astroslam:latest python /slam/predict.py
+# docker run -it -v /nfsdata/share/lamost/dr11-v1.0/fits/20191026/HD213633N331403V01/spec-58783-HD213633N331403V01_sp14-205.fits.gz:/slam/input.fits astroslam:latest bash
