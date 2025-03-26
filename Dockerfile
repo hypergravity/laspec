@@ -42,6 +42,7 @@ ENV OMP_NUM_THREADS=1 \
 COPY .condarc /root/
 COPY laspec /laspec/
 COPY setup.py /laspec/
+COPY README.md /laspec/
 COPY requirements.txt /laspec/
 COPY projects/2024-12-22-speczoo/predict.py /slam/
 
