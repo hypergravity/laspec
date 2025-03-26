@@ -1,4 +1,4 @@
-FROM ubuntu:24.04
+FROM debian:12
 LABEL authors="Bo Zhang"
 
 WORKDIR /opt
