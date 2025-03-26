@@ -37,12 +37,15 @@ ENV OMP_NUM_THREADS=1 \
     OPENBLAS_NUM_THREADS=1 \
     NUMEXPR_NUM_THREADS=1 \
     VECLIB_MAXIMUM_THREADS=1
+
 COPY .condarc /root/
 COPY requirements.txt /slam/
+COPY projects/2024-12-22-speczoo/predict.py /slam/
+
 # switch to tsinghua pip/conda source
 RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple/ \
     && pip install ipython \
-    && pip install -r /root/requirements.txt
+    && pip install -r /slam/requirements.txt
 
 # CMD
 CMD [ "/bin/bash" ]
