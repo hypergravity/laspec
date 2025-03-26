@@ -29,12 +29,14 @@ COPY README.md /laspec/
 COPY requirements.txt /laspec/
 COPY projects/2024-12-22-speczoo/predict.py /slam/
 COPY projects/2024-12-22-speczoo/sp.joblib /slam/
+COPY projects/2024-12-22-speczoo/upgrade_astropy.py /slam/
 
 # switch to tsinghua pip/conda source
 RUN --mount=type=cache,id=pip,uid=0,gid=0,target=/root/.cache \
     pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple/ \
     && pip install ipython \
-    && pip install /laspec
+    && pip install /laspec \
+    && ipython /slam/upgrade_astropy.py
 
 # CMD
 CMD ["ipython", "/slam/predict.py"]
@@ -43,3 +45,6 @@ CMD ["ipython", "/slam/predict.py"]
 # docker run astroslam:latest pip list
 # docker run -v /nfsdata/share/lamost/dr11-v1.0/fits/20191026/HD213633N331403V01/spec-58783-HD213633N331403V01_sp14-205.fits.gz:/slam/input.fits astroslam:latest python /slam/predict.py
 # docker run -it -v /nfsdata/share/lamost/dr11-v1.0/fits/20191026/HD213633N331403V01/spec-58783-HD213633N331403V01_sp14-205.fits.gz:/slam/input.fits astroslam:latest bash
+
+http://data.astropy.org/coordinates/sites.json
+https://datacenter.iers.org/data/9/finals2000A.all
