@@ -56,6 +56,5 @@ print(json.dumps(x_pred_dict))
 try:
     with open("/slam/result.json", "w", encoding="utf-8") as f:
         json.dump(x_pred_dict, f, ensure_ascii=False, indent=4)
-    print("字典已成功写入 JSON 文件。")
 except Exception as e:
     print(f"写入文件时出现错误: {e}")
