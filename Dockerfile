@@ -37,7 +37,7 @@ RUN --mount=type=cache,id=pip,uid=0,gid=0,target=/root/.cache \
     && pip install /laspec
 
 # CMD
-CMD ipython /slam/predict.py
+CMD ["ipython", "/slam/predict.py"]
 
 # docker build -t astroslam:latest -f Dockerfile --no-cache .
 # docker run astroslam:latest pip list
