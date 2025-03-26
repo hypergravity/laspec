@@ -27,7 +27,7 @@ RUN mkdir -p /opt \
     && rm /opt/miniconda.sh \
     && /opt/conda/bin/conda clean -ay \
     && ln -s /opt/conda/etc/profile.d/conda.sh /etc/profile.d/conda.sh \
-    # && echo ". /opt/conda/etc/profile.d/conda.sh" >> ~/.bashrc \
+    && echo ". /opt/conda/etc/profile.d/conda.sh" >> ~/.bashrc \
     && echo "conda activate base" >> ~/.bashrc \
     && echo "alias ll='ls -alF'" >> ~/.bashrc
 # include conda executables to PATH
@@ -45,6 +45,7 @@ COPY setup.py /laspec/
 COPY README.md /laspec/
 COPY requirements.txt /laspec/
 COPY projects/2024-12-22-speczoo/predict.py /slam/
+COPY projects/2024-12-22-speczoo/sp.joblib /slam/
 
 # switch to tsinghua pip/conda source
 RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple/ \
@@ -54,5 +55,6 @@ RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple/ \
 # CMD
 CMD [ "/bin/bash" ]
 
-#docker build -t astroslam:latest -f Dockerfile .
-# docker run slam:latest predict
+# docker build -t astroslam:latest -f Dockerfile .
+# docker run astroslam:latest pip list
+# docker run astroslam:latest python /slam/predict.py /nfsdata/share/lamost/dr11-v1.0/fits/20191026/HD213633N331403V01/spec-58783-HD213633N331403V01_sp14-205.fits.gz
