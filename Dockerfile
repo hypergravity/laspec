@@ -1,4 +1,4 @@
-FROM debian:12
+FROM ubuntu:24.04
 LABEL authors="Bo Zhang"
 
 WORKDIR /opt
@@ -17,7 +17,11 @@ RUN apt-get update --fix-missing && \
     rm -rf /var/lib/apt/lists/*
 
 # install miniconda3
-RUN wget --quiet https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda3-latest-Linux-aarch64.sh -O /opt/miniconda.sh \
+# Miniconda3-latest-Linux-x86_64.sh
+# Miniconda3-latest-Linux-aarch64.sh
+RUN mkdir -p /opt \
+    && mkdir -p /slam \
+    && wget --quiet https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /opt/miniconda.sh \
     && bash /opt/miniconda.sh -b -p /opt/conda \
     && rm /opt/miniconda.sh \
     && /opt/conda/bin/conda clean -ay \
@@ -34,7 +38,7 @@ ENV OMP_NUM_THREADS=1 \
     NUMEXPR_NUM_THREADS=1 \
     VECLIB_MAXIMUM_THREADS=1
 COPY .condarc /root/
-COPY requirements.txt /root/
+COPY requirements.txt /slam/
 # switch to tsinghua pip/conda source
 RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple/ \
     && pip install ipython \
@@ -42,3 +46,6 @@ RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple/ \
 
 # CMD
 CMD [ "/bin/bash" ]
+
+
+# docker run slam:latest predict
