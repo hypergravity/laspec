@@ -45,5 +45,5 @@ CMD ["ipython", "/slam/predict.py"]
 # docker run -v /nfsdata/share/lamost/dr11-v1.0/fits/20191026/HD213633N331403V01/spec-58783-HD213633N331403V01_sp14-205.fits.gz:/slam/input.fits astroslam:latest python /slam/predict.py
 # docker run -it -v /nfsdata/share/lamost/dr11-v1.0/fits/20191026/HD213633N331403V01/spec-58783-HD213633N331403V01_sp14-205.fits.gz:/slam/input.fits astroslam:latest bash
 
-http://data.astropy.org/coordinates/sites.json
-https://datacenter.iers.org/data/9/finals2000A.all
+#http://data.astropy.org/coordinates/sites.json
+#https://datacenter.iers.org/data/9/finals2000A.all
