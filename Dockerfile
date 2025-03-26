@@ -48,7 +48,7 @@ COPY projects/2024-12-22-speczoo/predict.py /slam/
 # switch to tsinghua pip/conda source
 RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple/ \
     && pip install ipython \
-    && pip install /laspec/
+    && pip install /laspec
 
 # CMD
 CMD [ "/bin/bash" ]
