@@ -1,3 +1,4 @@
+import json
 import joblib
 import os
 import sys
@@ -7,6 +8,7 @@ import numpy as np
 WEIGHT_PATH = "/slam/weight.joblib"
 VERBOSE = True
 WAVE = np.arange(3950, 5851, 1.0)
+INPUT_PATH = "/slam/input.fits"
 
 # Read spectrum
 if VERBOSE:
@@ -22,10 +24,7 @@ def read_spectrum(fp):
     return flux, flux_err
 
 
-print(sys.argv)
-fp = sys.argv[1]
-print("fp: ", fp)
-flux, flux_err = read_spectrum(fp)
+flux, flux_err = read_spectrum(INPUT_PATH)
 flux[flux > 2] = 1
 flux[flux < 0] = 1
 
@@ -45,4 +44,6 @@ x_pred = sp.least_square(
     method="trf",
     bounds=(np.ones(3) * -0.6, np.ones(3) * 0.6),
 )
-print(x_pred)
+LALEL_NAMES = ["Teff", "logg", "[Fe/H]"]
+x_pred = dict(zip(LALEL_NAMES, x_pred))
+print(json.dumps(x_pred))
