@@ -5,9 +5,10 @@ import sys
 from laspec import MrsSpec
 import numpy as np
 
-# from astropy.utils.iers import conf
-# conf.auto_max_age = None  # 禁用自动更新
-# conf.auto_download = False  # 关闭自动下载
+from astropy.utils.iers import conf
+
+conf.auto_max_age = None  # 禁用自动更新
+conf.auto_download = False  # 关闭自动下载
 
 SP_PATH = "/slam/sp.joblib"
 VERBOSE = True
