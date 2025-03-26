@@ -10,7 +10,7 @@ import numpy as np
 # conf.auto_download = False  # 关闭自动下载
 
 SP_PATH = "/slam/sp.joblib"
-VERBOSE = True
+VERBOSE = False
 WAVE = np.arange(3950, 5851, 1.0)
 INPUT_PATH = "/slam/input.fits"
 
