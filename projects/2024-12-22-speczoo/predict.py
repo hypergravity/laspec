@@ -41,7 +41,7 @@ sp = joblib.load(SP_PATH)
 # Predict labels
 if VERBOSE:
     print("[3/3] Predict Labels")
-x_pred = sp.least_square(
+x_pred = sp.least_squares(
     flux,
     flux_err,
     p0=[6000, 4, -0.1],
