@@ -49,5 +49,13 @@ x_pred = sp.least_squares(
     bounds=(np.ones(3) * -0.6, np.ones(3) * 0.6),
 )
 LALEL_NAMES = ["Teff", "logg", "[Fe/H]"]
-x_pred = dict(zip(LALEL_NAMES, x_pred))
+x_pred_dict = dict(zip(LALEL_NAMES, x_pred))
+
 print(json.dumps(x_pred))
+# save to json file
+try:
+    with open("/slam/result.json", "w", encoding="utf-8") as f:
+        json.dump(x_pred_dict, f, ensure_ascii=False, indent=4)
+    print("字典已成功写入 JSON 文件。")
+except Exception as e:
+    print(f"写入文件时出现错误: {e}")
