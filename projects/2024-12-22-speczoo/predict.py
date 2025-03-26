@@ -5,7 +5,7 @@ import sys
 from laspec import MrsSpec
 import numpy as np
 
-WEIGHT_PATH = "/slam/weight.joblib"
+SP_PATH = "/slam/sp.joblib"
 VERBOSE = True
 WAVE = np.arange(3950, 5851, 1.0)
 INPUT_PATH = "/slam/input.fits"
@@ -31,8 +31,8 @@ flux[flux < 0] = 1
 # Load model (/slam/weight.joblib)
 if VERBOSE:
     print("[2/3] Load Model")
-assert os.path.exists(WEIGHT_PATH), WEIGHT_PATH
-sp = joblib.load(WEIGHT_PATH)
+assert os.path.exists(SP_PATH), SP_PATH
+sp = joblib.load(SP_PATH)
 
 # Predict labels
 if VERBOSE:
