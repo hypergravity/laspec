@@ -22,7 +22,7 @@ ENV OMP_NUM_THREADS=1 \
 
 # copy laspec
 COPY .condarc /root/
-COPY laspec /laspec/
+COPY laspec /laspec/laspec
 COPY setup.py /laspec/
 COPY README.md /laspec/
 COPY requirements.txt /laspec/
@@ -38,11 +38,11 @@ RUN --mount=type=cache,id=pip,uid=0,gid=0,target=/root/.cache \
     && ipython /slam/upgrade_astropy.py
 
 # CMD
-CMD ["ipython", "/slam/predict.py"]
+CMD ["python", "/slam/predict.py"]
 
 # docker build -t astroslam:latest -f Dockerfile --no-cache .
 # docker run astroslam:latest pip list
-# docker run -v /nfsdata/share/lamost/dr11-v1.0/fits/20191026/HD213633N331403V01/spec-58783-HD213633N331403V01_sp14-205.fits.gz:/slam/input.fits astroslam:latest python /slam/predict.py
+# docker run -v /nfsdata/share/lamost/dr11-v1.0/fits/20191026/HD213633N331403V01/spec-58783-HD213633N331403V01_sp14-205.fits.gz:/slam/input.fits astroslam
 # docker run -it -v /nfsdata/share/lamost/dr11-v1.0/fits/20191026/HD213633N331403V01/spec-58783-HD213633N331403V01_sp14-205.fits.gz:/slam/input.fits astroslam:latest bash
 
 #http://data.astropy.org/coordinates/sites.json
