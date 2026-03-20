@@ -916,17 +916,13 @@ class MrsFits(fits.HDUList):
             **norm_kwargs,
         )
         # set additional infomation
-        me.filename = self[0].header["FILENAME"]
-        me.obsid = self[0].header["OBSID"]
-        me.seeing = self[0].header["SEEING"]
-        me.ra = self[0].header["RA"]
-        me.dec = self[0].header["DEC"]
-        me.fibertype = (
-            self[0].header["FIBERTYP"] if "FIBERTYP" in self[0].header.keys() else None
-        )
-        me.fibermask = (
-            self[0].header["FIBERMAS"] if "FIBERMAS" in self[0].header.keys() else None
-        )
+        me.filename = self[0].header.get("FILENAME", None)
+        me.obsid = self[0].header.get("OBSID", None)
+        me.seeing = self[0].header.get("SEEING", None)
+        me.ra = self[0].header.get("RA", None)
+        me.dec = self[0].header.get("DEC", None)
+        me.fibertype = self[0].header.get("FIBERTYP", None)
+        me.fibermask = self[0].header.get("FIBERMAS", None)
 
         try:
             if kB in self.hdunames and kR not in self.hdunames:
