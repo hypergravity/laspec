@@ -1320,7 +1320,12 @@ class RVM:
             "eta_init": 0.5,
             "eta_lim": (0.01, 3.0),
         }
-        mf = MrsFits(fp.strip())
+
+        try:
+            mf = MrsFits(fp.strip())
+        except BaseException as ex:
+            return OrderedDict()
+
         try:
             # blue arm
             ms = mf.get_one_spec(lmjm=lmjm, band="B")
@@ -1343,7 +1348,7 @@ class RVM:
         except Exception as e_:
             if raise_error:
                 raise e_
-            rvr_B = {}
+            rvr_B = OrderedDict()
 
         try:
             # red arm
@@ -1372,8 +1377,8 @@ class RVM:
         except Exception as e_:
             if raise_error:
                 raise e_
-            rvr_R = {}
-            # rvr_Rm = {}
+            rvr_R = OrderedDict()
+            # rvr_Rm = OrderedDict()
 
         rvr_B.update(rvr_R)
         # rvr_B.update(rvr_Rm)
