@@ -846,7 +846,9 @@ class MrsFits(fits.HDUList):
             elif self.hdunames[i] == "COADD_R":
                 self.isR[i] = True
                 self.isCoadd[i] = True
-            elif not self.hdunames[i] in ["Information", "PRIMARY"]:
+            elif not self.hdunames[i] in [
+                "Information",
+            ]:
                 raise RuntimeError("@MrsFits: error during processing HDU name")
 
     def __repr__(self):
