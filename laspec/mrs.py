@@ -3,6 +3,7 @@ __all__ = ["MrsSpec", "MrsEpoch", "MrsFits", "MrsSource", "debad", "SOL_kms"]
 import glob
 import os
 import warnings
+import traceback
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -964,8 +965,11 @@ class MrsFits(fits.HDUList):
                 me.jdend = jdend_B
                 me.jdmid = jdmid_B
                 me.bjdmid = jd2bjd(me.ra, me.dec, me.jdmid)
+
         except Exception as ex:
-            print("Keywords DATE-* not found from file {}!".format(me.filename))
+            print(f"Keywords DATE-* not found from file {me.filename}!")
+            print(f"Exception: {ex}")
+            traceback.print_exc()  # 打印完整的堆栈跟踪
 
         return me
 
