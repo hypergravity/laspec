@@ -9,7 +9,7 @@ lmfit==1.3.2
 toml==0.10.2
 ipyparallel==9.0.0
 #ipython==8.29.0
-pytest==8.3.4
+pytest==9.0.3
 
 # sphinx packages
 sphinx
